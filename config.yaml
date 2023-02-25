@@ -1,0 +1,26 @@
+tmp_dir: "/tmp/worker"
+runtime: "dagger"
+terraform:
+  image:
+    name: "hashicorp/terraform"
+    tag: "0.12.24"
+  moduleFolder: "modules"
+minio:
+  address: "minio:9000"
+  access_key_id: ""
+  secret_access_key: ""
+  use_ssl: false
+mongo:
+  address: "mongo"
+  port: 27017
+  username: "root"
+  password: "password"
+  database: "plugin-db"
+postgres:
+  address: "postgres"
+  port: 5432
+  username: "postgres"
+  password: "password"
+  database: "plugin-db"
+
+
