@@ -25,5 +25,5 @@ func (p *ProjectService) Add(payload dto.CreatePluginInstanceRequest) errors.Err
 	// Retrieve the plugin
 
 	// Build the plugin -> pipeline
-
+	return errors.OK
 }
