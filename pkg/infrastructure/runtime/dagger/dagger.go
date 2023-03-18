@@ -39,7 +39,7 @@ func (d *Dagger) AddProcess(image string, commands []string, volumes map[string]
 		process.WithEnvVariable(key, value)
 	}
 	//for dest, value := range secrets {
-	//	d.Client.Address().Secret(dest, value)
+	//	d.HelmClient.Address().Secret(dest, value)
 	//}
 
 	process.WithExec(commands)

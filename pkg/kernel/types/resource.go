@@ -7,7 +7,7 @@ type Resource string
 const (
 	VPC      Resource = "vpc"
 	Net      Resource = "net"
-	Subnet   Resource = "subnet"
+	Subnet   Resource = "subnetwork"
 	Firewall Resource = "firewall"
 	VM       Resource = "vm"
 )

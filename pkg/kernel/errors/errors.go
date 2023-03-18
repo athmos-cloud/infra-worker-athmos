@@ -13,26 +13,18 @@ type Error struct {
 	Code int
 }
 
-//msg string, err error, code int
-
-func New(args ...interface{}) Error {
-	invalidArgument := Error{Err: fmt.Sprintf("code must be a number, got : %s", args[1].(string))}
-	if len(args) == 2 && option.NewList(reflect.String, args).Validate() {
-		codeInt, err := strconv.Atoi(args[1].(string))
-		if err != nil {
-			return invalidArgument
-		}
+// New : msg string, err error, code int
+func New(message string, code string) Error {
+	strCode, err := strconv.Atoi(code)
+	if err != nil {
 		return Error{
-			Err:  args[0].(string),
-			Code: codeInt,
+			Err:  fmt.Sprintf("Error code %s is not a number", code),
+			Code: 500,
 		}
-	} else if len(args) == 3 && option.NewList(reflect.String, args).Validate() {
-		return Error{
-			Err:  fmt.Sprintf("%s: %s", args[0].(string), args[1].(error).Error()),
-			Code: args[2].(int),
-		}
-	} else {
-		return invalidArgument
+	}
+	return Error{
+		Err:  message,
+		Code: strCode,
 	}
 }
 
@@ -63,10 +55,10 @@ func (e *Error) ToString() string {
 }
 
 func (e *Error) Error(errorInput option.Option) error {
-	if errorInput.SetType(reflect.String); !errorInput.Validate() {
+	if errorInput.SetType(reflect.String.String()); !errorInput.Validate() {
 		return errors.New(errorInput.Value.(string))
 	}
-	if errorInput.SetType(reflect.TypeOf(e).Kind()); errorInput.Validate() {
+	if errorInput.SetType(reflect.TypeOf(e).String()); errorInput.Validate() {
 		return errors.New(fmt.Sprintf("[%d] %s", e.Code, e.Err))
 	}
 	return errors.New(e.ToString())

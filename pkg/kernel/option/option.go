@@ -1,16 +1,18 @@
 package option
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type Option struct {
-	Type  reflect.Kind
+	Type  string
 	Value interface{}
 }
 
-func New(kind reflect.Kind, v ...interface{}) Option {
-	if kind != reflect.TypeOf(reflect.TypeOf(v).Kind()).Kind() {
+func New(kind string, v ...interface{}) Option {
+	if kind != reflect.TypeOf(reflect.TypeOf(v).Kind()).String() {
 		return Option{
-			Type:  reflect.Zero(reflect.TypeOf(v)).Kind(),
+			Type:  reflect.Zero(reflect.TypeOf(v)).String(),
 			Value: v,
 		}
 	}
@@ -37,10 +39,13 @@ func EmptyWithMessage(msg string) *Option {
 }
 
 func (o Option) Validate() bool {
-	return reflect.DeepEqual(o.Type, reflect.TypeOf(o.Value).Kind())
+	if o.Value == nil {
+		return false
+	}
+	return o.Type == reflect.TypeOf(o.Value).String()
 }
 
-func (o Option) SetType(t reflect.Kind) Option {
+func (o Option) SetType(t string) Option {
 	o.Type = t
 	return o
 }

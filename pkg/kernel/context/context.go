@@ -3,7 +3,6 @@ package context
 import (
 	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/auth"
-	"github.com/PaulBarrie/infra-worker/pkg/plugin/common"
 )
 
 var CurrentContext context.Context
@@ -20,14 +19,6 @@ func SetWorkingDirectory(workDir string) {
 
 func GetWorkingDirectory() string {
 	return CurrentContext.Value(WorkingDirectoryKey).(string)
-}
-
-func SetPlugin(plugin common.Plugin) {
-	CurrentContext = context.WithValue(CurrentContext, PluginKey, plugin)
-}
-
-func GetPlugin() common.Plugin {
-	return CurrentContext.Value(PluginKey).(common.Plugin)
 }
 
 func GetUser() auth.User {

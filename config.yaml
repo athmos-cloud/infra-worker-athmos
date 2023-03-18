@@ -1,10 +1,29 @@
 tmp_dir: "/tmp/worker"
-runtime: "dagger"
-terraform:
-  image:
-    name: "hashicorp/terraform"
-    tag: "0.12.24"
-  moduleFolder: "modules"
+plugins:
+  crossplane:
+    registry:
+      address: "http://chart-museum:8080"
+      username: "athmos"
+      password: "athmos"
+    gcp:
+      firewall:
+        chart: "gcp-firewall"
+        version: "0.1.0"
+      network:
+        chart: "gcp-network"
+        version: "0.1.0"
+      provider:
+        chart: "gcp-provider"
+        version: "0.1.0"
+      subnet:
+        chart: "gcp-subnetwork"
+        version: "0.1.0"
+      vm:
+        chart: "gcp-vm"
+        version: "0.1.0"
+      vpc:
+        chart: "gcp-vpc"
+        version: "0.1.0"
 minio:
   address: "minio:9000"
   access_key_id: ""

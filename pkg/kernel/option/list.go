@@ -1,6 +1,8 @@
 package option
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type List struct {
 	Type   reflect.Kind

@@ -3,7 +3,7 @@ package mongo
 import (
 	"context"
 	"fmt"
-	config2 "github.com/PaulBarrie/infra-worker/pkg/kernel/config"
+	config "github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
@@ -49,7 +49,7 @@ func Connection(ctx context.Context) (*Mongo, errors.Error) {
 }
 
 func _initConnection(ctx context.Context) (*Mongo, errors.Error) {
-	config := config2.Get().Mongo
+	config := config.Current.Mongo
 	client, err := mongo.NewClient(options.Client().ApplyURI(
 		"mongodb://" + config.Username + ":" + config.Password + "@" + config.Address + ":" + strconv.Itoa(config.Port)),
 	)
@@ -73,7 +73,7 @@ func _initConnection(ctx context.Context) (*Mongo, errors.Error) {
 
 			return &Mongo{Client: client, Database: matchDB},
 				errors.ExternalServiceError.WithMessage(
-					option.New(reflect.TypeOf(err).Kind(), err),
+					option.New(reflect.TypeOf(err).String(), err),
 				)
 		}
 	}
@@ -82,7 +82,7 @@ func _initConnection(ctx context.Context) (*Mongo, errors.Error) {
 
 // Create args - context.Context - Payload interface{}
 func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(CreateRequestPayload{}).Kind()).Validate() {
+	if !optn.SetType(reflect.TypeOf(CreateRequestPayload{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequestPayload{}).Kind(), optn.Value,
@@ -100,7 +100,7 @@ func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, er
 
 func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	// Collection string - Payload interface{} - Filter interface{}
-	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).Kind()).Validate() {
+	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(RetrieveRequestPayload{}).Kind(), optn.Value,
@@ -138,7 +138,7 @@ func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, error
 }
 
 func (m *Mongo) GetAll(ctx context.Context, optn option.Option) ([]interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).Kind()).Validate() {
+	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(RetrieveRequestPayload{}).Kind(), optn.Value,

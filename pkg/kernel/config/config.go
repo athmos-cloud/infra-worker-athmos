@@ -2,33 +2,51 @@ package config
 
 import (
 	"github.com/ilyakaznacheev/cleanenv"
-	"gopkg.in/yaml.v3"
+	"github.com/tkanos/gonfig"
 	"os"
 	"sync"
 )
 
-var Current = &Config{}
+var Current *Config
 var lock = &sync.Mutex{}
 
 const DefaultConfigFileLocation = "config.yaml"
 
 type Config struct {
-	TempDir   string    `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
-	Runtime   string    `yaml:"runtime" env:"RUNTIME" env-default:"dagger"`
-	Terraform Terraform `yaml:"terraform" prefix:"TERRAFORM_"`
-	Minio     Minio     `yaml:"minio" prefix:"MINIO_"`
-	Mongo     Mongo     `yaml:"mongo" prefix:"MONGO_"`
-	Postgres  Postgres  `yaml:"postgres" prefix:"POSTGRES_"`
+	TempDir  string   `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
+	Plugins  Plugins  `yaml:"plugins" prefix:"PLUGINS_"`
+	Minio    Minio    `yaml:"minio" prefix:"MINIO_"`
+	Mongo    Mongo    `yaml:"mongo" prefix:"MONGO_"`
+	Postgres Postgres `yaml:"postgres" prefix:"POSTGRES_"`
 }
 
-type Terraform struct {
-	Image        Image  `yaml:"image" prefix:"IMAGE_"`
-	BucketPlugin string `yaml:"bucket_plugin" env:"BUCKET_PLUGIN" env-default:"terraform"`
+type Plugins struct {
+	Crossplane CrossplanePlugins `yaml:"crossplane" prefix:"CROSSPLANE_"`
 }
 
-type Image struct {
-	Name string `yaml:"name" env:"IMAGE_NAME" env-default:"hashicorp/terraform:1.3.9"`
-	Tag  string `yaml:"tag" env:"IMAGE_TAG" env-default:"1.3.9"`
+type CrossplanePlugins struct {
+	Registry ArtifactRegistry `yaml:"artifact-registry" prefix:"ARTIFACT_REGISTRY_"`
+	GCP      ProviderPlugins  `yaml:"gcp"`
+}
+
+type ArtifactRegistry struct {
+	Address  string `yaml:"address" env:"ADDRESS"`
+	Username string `yaml:"username" env:"USERNAME"`
+	Password string `yaml:"password" env:"PASSWORD"`
+}
+
+type ProviderPlugins struct {
+	Firewall ProviderPluginItem `yaml:"firewall"`
+	Network  ProviderPluginItem `yaml:"network"`
+	Provider ProviderPluginItem `yaml:"provider"`
+	Subnet   ProviderPluginItem `yaml:"subnetwork"`
+	VM       ProviderPluginItem `yaml:"vm"`
+	VPC      ProviderPluginItem `yaml:"vpc"`
+}
+
+type ProviderPluginItem struct {
+	Chart   string `yaml:"chart"`
+	Version string `yaml:"version"`
 }
 
 type Minio struct {
@@ -57,41 +75,25 @@ type Postgres struct {
 	SSLMode  string `yaml:"ssl_mode" env:"SSL_MODE" env-default:"disable"`
 }
 
-func Get() *Config {
-	if Current == nil {
-		lock.Lock()
-		defer lock.Unlock()
-		readEnv(Current)
-		readFile(Current)
-	}
-	return Current
+func init() {
+	Current = &Config{}
+	readEnv()
+	readFile()
 }
 
-func readFile(cfg *Config) {
+func readFile() {
 	configFile := os.Getenv("CONFIG_FILE_LOCATION")
 	if configFile == "" {
 		configFile = DefaultConfigFileLocation
 	}
-	f, err := os.Open(configFile)
-	if err != nil {
-		panic(err)
-	}
-	defer func(f *os.File) {
-		err1 := f.Close()
-		if err1 != nil {
-			panic(err1)
-		}
-	}(f)
-
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(cfg)
+	err := gonfig.GetConf(configFile, Current)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func readEnv(cfg *Config) {
-	err := cleanenv.ReadEnv(&Current)
+func readEnv() {
+	err := cleanenv.ReadEnv(Current)
 	if err != nil {
 		return
 	}
