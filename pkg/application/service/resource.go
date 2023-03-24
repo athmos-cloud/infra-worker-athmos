@@ -2,8 +2,8 @@ package service
 
 import (
 	dto2 "github.com/PaulBarrie/infra-worker/pkg/application/dto"
-	"github.com/PaulBarrie/infra-worker/pkg/infrastructure/repository"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/PaulBarrie/infra-worker/pkg/repository"
 )
 
 type ResourceService struct {

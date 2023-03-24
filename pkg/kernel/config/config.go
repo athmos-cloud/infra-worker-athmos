@@ -13,11 +13,21 @@ var lock = &sync.Mutex{}
 const DefaultConfigFileLocation = "config.yaml"
 
 type Config struct {
-	TempDir  string   `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
-	Plugins  Plugins  `yaml:"plugins" prefix:"PLUGINS_"`
-	Minio    Minio    `yaml:"minio" prefix:"MINIO_"`
-	Mongo    Mongo    `yaml:"mongo" prefix:"MONGO_"`
-	Postgres Postgres `yaml:"postgres" prefix:"POSTGRES_"`
+	TempDir    string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
+	Kubernetes Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
+	Plugins    Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
+	Minio      Minio      `yaml:"minio" prefix:"MINIO_"`
+	Mongo      Mongo      `yaml:"mongo" prefix:"MONGO_"`
+	Postgres   Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
+}
+
+type Kubernetes struct {
+	ConfigPath string `yaml:"configPath" env:"KUBECONFIG_PATH" env-default:"~/.kube/config"`
+	Helm       Helm   `yaml:"helm" prefix:"HELM_"`
+}
+
+type Helm struct {
+	Debug bool `yaml:"debug" env:"DEBUG" env-default:"false"`
 }
 
 type Plugins struct {

@@ -1,14 +1,14 @@
 package auth
 
-type AuthType string
+type Type string
 
 const (
-	SecretAuthType  AuthType = "Secret"
-	SecretVaultType AuthType = "SecretVault"
+	AuthTypeSecret Type = "secret"
+	AuthTypeVault  Type = "vault"
 )
 
 type Auth struct {
-	AuthType    AuthType    `bson:"authType"`
+	AuthType    Type        `bson:"authType"`
 	SecretAuth  SecretAuth  `bson:"secretAuth"`
 	SecretVault SecretVault `bson:"secretVault"`
 }

@@ -1,18 +1,10 @@
 package service
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/infrastructure/runtime"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 )
 
 type ProjectService struct {
-	Runtime runtime.IRuntime
-}
-
-func NewProjectService(runtime runtime.IRuntime) *ProjectService {
-	return &ProjectService{
-		Runtime: runtime,
-	}
 }
 
 type ProjectServiceRequestPayload struct {

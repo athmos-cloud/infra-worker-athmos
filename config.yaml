@@ -1,4 +1,8 @@
 tmp_dir: "/tmp/worker"
+kubernetes:
+  configPath: "/root/.kube/config"
+  helm:
+    debug: true
 plugins:
   crossplane:
     registry:
