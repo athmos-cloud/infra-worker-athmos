@@ -1,10 +1,25 @@
 package project
 
-import "github.com/PaulBarrie/infra-worker/pkg/resource/provider"
+import (
+	"github.com/PaulBarrie/infra-worker/pkg/common"
+	"github.com/PaulBarrie/infra-worker/pkg/resource/provider"
+)
 
 type Project struct {
 	ID        string              `bson:"_id,omitempty"`
 	Name      string              `bson:"name"`
-	OwnerID   string              `bson:"owner"`
+	Namespace string              `bson:"namespace"`
+	OwnerID   string              `bson:"owner_id"`
 	Resources []provider.Provider `bson:"components"`
+}
+
+type Resource struct {
+	ID               string           `bson:"_id,omitempty"`
+	Plugin           common.Plugin    `bson:"plugin"`
+	ReleaseReference ReleaseReference `bson:"releaseReference"`
+}
+
+type ReleaseReference struct {
+	Name      string `bson:"name"`
+	Namespace string `bson:"namespace"`
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func apply() {
-	mongo2.Client.Create(context.CurrentContext, mongo2.CreateRequestPayload{
+	mongo2.Client.Create(context.Current, mongo2.CreateRequest{
 		Plugin: mongo.Plugin{
 			Name: "test",
 

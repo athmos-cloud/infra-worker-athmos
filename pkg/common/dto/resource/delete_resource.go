@@ -1,4 +1,4 @@
-package dto
+package resource
 
 import "github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 

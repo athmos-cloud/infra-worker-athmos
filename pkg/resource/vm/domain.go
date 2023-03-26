@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/application/dto"
+	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/resource"
 )
@@ -43,32 +43,32 @@ type OS struct {
 	Version string `bson:"version"`
 }
 
-func (vm *VM) Create(request dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (vm *VM) Create(request resource2.CreateResourceRequest) (resource2.CreateResourceResponse, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vm *VM) Update(request dto.UpdateResourceRequest) (dto.UpdateResourceRequest, errors.Error) {
+func (vm *VM) Update(request resource2.UpdateResourceRequest) (resource2.UpdateResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vm *VM) Get(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (vm *VM) Get(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vm *VM) Watch(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (vm *VM) Watch(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vm *VM) List(request dto.GetListResourceRequest) (dto.GetListResourceRequest, errors.Error) {
+func (vm *VM) List(request resource2.GetListResourceRequest) (resource2.GetListResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vm *VM) Delete(request dto.DeleteResourceRequest) (dto.DeleteResourceRequest, errors.Error) {
+func (vm *VM) Delete(request resource2.DeleteResourceRequest) (resource2.DeleteResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -16,7 +16,6 @@ type Config struct {
 	TempDir    string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
 	Kubernetes Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
 	Plugins    Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
-	Minio      Minio      `yaml:"minio" prefix:"MINIO_"`
 	Mongo      Mongo      `yaml:"mongo" prefix:"MONGO_"`
 	Postgres   Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
 }
@@ -59,21 +58,13 @@ type ProviderPluginItem struct {
 	Version string `yaml:"version"`
 }
 
-type Minio struct {
-	Address         string `yaml:"address" env:"ADDRESS" env-default:"minio"`
-	AccessKeyID     string `yaml:"access_key_id" env:"ACCESS_KEY_ID"`
-	SecretAccessKey string `yaml:"secret_access_key" env:"SECRET_ACCESS_KEY"`
-	Token           string `yaml:"token" env:"TOKEN" env-default:""`
-	Region          string `yaml:"region" env:"REGION" env-default:""`
-	UseSSL          bool   `yaml:"use_ssl" env:"USE_SSL" env-default:"false"`
-}
-
 type Mongo struct {
-	Address  string `yaml:"address" env:"ADDRESS" env-default:"mongo"`
-	Port     int    `yaml:"port" env:"PORT" env-default:"27017"`
-	Username string `yaml:"username" env:"USERNAME" env-default:"root"`
-	Password string `yaml:"password" env:"PASSWORD"`
-	Database string `yaml:"database" env:"DATABASE" env-default:"plugin-db"`
+	Address           string `yaml:"address" env:"ADDRESS" env-default:"mongo"`
+	Port              int    `yaml:"port" env:"PORT" env-default:"27017"`
+	Username          string `yaml:"username" env:"USERNAME" env-default:"root"`
+	Password          string `yaml:"password" env:"PASSWORD"`
+	Database          string `yaml:"database" env:"DATABASE" env-default:"plugin-db"`
+	ProjectCollection string `yaml:"project_collection" env:"PROJECT_COLLECTION" env-default:"projects"`
 }
 
 type Postgres struct {

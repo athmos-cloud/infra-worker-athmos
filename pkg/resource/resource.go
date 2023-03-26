@@ -1,15 +1,15 @@
 package resource
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/application/dto"
+	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 )
 
 type IResource interface {
-	Create(dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error)
-	Update(dto.UpdateResourceRequest) (dto.UpdateResourceRequest, errors.Error)
-	Get(dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error)
-	Watch(dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error)
-	List(dto.GetListResourceRequest) (dto.GetListResourceRequest, errors.Error)
-	Delete(dto.DeleteResourceRequest) (dto.DeleteResourceRequest, errors.Error)
+	Create(resource2.CreateResourceRequest) (resource2.CreateResourceResponse, errors.Error)
+	Update(resource2.UpdateResourceRequest) (resource2.UpdateResourceRequest, errors.Error)
+	Get(resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error)
+	Watch(resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error)
+	List(resource2.GetListResourceRequest) (resource2.GetListResourceRequest, errors.Error)
+	Delete(resource2.DeleteResourceRequest) (resource2.DeleteResourceRequest, errors.Error)
 }

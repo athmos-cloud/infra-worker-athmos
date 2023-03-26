@@ -2,9 +2,11 @@ package context
 
 import (
 	"context"
+	"sync"
 )
 
-var CurrentContext context.Context
+var Current context.Context
+var lock = &sync.Mutex{}
 
 const (
 	WorkingDirectoryKey = "working_directory"
@@ -12,20 +14,28 @@ const (
 	UserKey             = "user"
 )
 
+func init() {
+	lock.Lock()
+	defer lock.Unlock()
+	if Current == nil {
+		Current = context.Background()
+	}
+}
+
 func SetWorkingDirectory(workDir string) {
-	CurrentContext = context.WithValue(CurrentContext, WorkingDirectoryKey, workDir)
+	Current = context.WithValue(Current, WorkingDirectoryKey, workDir)
 }
 
 func GetWorkingDirectory() string {
-	return CurrentContext.Value(WorkingDirectoryKey).(string)
+	return Current.Value(WorkingDirectoryKey).(string)
 }
 
 func Clear() {
-	CurrentContext = nil
+	Current = nil
 }
 
 func init() {
-	if CurrentContext == nil {
-		CurrentContext = context.Background()
+	if Current == nil {
+		Current = context.Background()
 	}
 }

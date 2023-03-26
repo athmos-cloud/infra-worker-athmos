@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	config "github.com/PaulBarrie/infra-worker/pkg/kernel/config"
+	internalCtx "github.com/PaulBarrie/infra-worker/pkg/kernel/context"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"reflect"
 	"strconv"
 	"sync"
@@ -24,161 +24,134 @@ type Mongo struct {
 	Database *mongo.Database
 }
 
-type CreateRequestPayload struct {
-	CollectionName string
-	Payload        interface{}
-}
-
-type RetrieveRequestPayload struct {
-	CollectionName string
-	Id             string
-	Filters        bson.M
-}
-
-func Connection(ctx context.Context) (*Mongo, errors.Error) {
+func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
-		mongoClient, err := _initConnection(ctx)
-		if !err.Equals(errors.NotFound) {
-			return nil, err
+		config := config.Current.Mongo
+		client, err := mongo.NewClient(options.Client().ApplyURI(
+			"mongodb://" + config.Username + ":" + config.Password + "@" + config.Address + ":" + strconv.Itoa(config.Port)),
+		)
+		if err != nil {
+			logger.Error.Printf("Error creating mongo client: %s", err)
+			panic(err)
 		}
-		Client = mongoClient
-	}
-	return Client, errors.OK
-}
-
-func _initConnection(ctx context.Context) (*Mongo, errors.Error) {
-	config := config.Current.Mongo
-	client, err := mongo.NewClient(options.Client().ApplyURI(
-		"mongodb://" + config.Username + ":" + config.Password + "@" + config.Address + ":" + strconv.Itoa(config.Port)),
-	)
-	if err != nil {
-		logger.Error.Printf("Error creating mongo client: %s", err)
-		return &Mongo{}, errors.ExternalServiceError
-	}
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	databases, err := client.ListDatabases(ctx, bson.M{})
-	if err != nil {
-		msg := fmt.Sprintf("Error listing databases: %s", err)
-		logger.Error.Println(msg)
-		return &Mongo{Client: client}, errors.ExternalServiceError
-	}
-	for _, db := range databases.Databases {
-		if db.Name == config.Database {
-			matchDB := client.Database(config.Database)
-
-			return &Mongo{Client: client, Database: matchDB},
-				errors.ExternalServiceError.WithMessage(
-					option.New(reflect.TypeOf(err).String(), err),
-				)
+		err = client.Connect(internalCtx.Current)
+		if err != nil {
+			logger.Error.Printf("Error connecting to mongo: %s", err)
+			panic(err)
+		}
+		matchDB := client.Database(config.Database)
+		Client = &Mongo{
+			Client:   client,
+			Database: matchDB,
 		}
 	}
-	return &Mongo{client, &mongo.Database{}}, errors.OK
 }
 
 // Create args - context.Context - Payload interface{}
 func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(CreateRequestPayload{}).String()).Validate() {
+	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequestPayload{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
 			),
 		)
 	}
-	payload := optn.Value.(CreateRequestPayload)
+	payload := optn.Value.(CreateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	result, err := collection.InsertOne(ctx, payload.Payload)
 	if err != nil {
 		return nil, errors.ExternalServiceError.WithMessage(err)
 	}
-	return result.InsertedID, errors.OK
+	return CreateResponse{Id: fmt.Sprintf("%v", result.InsertedID)}, errors.OK
 }
 
 func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	// Collection string - Payload interface{} - Filter interface{}
-	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).String()).Validate() {
+	if !optn.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(RetrieveRequestPayload{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), optn.Value,
 			),
 		)
 	}
 	var res interface{}
-	payload := optn.Value.(RetrieveRequestPayload)
-	searchWithFilter := payload.Filters != nil
-	// Collection string - Payload interface{}
-	searchById := payload.Id != ""
+	payload := optn.Value.(GetRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-
-	if searchWithFilter {
-		cursor, err := collection.Find(ctx, payload.Filters)
-		if err != nil {
-			return nil, errors.NotFound.WithMessage(err)
-		}
-		if err = cursor.All(ctx, &res); err != nil {
-			return nil, errors.ExternalServiceError.WithMessage(err)
-		}
-	} else if searchById {
-		cursor := collection.FindOne(ctx, bson.M{"_id": payload.Id})
-		if err := cursor.Decode(&res); err != nil {
-			return nil, errors.NotFound.WithMessage(err)
-		}
-	} else {
-		return nil, errors.InvalidArgument.WithMessage(
-			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(RetrieveRequestPayload{}).Kind(), optn.Value,
-			),
-		)
+	filter := bson.M{"_id": payload.Id}
+	res, err := collection.FindOne(ctx, filter).DecodeBytes()
+	if err != nil {
+		return nil, errors.NotFound.WithMessage(err.Error())
 	}
-	return res, errors.OK
+	return GetResponse{Payload: res}, errors.OK
 }
 
 func (m *Mongo) GetAll(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(RetrieveRequestPayload{}).String()).Validate() {
+	if !optn.SetType(reflect.TypeOf(GetAllRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(RetrieveRequestPayload{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), optn.Value,
 			),
 		)
 	}
-	var res []interface{}
-	payload := optn.Value.(RetrieveRequestPayload)
-	searchWithFilter := payload.Filters == nil
+	payload := optn.Value.(GetAllRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 
-	filter := bson.M{}
-	if searchWithFilter {
-		filter = payload.Filters
-	}
+	filter := payload.Filter
 	curs, err := collection.Find(ctx, filter)
 	if err != nil {
 		return nil, errors.NotFound.WithMessage(err)
 	}
-	if err = curs.All(ctx, &res); err != nil {
-		return nil, errors.ExternalServiceError.WithMessage(err)
+	defer func(curs *mongo.Cursor, ctx context.Context) {
+		errCurs := curs.Close(ctx)
+		if errCurs != nil {
+			logger.Error.Printf("Error closing cursor: %s", errCurs)
+		}
+	}(curs, ctx)
+	var res []interface{}
+	for curs.Next(ctx) {
+		var elem interface{}
+		errCur := curs.Decode(&elem)
+		if errCur != nil {
+			return nil, errors.ExternalServiceError.WithMessage(errCur)
+		}
+		res = append(res, elem)
 	}
-
-	return nil,
-		errors.InvalidArgument.WithMessage(
-			fmt.Sprintf(
-				"Invalid arguments: must be (string, []interface{}, bson.M) or (string, []interface{}), and not %v",
-				optn.Value,
-			),
-		)
+	return GetAllResponse{Payload: res}, errors.OK
 }
 
 func (m *Mongo) Update(ctx context.Context, optn option.Option) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	if !optn.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
+		return errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(UpdateRequest{}).Kind(), optn.Value,
+			),
+		)
+	}
+	payload := optn.Value.(UpdateRequest)
+	collection := m.Database.Collection(payload.CollectionName)
+	if _, err := collection.UpdateByID(ctx, payload.Id, payload.Payload); err != nil {
+		return errors.ExternalServiceError.WithMessage(err)
+	}
+	return errors.OK
 }
 
 func (m *Mongo) Delete(ctx context.Context, optn option.Option) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	if !optn.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
+		return errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(DeleteRequest{}).Kind(), optn.Value,
+			),
+		)
+	}
+	payload := optn.Value.(DeleteRequest)
+	collection := m.Database.Collection(payload.CollectionName)
+	res := collection.FindOneAndDelete(ctx, bson.M{"_id": payload.Id})
+	if res.Err() != nil {
+		return errors.NotFound.WithMessage(res.Err().Error())
+	}
+	return errors.OK
 }
 
 func (m *Mongo) Close(ctx context.Context) errors.Error {

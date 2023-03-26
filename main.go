@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
-	"github.com/PaulBarrie/infra-worker/pkg/repository/helm"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
+	projectService "github.com/PaulBarrie/infra-worker/pkg/service/project"
 )
 
 var (
@@ -15,33 +15,48 @@ var (
 
 func main() {
 	ctx := context.Background()
-	client, err := helm.Client("crossplane-system")
-	if !err.IsOk() {
-		logger.Error.Println("Error: ", err)
+	service := projectService.ProjectService{
+		ProjectRepository: mongo.Client,
 	}
-	release, err := client.Create(ctx, option.Option{
-		Value: helm.CreateHelmReleaseRequest{
-			ChartName:    "plugins/gcp-vpc",
-			ChartVersion: "0.1.0",
-			ReleaseName:  "vpc-test",
-			Namespace:    "default",
-			Values: map[string]interface{}{
-				"name":    "test",
-				"managed": true,
-			},
-		},
-	},
-	)
-	resp, err := client.Get(ctx, option.Option{
-		Value: helm.GetHelmReleaseRequest{
-			ReleaseName: "vpc-test",
-		},
-	})
-	getResp := resp.(helm.GetHelmReleaseResponse)
-	logger.Info.Println("Info: ", release)
 
+	id1, _ := service.Create(ctx, project.CreateProjectRequest{
+		ProjectName: "test1",
+		OwnerID:     "toto",
+	})
+	_, _ = service.Create(ctx, project.CreateProjectRequest{
+		ProjectName: "test2",
+		OwnerID:     "toto",
+	})
+	projectByID, err := service.GetByID(ctx, project.GetProjectByIDRequest{
+		ProjectID: id1.ProjectID,
+	})
 	if !err.IsOk() {
-		logger.Error.Printf("Error loading chart :  %v", err)
+		logger.Info.Println("Err: ", err)
 	}
-	logger.Info.Println("Info: ", getResp.Release.Manifest)
+	logger.Info.Println(ctx, "Project found with id: ", projectByID)
+	err = service.Update(ctx, project.UpdateProjectRequest{
+		ProjectID:   id1.ProjectID,
+		ProjectName: "test1-updated",
+	})
+	if !err.IsOk() {
+		logger.Error.Println(ctx, "Error: ", err)
+	}
+	projectAll, err := service.GetByOwnerID(ctx, project.GetProjectByOwnerIDRequest{
+		OwnerID: "toto",
+	})
+
+	err = service.Delete(ctx, project.DeleteRequest{
+		ProjectID: id1.ProjectID,
+	})
+	if !err.IsOk() {
+		logger.Error.Println(ctx, "Error: ", err)
+	}
+	err = service.Delete(ctx, project.DeleteRequest{
+		ProjectID: id1.ProjectID,
+	})
+	if !err.IsOk() {
+		logger.Error.Println(ctx, "Error: ", err)
+	}
+	logger.Info.Println(ctx, "Project found with ownerID: ", projectAll)
+
 }

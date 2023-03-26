@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"github.com/PaulBarrie/infra-worker/pkg/common"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/firewall"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/network"
@@ -10,19 +11,19 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/resource/vpc"
 )
 
-func ResourceFactory(resourceType ResourceType) IResource {
+func ResourceFactory(resourceType common.ResourceType) IResource {
 	switch resourceType {
-	case Provider:
+	case common.Provider:
 		return &provider.Provider{}
-	case Network:
+	case common.Network:
 		return &network.Network{}
-	case Firewall:
+	case common.Firewall:
 		return &firewall.Firewall{}
-	case VPC:
+	case common.VPC:
 		return &vpc.VPC{}
-	case Subnetwork:
+	case common.Subnetwork:
 		return &subnetwork.Subnetwork{}
-	case VM:
+	case common.VM:
 		return &vm.VM{}
 	default:
 		logger.Error.Printf("Resource type %s not supported", resourceType)

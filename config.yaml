@@ -28,17 +28,13 @@ plugins:
       vpc:
         chart: "gcp-vpc"
         version: "0.1.0"
-minio:
-  address: "minio:9000"
-  access_key_id: ""
-  secret_access_key: ""
-  use_ssl: false
 mongo:
-  address: "mongo"
+  address: "mongodb"
   port: 27017
-  username: "root"
+  username: "admin"
   password: "password"
   database: "plugin-db"
+  projectCollection: "projects"
 postgres:
   address: "postgres"
   port: 5432

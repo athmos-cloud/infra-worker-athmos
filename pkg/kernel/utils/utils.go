@@ -18,7 +18,7 @@ func RandomString(length int) string {
 }
 
 func StringToTempFile(content string) (*os.File, errors.Error) {
-	file, err := os.CreateTemp(fmt.Sprintf("%s/%s", config2.Get().TempDir, RandomString(10)), "temp")
+	file, err := os.CreateTemp(fmt.Sprintf("%s/%s", config2.Current.TempDir, RandomString(10)), "temp")
 	if err != nil {
 		return nil, errors.IOError.WithMessage(err)
 	}

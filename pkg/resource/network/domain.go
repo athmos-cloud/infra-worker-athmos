@@ -1,7 +1,7 @@
 package network
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/application/dto"
+	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/firewall"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/subnetwork"
@@ -15,32 +15,32 @@ type Network struct {
 	Firewalls         []firewall.Firewall     `bson:"firewalls"`
 }
 
-func (network *Network) Create(request dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (network *Network) Create(request resource2.CreateResourceRequest) (resource2.CreateResourceResponse, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (network *Network) Update(request dto.UpdateResourceRequest) (dto.UpdateResourceRequest, errors.Error) {
+func (network *Network) Update(request resource2.UpdateResourceRequest) (resource2.UpdateResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (network *Network) Get(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (network *Network) Get(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (network *Network) Watch(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (network *Network) Watch(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (network *Network) List(request dto.GetListResourceRequest) (dto.GetListResourceRequest, errors.Error) {
+func (network *Network) List(request resource2.GetListResourceRequest) (resource2.GetListResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (network *Network) Delete(request dto.DeleteResourceRequest) (dto.DeleteResourceRequest, errors.Error) {
+func (network *Network) Delete(request resource2.DeleteResourceRequest) (resource2.DeleteResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }

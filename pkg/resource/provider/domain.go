@@ -1,50 +1,43 @@
 package provider
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/application/dto"
+	"github.com/PaulBarrie/infra-worker/pkg/common"
+	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/provider/auth"
 )
 
-type ProviderType string
-
-const (
-	AWS   ProviderType = "aws"
-	AZURE ProviderType = "azure"
-	GCP   ProviderType = "gcp"
-)
-
 type Provider struct {
-	Type ProviderType `bson:"type"`
-	Auth auth.Auth    `bson:"auth"`
+	Type common.ProviderType `bson:"type"`
+	Auth auth.Auth           `bson:"auth"`
 }
 
-func (provider *Provider) Create(request dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (provider *Provider) Create(request resource2.CreateResourceRequest) (resource2.CreateResourceResponse, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (provider *Provider) Update(request dto.UpdateResourceRequest) (dto.UpdateResourceRequest, errors.Error) {
+func (provider *Provider) Update(request resource2.UpdateResourceRequest) (resource2.UpdateResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (provider *Provider) Get(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (provider *Provider) Get(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (provider *Provider) Watch(request dto.GetResourceRequest) (dto.GetResourceRequest, errors.Error) {
+func (provider *Provider) Watch(request resource2.GetResourceRequest) (resource2.GetResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (provider *Provider) List(request dto.GetListResourceRequest) (dto.GetListResourceRequest, errors.Error) {
+func (provider *Provider) List(request resource2.GetListResourceRequest) (resource2.GetListResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (provider *Provider) Delete(request dto.DeleteResourceRequest) (dto.DeleteResourceRequest, errors.Error) {
+func (provider *Provider) Delete(request resource2.DeleteResourceRequest) (resource2.DeleteResourceRequest, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
