@@ -4,6 +4,7 @@ kubernetes:
   helm:
     debug: true
 plugins:
+  location: "/etc/athmos/plugins"
   crossplane:
     registry:
       address: "http://chart-museum:8080"

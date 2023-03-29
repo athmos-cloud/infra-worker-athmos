@@ -30,6 +30,7 @@ type Helm struct {
 }
 
 type Plugins struct {
+	Location   string            `yaml:"location" env:"LOCATION" env-default:"/plugins"`
 	Crossplane CrossplanePlugins `yaml:"crossplane" prefix:"CROSSPLANE_"`
 }
 

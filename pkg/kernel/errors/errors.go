@@ -51,7 +51,7 @@ func (e *Error) WithMessage(msg interface{}) Error {
 }
 
 func (e *Error) ToString() string {
-	return fmt.Sprintf("%s \n Code: %d", e.Err, e.Code)
+	return fmt.Sprintf("[%d]: %s", e.Code, e.Err)
 }
 
 func (e *Error) Error(errorInput option.Option) error {
@@ -84,6 +84,7 @@ var (
 	Created              = New("Created", "201")
 	Accepted             = New("Accepted", "202")
 	InvalidArgument      = New("Invalid argument", "400")
+	ValidationError      = New("Validation error", "400")
 	NotFound             = New("Not found", "404")
 	ConfigError          = New("Config error", "500")
 	ParseError           = New("Parse error", "500")

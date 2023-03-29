@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/common"
+	"github.com/PaulBarrie/infra-worker/pkg/plugin"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/provider"
 )
 
@@ -15,7 +15,7 @@ type Project struct {
 
 type Resource struct {
 	ID               string           `bson:"_id,omitempty"`
-	Plugin           common.Plugin    `bson:"plugin"`
+	Plugin           plugin.Plugin    `bson:"plugin"`
 	ReleaseReference ReleaseReference `bson:"releaseReference"`
 }
 

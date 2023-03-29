@@ -5,11 +5,15 @@ import (
 	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/provider/auth"
+	"github.com/PaulBarrie/infra-worker/pkg/resource/vpc"
 )
 
 type Provider struct {
+	Id   string              `bson:"id"`
+	Name string              `bson:"name"`
 	Type common.ProviderType `bson:"type"`
 	Auth auth.Auth           `bson:"auth"`
+	VPCs []vpc.VPC           `bson:"vpcs"`
 }
 
 func (provider *Provider) Create(request resource2.CreateResourceRequest) (resource2.CreateResourceResponse, errors.Error) {
