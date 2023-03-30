@@ -65,11 +65,15 @@ func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin
 	if err = yaml.Unmarshal(typesBytes, &plugin.Types); err != nil {
 		return Plugin{}, errors.ConversionError.WithMessage(err.Error())
 	}
+
 	return plugin, errors.OK
 }
 
 func (p *Plugin) Validate(entry map[string]interface{}) errors.Error {
 	for _, input := range p.Inputs {
+		if entry[input.Name] == nil && input.Required && input.Default == nil {
+			return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
+		}
 		if err := input.Validate(entry, p.Types); !err.IsOk() {
 			return err
 		}
@@ -77,85 +81,69 @@ func (p *Plugin) Validate(entry map[string]interface{}) errors.Error {
 	return errors.OK
 }
 
-func (i *Input) Validate(entry map[string]interface{}, types []Type) errors.Error {
-	validateType := func(subEntry map[string]interface{}) errors.Error {
-		for key, val := range subEntry {
-			if key == i.Name {
-				switch i.Type {
-				case "string":
-					if reflect.TypeOf(val).Kind() != reflect.String {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a string", key))
-					}
-				case "int":
-					if reflect.TypeOf(val).Kind() != reflect.Int {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be an int", key))
-					}
-				case "bool":
-					if reflect.TypeOf(val).Kind() != reflect.Bool {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a bool", key))
-					}
-				case "float":
-					if reflect.TypeOf(val).Kind() != reflect.Float64 {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a float", key))
-					}
-				case "list":
-					if reflect.TypeOf(val).Kind() != reflect.Slice {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a list", key))
-					}
-				default:
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Unknown type %s", i.Type))
-				}
-			}
+func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error {
+	validateVar := func(input Input, entry map[string]interface{}) errors.Error {
+		val := entry[input.Name]
+		if val == nil && input.Default == nil && input.Required {
+			return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
+		} else if val == nil && (input.Default != nil || !input.Required) {
+			return errors.OK
 		}
+		switch input.Type {
+		case "string":
+			logger.Info.Println("String")
+			if reflect.TypeOf(val).Kind() != reflect.String {
+				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a string", input.Name))
+			}
+			return errors.OK
+		case "int":
+			if reflect.TypeOf(val).Kind() != reflect.Int {
+				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be an int", input.Name))
+			}
+			return errors.OK
+		case "bool":
+			if reflect.TypeOf(val).Kind() != reflect.Bool {
+				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a bool", input.Name))
+			}
+			return errors.OK
+		case "float":
+			if reflect.TypeOf(val).Kind() != reflect.Float64 {
+				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a float", input.Name))
+			}
+			return errors.OK
+		case "list":
+			if reflect.TypeOf(val).Kind() != reflect.Slice {
+				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a list", input.Name))
+			}
+			return errors.OK
+		}
+		return errors.ValidationError.WithMessage(fmt.Sprintf("%s is not a primary type", input.Type))
+	}
+	if err := validateVar(i, entry); err.IsOk() {
 		return errors.OK
 	}
-	for key, val := range entry {
-		if key == i.Name {
-			switch i.Type {
-			case "string":
-				if reflect.TypeOf(val).Kind() != reflect.String {
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a string", key))
+	for _, t := range types {
+		if t.Name == i.Type {
+			logger.Info.Println("i.Type")
+			for name, input := range t.Fields {
+				input.Name = name
+				if err := validateVar(input, entry[t.Name].(map[string]interface{})); !err.IsOk() {
+					return err
 				}
-			case "int":
-				if reflect.TypeOf(val).Kind() != reflect.Int {
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be an int", key))
-				}
-			case "bool":
-				if reflect.TypeOf(val).Kind() != reflect.Bool {
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a bool", key))
-				}
-			case "float":
-				if reflect.TypeOf(val).Kind() != reflect.Float64 {
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a float", key))
-				}
-			case "list":
-				if reflect.TypeOf(val).Kind() != reflect.Slice {
-					return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a list", key))
-				}
-			default:
-				// Check custom types
-				for _, t := range types {
-					if i.Type == t.Name {
-						subentry := val.(map[string]interface{})
-						for name, input := range t.Fields {
-							for subKey, subVal := range subentry {
-								if subKey == name {
-									if reflect.TypeOf(subVal).String() != input.Type || subentry[name] == nil {
-										return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a %s", subKey, input.Type))
-									}
-									logger.Info.Println(subentry)
-								}
-							}
-						}
-					} else if i.Type == fmt.Sprintf("list[%s]", t.Name) {
-
-					} else {
-						return errors.ValidationError.WithMessage(fmt.Sprintf("Unknown type %s", i.Type))
+			}
+			return errors.OK
+		} else if i.Type == fmt.Sprintf("list[%s]", t.Name) {
+			subEntry := entry[i.Name].([]map[string]interface{})
+			for _, sub := range subEntry {
+				for _, input := range t.Fields {
+					if err := validateVar(input, sub); !err.IsOk() {
+						return err
 					}
 				}
 			}
-
+			return errors.OK
 		}
 	}
+
 	return errors.OK
 }
