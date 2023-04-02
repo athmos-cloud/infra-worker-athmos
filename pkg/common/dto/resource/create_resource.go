@@ -5,9 +5,9 @@ import (
 )
 
 type CreateResourceRequest struct {
-	ProjectID     string
-	Provider      common.ProviderType
-	ResourceType  common.ResourceType
+	ProjectID    string
+	ProviderType common.ProviderType
+	ResourceType common.ResourceType
 	ResourceSpecs interface{}
 }
 

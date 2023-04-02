@@ -14,19 +14,31 @@ type Service struct {
 
 func (service *Service) CreateResource(ctx context.Context, payload dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
 	// Get project
-	//currentProject, err := service.ProjectRepository.Get(ctx, option.Option{
+	//projectResp, err := service.ProjectRepository.Get(ctx, option.Option{
 	//	Value: mongo.GetRequest{
 	//		CollectionName: config.Current.Mongo.ProjectCollection,
 	//		Id:             payload.ProjectID,
 	//	},
 	//})
+	//currentProject := projectResp.(mongo.GetResponse).Payload.(project.Project)
 	//if !err.IsOk() {
 	//	return dto.CreateResourceResponse{}, err
 	//}
-	//_ := resource.Factory(payload.ResourceType)
+	//plugin, err := plugin.Get(payload.ProviderType, payload.ResourceType)
+	//if !err.IsOk() {
+	//	return dto.CreateResourceResponse{}, err
+	//}
+	//factory := resource.Factory(payload.ResourceType)
+	//// Execute plugin
+	//
+	//if !err.IsOk() {
+	//	return dto.CreateResourceResponse{}, err
+	//}
+	//helmClient.Create(ctx, option.Option{
+	//	Value: factory(payload.ResourceSpecs),
+	//}
 
-	// Execute plugin
-
+	// Map plugin input to struct
 	// Save resource
 
 	panic("")

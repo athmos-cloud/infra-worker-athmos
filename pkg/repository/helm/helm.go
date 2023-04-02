@@ -12,20 +12,38 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 	"os"
 	"reflect"
+	"sync"
 )
 
 const (
 	CleanupOnFail    = true
 	RepositoryCache  = "/tmp/.helmcache"
 	RepositoryConfig = "/tmp/.helmconfig"
+	DefaultNamespace = "default"
 )
+
+var ReleaseClient *ReleaseRepository
+var lock = &sync.Mutex{}
 
 type ReleaseRepository struct {
 	HelmClient helmclient.Client
 	Namespace  string
 }
 
-func Client(namespace string) (*ReleaseRepository, errors.Error) {
+func init() {
+	lock.Lock()
+	defer lock.Unlock()
+	if ReleaseClient == nil {
+		client, err := client()
+		if !err.IsOk() {
+			logger.Error.Printf("Error creating helm client: %s", err)
+			panic(err)
+		}
+		ReleaseClient = client
+	}
+}
+
+func client() (*ReleaseRepository, errors.Error) {
 	kubeConfig, errFile := os.ReadFile(config.Current.Kubernetes.ConfigPath)
 	if errFile != nil {
 		msg := fmt.Sprintf("Error reading kube config file: %s", errFile)
@@ -40,7 +58,7 @@ func Client(namespace string) (*ReleaseRepository, errors.Error) {
 				RepositoryCache:  RepositoryCache,
 				RepositoryConfig: RepositoryConfig,
 				Debug:            config.Current.Kubernetes.Helm.Debug,
-				Namespace:        namespace,
+				Namespace:        DefaultNamespace,
 			},
 		})
 	if err != nil || client == nil {
