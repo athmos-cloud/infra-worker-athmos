@@ -1,9 +1,9 @@
 package vpc
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/resource"
+	"github.com/PaulBarrie/infra-worker/pkg/resource/types"
 )
 
 type Application struct {
-	ResourceReference resource.Reference
+	ResourceReference types.Reference
 }

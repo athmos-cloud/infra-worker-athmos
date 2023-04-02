@@ -1,0 +1,11 @@
+FROM golang:1.19.3-alpine
+
+WORKDIR /go/src/app
+
+RUN apk add -U build-base bash
+
+ADD . .
+ADD _plugins /etc/athmos/plugins
+
+ENTRYPOINT ["go", "test", "-v", "./..."]
+

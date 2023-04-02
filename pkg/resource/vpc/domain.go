@@ -3,13 +3,13 @@ package vpc
 import (
 	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/network"
+	"github.com/PaulBarrie/infra-worker/pkg/resource/types"
 )
 
 type VPC struct {
 	ID                string `bson:"_id,omitempty"`
-	ResourceReference resource.Reference
+	ResourceReference types.Reference
 	Networks          []network.Network `bson:"networks"`
 }
 

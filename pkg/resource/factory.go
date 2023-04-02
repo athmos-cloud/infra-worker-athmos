@@ -11,7 +11,7 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/resource/vpc"
 )
 
-func ResourceFactory(resourceType common.ResourceType) IResource {
+func Factory(resourceType common.ResourceType) IResource {
 	switch resourceType {
 	case common.Provider:
 		return &provider.Provider{}

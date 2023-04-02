@@ -1,8 +1,4 @@
-package resource
-
-import (
-	"github.com/PaulBarrie/infra-worker/pkg/resource/provider"
-)
+package types
 
 type HelmChartResource struct {
 	ChartName    string `bson:"chartName"`
@@ -12,7 +8,6 @@ type HelmChartResource struct {
 type Reference struct {
 	Name              string                 `bson:"name"`
 	Monitored         bool                   `bson:"monitored,default=true"`
-	Provider          provider.Provider      `bson:"provider"`
 	HelmChartResource HelmChartResource      `bson:"helmChartResource"`
 	Values            map[string]interface{} `bson:"values"`
 	Tags              map[string]string      `bson:"tags"`

@@ -1,9 +1,11 @@
 package vm
 
-import "github.com/PaulBarrie/infra-worker/pkg/resource"
+import (
+	"github.com/PaulBarrie/infra-worker/pkg/resource/types"
+)
 
 type Application struct {
-	ResourceReference resource.Reference
+	ResourceReference types.Reference
 	VPC               string   `bson:"vpc"`
 	Network           string   `bson:"network"`
 	Subnetwork        string   `bson:"subnetwork"`

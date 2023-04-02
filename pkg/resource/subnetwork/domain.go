@@ -3,13 +3,13 @@ package subnetwork
 import (
 	resource2 "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/resource"
+	"github.com/PaulBarrie/infra-worker/pkg/resource/types"
 	"github.com/PaulBarrie/infra-worker/pkg/resource/vm"
 )
 
 type Subnetwork struct {
 	ID                string `bson:"_id,omitempty"`
-	ResourceReference resource.Reference
+	ResourceReference types.Reference
 	Region            string  `bson:"region"`
 	IPCIDRRange       string  `bson:"ipCidrRange"`
 	VMs               []vm.VM `bson:"vmList"`

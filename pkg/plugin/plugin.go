@@ -5,7 +5,6 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/common"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -91,7 +90,6 @@ func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error
 		}
 		switch input.Type {
 		case "string":
-			logger.Info.Println("String")
 			if reflect.TypeOf(val).Kind() != reflect.String {
 				return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be a string", input.Name))
 			}
@@ -124,7 +122,6 @@ func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error
 	}
 	for _, t := range types {
 		if t.Name == i.Type {
-			logger.Info.Println("i.Type")
 			for name, input := range t.Fields {
 				input.Name = name
 				if err := validateVar(input, entry[t.Name].(map[string]interface{})); !err.IsOk() {
