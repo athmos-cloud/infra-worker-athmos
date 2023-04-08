@@ -4,23 +4,23 @@ import (
 	"context"
 	"fmt"
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
+	"github.com/PaulBarrie/infra-worker/pkg/domain"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/utils"
-	"github.com/PaulBarrie/infra-worker/pkg/project"
 	"github.com/PaulBarrie/infra-worker/pkg/repository"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type ProjectService struct {
+type Service struct {
 	ProjectRepository repository.IRepository
 }
 
-func (ps *ProjectService) Create(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
-	newProject := project.Project{
+func (ps *Service) Create(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
+	newProject := domain.Project{
 		Name:      request.ProjectName,
 		OwnerID:   request.OwnerID,
 		Namespace: fmt.Sprintf("%s-%s", request.ProjectName, utils.RandomString(5)),
@@ -40,7 +40,7 @@ func (ps *ProjectService) Create(ctx context.Context, request dto.CreateProjectR
 	}, errors.OK
 }
 
-func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
+func (ps *Service) Update(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -51,7 +51,11 @@ func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectR
 	if !err.IsOk() {
 		return err
 	}
-	projectResp := resp.(mongo.GetResponse).Payload.(project.Project)
+	projectRaw := resp.(mongo.GetResponse).Payload
+	projectResp, err := fromBsonRaw(projectRaw)
+	if !err.IsOk() {
+		return err
+	}
 	projectResp.Name = request.ProjectName
 	if err = mongo.Client.Update(ctx, option.Option{
 		Value: mongo.UpdateRequest{
@@ -65,7 +69,7 @@ func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectR
 	return errors.OK
 }
 
-func (ps *ProjectService) GetByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
+func (ps *Service) GetByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -76,12 +80,16 @@ func (ps *ProjectService) GetByID(ctx context.Context, request dto.GetProjectByI
 	if !err.IsOk() {
 		return dto.GetProjectByIDResponse{}, err
 	}
+	project, err := fromBsonRaw(resp.(mongo.GetResponse).Payload)
+	if !err.IsOk() {
+		return dto.GetProjectByIDResponse{}, err
+	}
 	return dto.GetProjectByIDResponse{
-		Payload: resp.(mongo.GetResponse).Payload.(project.Project),
+		Payload: project,
 	}, errors.OK
 }
 
-func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
+func (ps *Service) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetAllRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Filter: bson.M{
@@ -94,14 +102,14 @@ func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProje
 	if !err.IsOk() {
 		return dto.GetProjectByOwnerIDResponse{}, err
 	}
-	var projects []project.Project
+	var projects []domain.Project
 	for _, p := range resp.(mongo.GetAllResponse).Payload {
 		primitive := p.(bson.D)
 		doc, errMarshal := bson.Marshal(primitive)
 		if errMarshal != nil {
 			logger.Error.Printf("Error marshalling bson: %v", errMarshal)
 		}
-		var projectItem project.Project
+		var projectItem domain.Project
 		if errUnmarshall := bson.Unmarshal(doc, &projectItem); errUnmarshall != nil {
 			logger.Error.Printf("Error unmarshalling bson: %v", errUnmarshall)
 		}
@@ -112,7 +120,7 @@ func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProje
 	}, errors.OK
 }
 
-func (ps *ProjectService) Delete(ctx context.Context, request dto.DeleteRequest) errors.Error {
+func (ps *Service) Delete(ctx context.Context, request dto.DeleteRequest) errors.Error {
 	mongoDeleteRequest := mongo.DeleteRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -124,4 +132,12 @@ func (ps *ProjectService) Delete(ctx context.Context, request dto.DeleteRequest)
 	}
 
 	return errors.OK
+}
+
+func fromBsonRaw(raw bson.Raw) (domain.Project, errors.Error) {
+	var project domain.Project
+	if err := bson.Unmarshal(raw, &project); err != nil {
+		return domain.Project{}, errors.InternalError.WithMessage(err.Error())
+	}
+	return project, errors.OK
 }

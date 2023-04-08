@@ -14,10 +14,11 @@ type CreateResponse struct {
 type GetRequest struct {
 	CollectionName string
 	Id             string
+	Payload        interface{}
 }
 
 type GetResponse struct {
-	Payload interface{}
+	Payload bson.Raw
 }
 
 type GetAllRequest struct {

@@ -14,10 +14,19 @@ const DefaultConfigFileLocation = "config.yaml"
 
 type Config struct {
 	TempDir    string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
+	Test       Test       `yaml:"test" prefix:"TEST_"`
 	Kubernetes Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
 	Plugins    Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
 	Mongo      Mongo      `yaml:"mongo" prefix:"MONGO_"`
 	Postgres   Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
+}
+
+type Test struct {
+	Credentials CredentialsTest `yaml:"credentials" prefix:"CREDENTIALS_"`
+}
+
+type CredentialsTest struct {
+	GCP string `yaml:"gcp" env:"GCP" env-default:"/etc/credentials/gcp.json"`
 }
 
 type Kubernetes struct {
@@ -55,8 +64,8 @@ type ProviderPlugins struct {
 }
 
 type ProviderPluginItem struct {
-	Chart   string `yaml:"chart"`
-	Version string `yaml:"version"`
+	ChartName string `yaml:"chart"`
+	Version   string `yaml:"version"`
 }
 
 type Mongo struct {

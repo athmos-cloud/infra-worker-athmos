@@ -1,11 +1,8 @@
 package utils
 
 import (
-	"fmt"
-	config2 "github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/google/uuid"
 	"math/rand"
-	"os"
 )
 
 func RandomString(length int) string {
@@ -17,16 +14,6 @@ func RandomString(length int) string {
 	return string(b)
 }
 
-func StringToTempFile(content string) (*os.File, errors.Error) {
-	file, err := os.CreateTemp(fmt.Sprintf("%s/%s", config2.Current.TempDir, RandomString(10)), "temp")
-	if err != nil {
-		return nil, errors.IOError.WithMessage(err)
-	}
-
-	_, err = file.WriteString(content)
-	if err != nil {
-		return nil, errors.IOError.WithMessage(err)
-
-	}
-	return file, errors.OK
+func GenerateUUID() string {
+	return uuid.New().String()
 }

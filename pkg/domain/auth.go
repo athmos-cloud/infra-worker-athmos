@@ -1,4 +1,4 @@
-package auth
+package domain
 
 type Type string
 

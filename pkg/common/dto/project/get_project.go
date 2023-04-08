@@ -1,13 +1,15 @@
 package project
 
-import "github.com/PaulBarrie/infra-worker/pkg/project"
+import (
+	"github.com/PaulBarrie/infra-worker/pkg/domain"
+)
 
 type GetProjectByIDRequest struct {
 	ProjectID string `json:"project_id"`
 }
 
 type GetProjectByIDResponse struct {
-	Payload project.Project
+	Payload domain.Project
 }
 
 type GetProjectByOwnerIDRequest struct {
@@ -15,5 +17,5 @@ type GetProjectByOwnerIDRequest struct {
 }
 
 type GetProjectByOwnerIDResponse struct {
-	Payload []project.Project
+	Payload []domain.Project
 }

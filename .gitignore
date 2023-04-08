@@ -3,3 +3,4 @@ main
 vendor
 tmp
 .plugins
+configs/kube/config

@@ -5,6 +5,7 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/common"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -12,12 +13,13 @@ import (
 
 const (
 	MainPluginFile = "main.yaml"
+	TypePluginFile = "types.yaml"
 )
 
 type Plugin struct {
 	Prerequisites []Prerequisite `yaml:"prerequisites"`
 	Inputs        []Input        `yaml:"inputs"`
-	Types         []Type         `yaml:"types,omitempty"`
+	Types         []Type         `yaml:"metadata,omitempty"`
 }
 
 type Prerequisite struct {
@@ -34,7 +36,7 @@ type Condition struct {
 
 type Input struct {
 	Name        string      `yaml:"name"`
-	Description string      `yaml:"description"`
+	Description string      `yaml:"description,omitempty"`
 	Type        string      `yaml:"type" default:"string"`
 	Default     interface{} `yaml:"default,omitempty"`
 	Required    bool        `yaml:"required" default:"false"`
@@ -52,11 +54,15 @@ func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin
 	if err != nil {
 		return Plugin{}, errors.IOError.WithMessage(err.Error())
 	}
+	logger.Info.Printf(fmt.Sprintf("Reading plugin file %s", string(pluginBytes[:])))
 	plugin := Plugin{}
 	if err = yaml.Unmarshal(pluginBytes, &plugin); err != nil {
 		return Plugin{}, errors.ConversionError.WithMessage(err.Error())
 	}
-	typePath := fmt.Sprintf("%s/%s/%s/types.yaml", config.Current.Plugins.Location, provider, resourceType)
+	typePath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, TypePluginFile)
+	if _, errExists := os.Stat(typePath); os.IsNotExist(errExists) {
+		return plugin, errors.OK
+	}
 	typesBytes, err := os.ReadFile(typePath)
 	if err != nil {
 		return Plugin{}, errors.IOError.WithMessage(err.Error())
@@ -64,20 +70,36 @@ func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin
 	if err = yaml.Unmarshal(typesBytes, &plugin.Types); err != nil {
 		return Plugin{}, errors.ConversionError.WithMessage(err.Error())
 	}
-
 	return plugin, errors.OK
 }
 
-func (p *Plugin) Validate(entry map[string]interface{}) errors.Error {
+func validateMetadataPlugin(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
+	if entry["name"] == nil {
+		return entry, errors.InvalidArgument.WithMessage("Expected name to be set")
+	}
+	if entry["monitored"] == nil || reflect.TypeOf(entry["monitored"]).Kind() != reflect.Bool {
+		entry["monitored"] = true
+	}
+	if entry["tags"] == nil || reflect.TypeOf(entry["tags"]).Kind() != reflect.Map {
+		entry["tags"] = map[string]string{}
+	}
+	return entry, errors.OK
+}
+
+func (p *Plugin) ValidateAndComplete(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
+	entry, err := validateMetadataPlugin(entry)
+	if !err.IsOk() {
+		return entry, err
+	}
 	for _, input := range p.Inputs {
 		if entry[input.Name] == nil && input.Required && input.Default == nil {
-			return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
+			return entry, errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
 		}
-		if err := input.Validate(entry, p.Types); !err.IsOk() {
-			return err
+		if err2 := input.Validate(entry, p.Types); !err2.IsOk() {
+			return entry, err2
 		}
 	}
-	return errors.OK
+	return entry, errors.OK
 }
 
 func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error {

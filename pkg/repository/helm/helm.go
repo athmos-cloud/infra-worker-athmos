@@ -34,12 +34,12 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ReleaseClient == nil {
-		client, err := client()
+		cli, err := client()
 		if !err.IsOk() {
-			logger.Error.Printf("Error creating helm client: %s", err)
+			logger.Error.Printf("Error creating helm cli: %s", err)
 			panic(err)
 		}
-		ReleaseClient = client
+		ReleaseClient = cli
 	}
 }
 
@@ -163,12 +163,11 @@ func (r *ReleaseRepository) Delete(ctx context.Context, request option.Option) e
 	return errors.OK
 }
 
-func (r *ReleaseRepository) GetAll(ctx_ context.Context, _ option.Option) ([]interface{}, errors.Error) {
+func (r *ReleaseRepository) GetAll(_ context.Context, _ option.Option) (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
-
-func (r *ReleaseRepository) Close(context context.Context) errors.Error {
+func (r *ReleaseRepository) Close(_ context.Context) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }

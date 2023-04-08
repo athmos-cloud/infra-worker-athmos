@@ -9,6 +9,7 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"reflect"
@@ -64,7 +65,9 @@ func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, er
 	if err != nil {
 		return nil, errors.ExternalServiceError.WithMessage(err)
 	}
-	return CreateResponse{Id: fmt.Sprintf("%v", result.InsertedID)}, errors.OK
+	objectID := result.InsertedID.(primitive.ObjectID)
+
+	return CreateResponse{Id: objectID.Hex()}, errors.OK
 }
 
 func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
@@ -76,13 +79,21 @@ func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, error
 			),
 		)
 	}
-	var res interface{}
 	payload := optn.Value.(GetRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-	filter := bson.M{"_id": payload.Id}
+	id, err := primitive.ObjectIDFromHex(payload.Id)
+	if err != nil {
+		return nil, errors.InvalidArgument.WithMessage(err.Error())
+	}
+	filter := bson.M{"_id": id}
 	res, err := collection.FindOne(ctx, filter).DecodeBytes()
 	if err != nil {
-		return nil, errors.NotFound.WithMessage(err.Error())
+		if err == mongo.ErrNoDocuments {
+			logger.Info.Printf("No documents found for id %s", payload.Id)
+			return nil, errors.NotFound
+		} else {
+			return nil, errors.ExternalServiceError.WithMessage(err.Error())
+		}
 	}
 	return GetResponse{Payload: res}, errors.OK
 }

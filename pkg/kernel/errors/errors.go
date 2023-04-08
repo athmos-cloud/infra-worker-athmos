@@ -79,12 +79,17 @@ func (e *Error) IsOk() bool {
 	return reflect.DeepEqual(e, &OK) || reflect.DeepEqual(e, &Created) || reflect.DeepEqual(e, &Accepted)
 }
 
+func (e *Error) IsNotFound() bool {
+	return reflect.DeepEqual(e, &NotFound)
+}
+
 var (
 	OK                   Error
 	Created              = New("Created", "201")
 	Accepted             = New("Accepted", "202")
 	InvalidArgument      = New("Invalid argument", "400")
 	ValidationError      = New("Validation error", "400")
+	AlreadyExists        = New("Already exists", "400")
 	NotFound             = New("Not found", "404")
 	ConfigError          = New("Config error", "500")
 	ParseError           = New("Parse error", "500")

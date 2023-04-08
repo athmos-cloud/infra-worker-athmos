@@ -5,10 +5,10 @@ import (
 )
 
 type CreateResourceRequest struct {
-	ProjectID    string
-	ProviderType common.ProviderType
-	ResourceType common.ResourceType
-	ResourceSpecs interface{}
+	ProjectID     string
+	ProviderType  common.ProviderType
+	ResourceType  common.ResourceType
+	ResourceSpecs map[string]interface{}
 }
 
 type CreateResourceResponse struct {

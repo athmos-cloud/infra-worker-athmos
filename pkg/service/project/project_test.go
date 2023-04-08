@@ -71,7 +71,7 @@ func TestProjectService_Create(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps := &ProjectService{
+			ps := &Service{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
 			got, got1 := ps.Create(tt.args.ctx, tt.args.request)
@@ -103,7 +103,7 @@ func TestProjectService_Delete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps := &ProjectService{
+			ps := &Service{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
 			if got := ps.Delete(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
@@ -132,7 +132,7 @@ func TestProjectService_GetByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps := &ProjectService{
+			ps := &Service{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
 			got, got1 := ps.GetByID(tt.args.ctx, tt.args.request)
@@ -165,7 +165,7 @@ func TestProjectService_GetByOwnerID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps := &ProjectService{
+			ps := &Service{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
 			got, got1 := ps.GetByOwnerID(tt.args.ctx, tt.args.request)
@@ -197,7 +197,7 @@ func TestProjectService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps := &ProjectService{
+			ps := &Service{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
 			if got := ps.Update(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
