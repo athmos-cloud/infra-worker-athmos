@@ -2,6 +2,8 @@ tmp_dir: "/tmp/worker"
 test:
   credentials:
     gcp: "/etc/credentials/gcp.json"
+http:
+  port: 8080
 kubernetes:
   configPath: "/root/.kube/config"
   helm:

@@ -163,6 +163,5 @@ func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error
 			return errors.OK
 		}
 	}
-
 	return errors.OK
 }
