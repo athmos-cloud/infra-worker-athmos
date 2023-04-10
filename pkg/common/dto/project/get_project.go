@@ -9,13 +9,13 @@ type GetProjectByIDRequest struct {
 }
 
 type GetProjectByIDResponse struct {
-	Payload domain.Project
+	Payload domain.Project `json:"payload"`
 }
 
 type GetProjectByOwnerIDRequest struct {
-	OwnerID string
+	OwnerID string `json:"owner_id"`
 }
 
 type GetProjectByOwnerIDResponse struct {
-	Payload []domain.Project
+	Payload []domain.Project `json:"payload"`
 }

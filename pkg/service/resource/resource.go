@@ -85,7 +85,7 @@ func (service *Service) CreateResource(ctx context.Context, payload dto.CreateRe
 
 }
 
-func (service *Service) GetResource(payload dto.GetResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (service *Service) GetResource(ctx context.Context, payload dto.GetResourceRequest) (dto.CreateResourceResponse, errors.Error) {
 	panic("")
 }
 

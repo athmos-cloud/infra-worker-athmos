@@ -6,9 +6,9 @@ import (
 	plugin2 "github.com/PaulBarrie/infra-worker/pkg/plugin"
 )
 
-type ServicePlugin struct{}
+type Service struct{}
 
-func (service *ServicePlugin) GetPlugin(request dto.GetPluginRequest) (dto.GetPluginResponse, errors.Error) {
+func (service *Service) GetPlugin(request dto.GetPluginRequest) (dto.GetPluginResponse, errors.Error) {
 	plugin, err := plugin2.Get(request.ProviderType, request.ResourceType)
 	if !err.IsOk() {
 		return dto.GetPluginResponse{}, err
