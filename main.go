@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/http"
 	"github.com/PaulBarrie/infra-worker/pkg/queue"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
@@ -15,6 +16,7 @@ var (
 )
 
 func main() {
+	ctx := context.Background()
 	projectService := project.Service{
 		ProjectRepository: mongo.Client,
 	}
@@ -24,7 +26,8 @@ func main() {
 		PluginRepository:  PluginRepository,
 	}
 	server := http.New(&projectService, &pluginService, &resourceService)
-	go queue.Queue.StartConsumer()
+	queue.Queue.SetServices(&resourceService)
+	go queue.Queue.StartConsumer(ctx)
 	defer queue.Close()
 	server.Start()
 }

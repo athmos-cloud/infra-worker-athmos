@@ -89,10 +89,10 @@ func (service *Service) GetResource(ctx context.Context, payload dto.GetResource
 	panic("")
 }
 
-func (service *Service) UpdateResource(payload dto.UpdateResourceRequest) errors.Error {
+func (service *Service) UpdateResource(ctx context.Context, payload dto.UpdateResourceRequest) errors.Error {
 	panic("")
 }
 
-func (service *Service) DeleteResource(payload dto.DeleteResourceRequest) errors.Error {
+func (service *Service) DeleteResource(ctx context.Context, payload dto.DeleteResourceRequest) errors.Error {
 	panic("")
 }

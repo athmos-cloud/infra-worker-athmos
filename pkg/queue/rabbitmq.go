@@ -1,17 +1,20 @@
 package queue
 
 import (
+	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
+	"github.com/PaulBarrie/infra-worker/pkg/service/resource"
 	"github.com/streadway/amqp"
 	"log"
 	"sync"
 )
 
 type RabbitMQ struct {
-	Connection *amqp.Connection
-	Channel    *amqp.Channel
-	MsgHandler func(queue string, msg amqp.Delivery, err error)
+	Connection      *amqp.Connection
+	Channel         *amqp.Channel
+	ResourceService *resource.Service
+	MsgHandler      func(queue string, msg amqp.Delivery, err error)
 }
 
 var Queue *RabbitMQ
@@ -35,7 +38,6 @@ func init() {
 		Queue = &RabbitMQ{
 			Connection: conn,
 			Channel:    ch,
-			MsgHandler: HandleMessage,
 		}
 	}
 }
@@ -51,20 +53,11 @@ func Close() {
 	}
 }
 
-func HandleMessage(queue string, msg amqp.Delivery, err error) {
-	if err != nil {
-		logger.Error.Fatalf("Error occurred in RMQ consumer", err)
-	}
-	logger.Info.Printf("Message received on '%s' queue: %s", queue, string(msg.Body))
+func (queue *RabbitMQ) SetServices(resourceService *resource.Service) {
+	queue.ResourceService = resourceService
 }
 
-func (queue *RabbitMQ) OnError(err error, msg string) {
-	if err != nil {
-		queue.MsgHandler(config.Current.Queue.Queue, amqp.Delivery{}, err)
-	}
-}
-
-func (queue *RabbitMQ) StartConsumer() {
+func (queue *RabbitMQ) StartConsumer(ctx context.Context) {
 	queueName := config.Current.Queue.Queue
 	q, err := queue.Channel.QueueDeclare(
 		queueName, // name
@@ -91,7 +84,7 @@ func (queue *RabbitMQ) StartConsumer() {
 
 	go func() {
 		for d := range msgs {
-			queue.MsgHandler(queueName, d, nil)
+			queue.HandleMessage(ctx, d, nil)
 		}
 	}()
 	logger.Info.Printf("Started listening for messages on '%s' queue", queueName)
