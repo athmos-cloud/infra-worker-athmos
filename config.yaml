@@ -34,6 +34,10 @@ plugins:
       vpc:
         chart: "gcp-vpc"
         version: "0.1.0"
+queue:
+  uri: "amqp://user:password@rabbitmq:5672/"
+  exchange: "from-infra-worker"
+  queue: "to-infra-worker"
 mongo:
   address: "mongodb"
   port: 27017

@@ -24,7 +24,9 @@ type Config struct {
 }
 
 type Queue struct {
-	Host string `yaml:"host" env:"HOST" env-default:"localhost"`
+	URI      string `yaml:"uri" env:"URI" env-default:"localhost"`
+	Exchange string `yaml:"exchange" env:"EXCHANGE"`
+	Queue    string `yaml:"queue" env:"QUEUE"`
 }
 
 type Http struct {

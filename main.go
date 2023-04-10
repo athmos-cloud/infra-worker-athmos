@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/PaulBarrie/infra-worker/pkg/http"
+	"github.com/PaulBarrie/infra-worker/pkg/queue"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
 )
 
@@ -11,6 +12,8 @@ var (
 )
 
 func main() {
+	go queue.Queue.StartConsumer()
+	defer queue.Close()
 	http.Start()
 }
 

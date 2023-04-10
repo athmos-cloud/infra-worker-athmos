@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/mittwald/go-helm-client v0.11.5
+	github.com/streadway/amqp v1.0.0
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
 	go.mongodb.org/mongo-driver v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
