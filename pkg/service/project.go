@@ -1,4 +1,4 @@
-package project
+package service
 
 import (
 	"context"
@@ -15,11 +15,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type Service struct {
+type ProjectService struct {
 	ProjectRepository repository.IRepository
 }
 
-func (ps *Service) Create(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
+func (ps *ProjectService) Create(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
 	newProject := domain.Project{
 		Name:      request.ProjectName,
 		OwnerID:   request.OwnerID,
@@ -40,7 +40,7 @@ func (ps *Service) Create(ctx context.Context, request dto.CreateProjectRequest)
 	}, errors.OK
 }
 
-func (ps *Service) Update(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
+func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -69,7 +69,7 @@ func (ps *Service) Update(ctx context.Context, request dto.UpdateProjectRequest)
 	return errors.OK
 }
 
-func (ps *Service) GetByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
+func (ps *ProjectService) GetByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -89,7 +89,7 @@ func (ps *Service) GetByID(ctx context.Context, request dto.GetProjectByIDReques
 	}, errors.OK
 }
 
-func (ps *Service) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
+func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetAllRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Filter: bson.M{
@@ -120,7 +120,7 @@ func (ps *Service) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwn
 	}, errors.OK
 }
 
-func (ps *Service) Delete(ctx context.Context, request dto.DeleteRequest) errors.Error {
+func (ps *ProjectService) Delete(ctx context.Context, request dto.DeleteRequest) errors.Error {
 	mongoDeleteRequest := mongo.DeleteRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,

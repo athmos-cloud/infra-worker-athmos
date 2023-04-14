@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
-	"github.com/PaulBarrie/infra-worker/pkg/service/resource"
+	"github.com/PaulBarrie/infra-worker/pkg/service"
 	"github.com/streadway/amqp"
 	"log"
 	"sync"
@@ -13,7 +13,7 @@ import (
 type RabbitMQ struct {
 	Connection      *amqp.Connection
 	Channel         *amqp.Channel
-	ResourceService *resource.Service
+	ResourceService *service.ResourceService
 	MsgHandler      func(queue string, msg amqp.Delivery, err error)
 }
 
@@ -53,7 +53,7 @@ func Close() {
 	}
 }
 
-func (queue *RabbitMQ) SetServices(resourceService *resource.Service) {
+func (queue *RabbitMQ) SetServices(resourceService *service.ResourceService) {
 	queue.ResourceService = resourceService
 }
 

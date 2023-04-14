@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"github.com/PaulBarrie/infra-worker/pkg/http"
-	"github.com/PaulBarrie/infra-worker/pkg/queue"
+	"github.com/PaulBarrie/infra-worker/pkg/exposition/http"
+	"github.com/PaulBarrie/infra-worker/pkg/exposition/queue"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
-	"github.com/PaulBarrie/infra-worker/pkg/service/plugin"
-	"github.com/PaulBarrie/infra-worker/pkg/service/project"
-	"github.com/PaulBarrie/infra-worker/pkg/service/resource"
+	"github.com/PaulBarrie/infra-worker/pkg/service"
 )
 
 var (
@@ -17,11 +15,11 @@ var (
 
 func main() {
 	ctx := context.Background()
-	projectService := project.Service{
+	projectService := service.ProjectService{
 		ProjectRepository: mongo.Client,
 	}
-	pluginService := plugin.Service{}
-	resourceService := resource.Service{
+	pluginService := service.PluginService{}
+	resourceService := service.ResourceService{
 		ProjectRepository: mongo.Client,
 		PluginRepository:  PluginRepository,
 	}

@@ -1,4 +1,4 @@
-package plugin
+package service
 
 import (
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/plugin"
@@ -6,9 +6,9 @@ import (
 	plugin2 "github.com/PaulBarrie/infra-worker/pkg/plugin"
 )
 
-type Service struct{}
+type PluginService struct{}
 
-func (service *Service) GetPlugin(request dto.GetPluginRequest) (dto.GetPluginResponse, errors.Error) {
+func (service *PluginService) GetPlugin(request dto.GetPluginRequest) (dto.GetPluginResponse, errors.Error) {
 	plugin, err := plugin2.Get(request.ProviderType, request.ResourceType)
 	if !err.IsOk() {
 		return dto.GetPluginResponse{}, err

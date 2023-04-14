@@ -3,20 +3,18 @@ package http
 import (
 	"fmt"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/service/plugin"
-	"github.com/PaulBarrie/infra-worker/pkg/service/project"
-	"github.com/PaulBarrie/infra-worker/pkg/service/resource"
+	"github.com/PaulBarrie/infra-worker/pkg/service"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
 	Router          *gin.Engine
-	ProjectService  *project.Service
-	PluginService   *plugin.Service
-	ResourceService *resource.Service
+	ProjectService  *service.ProjectService
+	PluginService   *service.PluginService
+	ResourceService *service.ResourceService
 }
 
-func New(projectService *project.Service, pluginService *plugin.Service, resourceService *resource.Service) *Server {
+func New(projectService *service.ProjectService, pluginService *service.PluginService, resourceService *service.ResourceService) *Server {
 	return &Server{
 		Router:          gin.Default(),
 		ProjectService:  projectService,

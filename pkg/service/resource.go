@@ -1,4 +1,4 @@
-package resource
+package service
 
 import (
 	"context"
@@ -15,12 +15,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type Service struct {
+type ResourceService struct {
 	ProjectRepository repository.IRepository
 	PluginRepository  repository.IRepository
 }
 
-func (service *Service) CreateResource(ctx context.Context, payload dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (service *ResourceService) CreateResource(ctx context.Context, payload dto.CreateResourceRequest) (dto.CreateResourceResponse, errors.Error) {
 	// Get project
 	projectResp, err := service.ProjectRepository.Get(ctx, option.Option{
 		Value: mongo.GetRequest{
@@ -85,14 +85,14 @@ func (service *Service) CreateResource(ctx context.Context, payload dto.CreateRe
 
 }
 
-func (service *Service) GetResource(ctx context.Context, payload dto.GetResourceRequest) (dto.CreateResourceResponse, errors.Error) {
+func (service *ResourceService) GetResource(ctx context.Context, payload dto.GetResourceRequest) (dto.CreateResourceResponse, errors.Error) {
 	panic("")
 }
 
-func (service *Service) UpdateResource(ctx context.Context, payload dto.UpdateResourceRequest) errors.Error {
+func (service *ResourceService) UpdateResource(ctx context.Context, payload dto.UpdateResourceRequest) errors.Error {
 	panic("")
 }
 
-func (service *Service) DeleteResource(ctx context.Context, payload dto.DeleteResourceRequest) errors.Error {
+func (service *ResourceService) DeleteResource(ctx context.Context, payload dto.DeleteResourceRequest) errors.Error {
 	panic("")
 }

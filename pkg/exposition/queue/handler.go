@@ -22,27 +22,46 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 
 	switch message.Verb {
 	case CREATE:
-		payload, ok := message.Payload.(dto.CreateResourceRequest)
-		if !ok {
-			logger.Error.Printf("Wrong message format: %s", err)
+		var payload dto.CreateResourceRequest
+
+		jsonData, errMarshal := json.Marshal(message.Payload)
+		if errMarshal != nil {
+			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
 		}
+		errUnmarshall := json.Unmarshal(jsonData, &payload)
+		if errUnmarshall != nil {
+			return
+		}
+		logger.Info.Println(payload)
 		_, svcErr := queue.ResourceService.CreateResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
 	case UPDATE:
-		payload, ok := message.Payload.(dto.UpdateResourceRequest)
-		if !ok {
-			logger.Error.Printf("Wrong message format: %s", err)
+		var payload dto.UpdateResourceRequest
+
+		jsonData, errMarshal := json.Marshal(message.Payload)
+		if errMarshal != nil {
+			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
+		}
+		errUnmarshall := json.Unmarshal(jsonData, &payload)
+		if errUnmarshall != nil {
+			return
 		}
 		svcErr := queue.ResourceService.UpdateResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
 	case DELETE:
-		payload, ok := message.Payload.(dto.DeleteResourceRequest)
-		if !ok {
-			logger.Error.Printf("Wrong message format: %s", err)
+		var payload dto.DeleteResourceRequest
+
+		jsonData, errMarshal := json.Marshal(message.Payload)
+		if errMarshal != nil {
+			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
+		}
+		errUnmarshall := json.Unmarshal(jsonData, &payload)
+		if errUnmarshall != nil {
+			return
 		}
 		svcErr := queue.ResourceService.DeleteResource(ctx, payload)
 		if !svcErr.IsOk() {
