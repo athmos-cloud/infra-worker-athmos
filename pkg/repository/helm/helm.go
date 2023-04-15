@@ -50,7 +50,7 @@ func client() (*ReleaseRepository, errors.Error) {
 		logger.Error.Print(msg)
 		return nil, errors.InternalError.WithMessage(msg)
 	}
-	client, err := helmclient.NewClientFromKubeConf(
+	cli, err := helmclient.NewClientFromKubeConf(
 		&helmclient.KubeConfClientOptions{
 			KubeContext: "",
 			KubeConfig:  kubeConfig,
@@ -61,11 +61,11 @@ func client() (*ReleaseRepository, errors.Error) {
 				Namespace:        DefaultNamespace,
 			},
 		})
-	if err != nil || client == nil {
+	if err != nil || cli == nil {
 		logger.Error.Printf("Error creating helm client :  %v", err)
 		return nil, errors.ExternalServiceError.WithMessage(err)
 	}
-	err = client.AddOrUpdateChartRepo(
+	err = cli.AddOrUpdateChartRepo(
 		repo.Entry{
 			Name:     "plugins",
 			URL:      config.Current.Plugins.Crossplane.Registry.Address,
@@ -78,7 +78,7 @@ func client() (*ReleaseRepository, errors.Error) {
 		return nil, errors.ExternalServiceError.WithMessage(err)
 	}
 	helmClient := &ReleaseRepository{
-		HelmClient: client,
+		HelmClient: cli,
 	}
 	return helmClient, errors.OK
 }
@@ -96,6 +96,11 @@ func (r *ReleaseRepository) Get(_ context.Context, optn option.Option) (interfac
 		return nil, errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error getting release : %v", err))
 	}
 	return GetHelmReleaseResponse{release}, errors.OK
+}
+
+func (r *ReleaseRepository) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (r *ReleaseRepository) Create(ctx context.Context, request option.Option) (interface{}, errors.Error) {

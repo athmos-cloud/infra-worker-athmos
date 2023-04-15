@@ -98,6 +98,23 @@ func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, error
 	return GetResponse{Payload: res}, errors.OK
 }
 
+func (m *Mongo) Exists(ctx context.Context, optn option.Option) (bool, errors.Error) {
+	if !optn.SetType(reflect.TypeOf(ExistsRequest{}).String()).Validate() {
+		return false, errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(ExistsRequest{}).Kind(), optn.Value,
+			),
+		)
+	}
+	payload := optn.Value.(ExistsRequest)
+	collection := m.Database.Collection(payload.CollectionName)
+	count, err := collection.CountDocuments(ctx, payload.Filter)
+	if err != nil {
+		return false, errors.ExternalServiceError.WithMessage(err.Error())
+	}
+	return count > 0, errors.OK
+}
+
 func (m *Mongo) GetAll(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	if !optn.SetType(reflect.TypeOf(GetAllRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
@@ -158,11 +175,15 @@ func (m *Mongo) Delete(ctx context.Context, optn option.Option) errors.Error {
 	}
 	payload := optn.Value.(DeleteRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-	res := collection.FindOneAndDelete(ctx, bson.M{"_id": payload.Id})
+	id, err := primitive.ObjectIDFromHex(payload.Id)
+	if err != nil {
+		return errors.InvalidArgument.WithMessage(err.Error())
+	}
+	res := collection.FindOneAndDelete(ctx, bson.M{"_id": id})
 	if res.Err() != nil {
 		return errors.NotFound.WithMessage(res.Err().Error())
 	}
-	return errors.OK
+	return errors.NoContent
 }
 
 func (m *Mongo) Close(ctx context.Context) errors.Error {

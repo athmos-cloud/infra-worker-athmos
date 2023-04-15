@@ -9,7 +9,7 @@ import (
 
 func (server *Server) WithProjectRouter() *Server {
 	server.Router.GET("/projects/:id", func(c *gin.Context) {
-		resp, err := server.ProjectService.GetByID(c, dtoProject.GetProjectByIDRequest{
+		resp, err := server.ProjectService.GetProjectByID(c, dtoProject.GetProjectByIDRequest{
 			ProjectID: c.Param("id"),
 		})
 		if !err.IsOk() {
@@ -18,19 +18,13 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		jsonBytes, errMarshal := json.Marshal(resp)
-		if errMarshal != nil {
-			c.JSON(500, gin.H{
-				"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
-			})
-			return
-		}
+
 		c.JSON(err.Code, gin.H{
-			"message": string(jsonBytes[:]),
+			"payload": resp.Payload,
 		})
 	})
 	server.Router.GET("/projects/owner/:id", func(c *gin.Context) {
-		resp, err := server.ProjectService.GetByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
+		resp, err := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
 			OwnerID: c.Param("id"),
 		})
 		if !err.IsOk() {
@@ -39,7 +33,7 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		jsonBytes, errMarshal := json.Marshal(resp)
+		jsonBytes, errMarshal := json.Marshal(resp.Payload)
 		if errMarshal != nil {
 			c.JSON(500, gin.H{
 				"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
@@ -47,7 +41,7 @@ func (server *Server) WithProjectRouter() *Server {
 			return
 		}
 		c.JSON(err.Code, gin.H{
-			"message": string(jsonBytes[:]),
+			"payload": string(jsonBytes[:]),
 		})
 	})
 	server.Router.POST("/projects", func(c *gin.Context) {
@@ -59,16 +53,15 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		resp, err := server.ProjectService.Create(c, request)
-		jsonBytes, errMarshal := json.Marshal(resp)
-		if errMarshal != nil {
-			c.JSON(500, gin.H{
-				"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
+		resp, err := server.ProjectService.CreateProject(c, request)
+		if !err.IsOk() {
+			c.JSON(err.Code, gin.H{
+				"message": err.ToString(),
 			})
 			return
 		}
 		c.JSON(err.Code, gin.H{
-			"message": string(jsonBytes[:]),
+			"project_id": resp.ProjectID,
 		})
 	})
 	server.Router.PUT("/projects/:id", func(c *gin.Context) {
@@ -83,7 +76,7 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		err := server.ProjectService.Update(c, dtoProject.UpdateProjectRequest{
+		err := server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
 			ProjectID:   c.Param("id"),
 			ProjectName: request.Name,
 		})
@@ -98,7 +91,7 @@ func (server *Server) WithProjectRouter() *Server {
 		})
 	})
 	server.Router.DELETE("/projects/:id", func(c *gin.Context) {
-		err := server.ProjectService.Delete(c, dtoProject.DeleteRequest{
+		err := server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
 			ProjectID: c.Param("id"),
 		})
 		if !err.IsOk() {

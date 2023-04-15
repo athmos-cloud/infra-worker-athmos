@@ -1,9 +1,9 @@
-package service
+package application
 
 import (
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/plugin"
+	plugin2 "github.com/PaulBarrie/infra-worker/pkg/domain/plugin"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	plugin2 "github.com/PaulBarrie/infra-worker/pkg/plugin"
 )
 
 type PluginService struct{}

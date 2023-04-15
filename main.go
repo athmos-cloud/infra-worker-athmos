@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/PaulBarrie/infra-worker/pkg/application"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/http"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/queue"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
-	"github.com/PaulBarrie/infra-worker/pkg/service"
 )
 
 var (
@@ -15,11 +15,11 @@ var (
 
 func main() {
 	ctx := context.Background()
-	projectService := service.ProjectService{
+	projectService := application.ProjectService{
 		ProjectRepository: mongo.Client,
 	}
-	pluginService := service.PluginService{}
-	resourceService := service.ResourceService{
+	pluginService := application.PluginService{}
+	resourceService := application.ResourceService{
 		ProjectRepository: mongo.Client,
 		PluginRepository:  PluginRepository,
 	}

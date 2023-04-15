@@ -76,7 +76,10 @@ func (e *Error) Equals(err Error) bool {
 }
 
 func (e *Error) IsOk() bool {
-	return reflect.DeepEqual(e, &OK) || reflect.DeepEqual(e, &Created) || reflect.DeepEqual(e, &Accepted)
+	return reflect.DeepEqual(e, &OK) ||
+		reflect.DeepEqual(e, &Created) ||
+		reflect.DeepEqual(e, &Accepted) ||
+		reflect.DeepEqual(e, &NoContent)
 }
 
 func (e *Error) IsNotFound() bool {
@@ -87,9 +90,10 @@ var (
 	OK                   Error
 	Created              = New("Created", "201")
 	Accepted             = New("Accepted", "202")
+	NoContent            = New("No content", "204")
 	InvalidArgument      = New("Invalid argument", "400")
 	ValidationError      = New("Validation error", "400")
-	AlreadyExists        = New("Already exists", "400")
+	AlreadyExists        = New("Already exists", "409")
 	NotFound             = New("Not found", "404")
 	ConfigError          = New("Config error", "500")
 	ParseError           = New("Parse error", "500")
@@ -97,5 +101,5 @@ var (
 	IOError              = New("IO error", "500")
 	ConversionError      = New("Conversion error", "500")
 	WrongConfig          = New("Wrong config", "500")
-	ExternalServiceError = New("External service error", "500")
+	ExternalServiceError = New("External application error", "500")
 )

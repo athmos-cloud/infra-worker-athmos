@@ -35,10 +35,10 @@ func TestReleaseRepository_Create(t *testing.T) {
 			}
 			got, got1 := r.Create(tt.args.ctx, tt.args.request)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Create() got = %v, want %v", got, tt.want)
+				t.Errorf("CreateProject() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("Create() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("CreateProject() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -68,7 +68,7 @@ func TestReleaseRepository_Delete(t *testing.T) {
 				Namespace:  tt.fields.Namespace,
 			}
 			if got := r.Delete(tt.args.ctx, tt.args.optn); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Delete() = %v, want %v", got, tt.want)
+				t.Errorf("DeleteProject() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -168,7 +168,7 @@ func TestReleaseRepository_Update(t *testing.T) {
 				Namespace:  tt.fields.Namespace,
 			}
 			if got := r.Update(tt.args.ctx, tt.args.optn); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Update() = %v, want %v", got, tt.want)
+				t.Errorf("UpdateProjectName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

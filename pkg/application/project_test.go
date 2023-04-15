@@ -1,4 +1,4 @@
-package service
+package application
 
 import (
 	"context"
@@ -9,43 +9,43 @@ import (
 	"testing"
 )
 
-// service := projectService.ProjectService{
+// application := projectService.ProjectService{
 // ProjectRepository: mongo.Client,
 // }
 //
-// id1, _ := service.Create(ctx, project.CreateProjectRequest{
+// id1, _ := application.CreateProject(ctx, project.CreateProjectRequest{
 // ProjectName: "test1",
 // OwnerID:     "toto",
 // })
-// _, _ = service.Create(ctx, project.CreateProjectRequest{
+// _, _ = application.CreateProject(ctx, project.CreateProjectRequest{
 // ProjectName: "test2",
 // OwnerID:     "toto",
 // })
-// projectByID, err := service.GetByID(ctx, project.GetProjectByIDRequest{
+// projectByID, err := application.GetProjectByID(ctx, project.GetProjectByIDRequest{
 // ProjectID: id1.ProjectID,
 // })
 // if !err.IsOk() {
 // logger.Info.Println("Err: ", err)
 // }
 // logger.Info.Println(ctx, "Project found with id: ", projectByID)
-// err = service.Update(ctx, project.UpdateProjectRequest{
+// err = application.UpdateProjectName(ctx, project.UpdateProjectRequest{
 // ProjectID:   id1.ProjectID,
 // ProjectName: "test1-updated",
 // })
 // if !err.IsOk() {
 // logger.Error.Println(ctx, "Error: ", err)
 // }
-// projectAll, err := service.GetByOwnerID(ctx, project.GetProjectByOwnerIDRequest{
+// projectAll, err := application.GetProjectByOwnerID(ctx, project.GetProjectByOwnerIDRequest{
 // OwnerID: "toto",
 // })
 //
-// err = service.Delete(ctx, project.DeleteRequest{
+// err = application.DeleteProject(ctx, project.DeleteRequest{
 // ProjectID: id1.ProjectID,
 // })
 // if !err.IsOk() {
 // logger.Error.Println(ctx, "Error: ", err)
 // }
-// err = service.Delete(ctx, project.DeleteRequest{
+// err = application.DeleteProject(ctx, project.DeleteRequest{
 // ProjectID: id1.ProjectID,
 // })
 // if !err.IsOk() {
@@ -74,12 +74,12 @@ func TestProjectService_Create(t *testing.T) {
 			ps := &ProjectService{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
-			got, got1 := ps.Create(tt.args.ctx, tt.args.request)
+			got, got1 := ps.CreateProject(tt.args.ctx, tt.args.request)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Create() got = %v, want %v", got, tt.want)
+				t.Errorf("CreateProject() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("Create() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("CreateProject() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -106,8 +106,8 @@ func TestProjectService_Delete(t *testing.T) {
 			ps := &ProjectService{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
-			if got := ps.Delete(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Delete() = %v, want %v", got, tt.want)
+			if got := ps.DeleteProject(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DeleteProject() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -135,12 +135,12 @@ func TestProjectService_GetByID(t *testing.T) {
 			ps := &ProjectService{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
-			got, got1 := ps.GetByID(tt.args.ctx, tt.args.request)
+			got, got1 := ps.GetProjectByID(tt.args.ctx, tt.args.request)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetByID() got = %v, want %v", got, tt.want)
+				t.Errorf("GetProjectByID() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetByID() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("GetProjectByID() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -168,12 +168,12 @@ func TestProjectService_GetByOwnerID(t *testing.T) {
 			ps := &ProjectService{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
-			got, got1 := ps.GetByOwnerID(tt.args.ctx, tt.args.request)
+			got, got1 := ps.GetProjectByOwnerID(tt.args.ctx, tt.args.request)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetByOwnerID() got = %v, want %v", got, tt.want)
+				t.Errorf("GetProjectByOwnerID() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetByOwnerID() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("GetProjectByOwnerID() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -200,8 +200,8 @@ func TestProjectService_Update(t *testing.T) {
 			ps := &ProjectService{
 				ProjectRepository: tt.fields.ProjectRepository,
 			}
-			if got := ps.Update(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Update() = %v, want %v", got, tt.want)
+			if got := ps.UpdateProjectName(tt.args.ctx, tt.args.request); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UpdateProjectName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

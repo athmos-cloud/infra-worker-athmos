@@ -5,7 +5,6 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/common"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -39,7 +38,7 @@ type Input struct {
 	Description string      `yaml:"description,omitempty"`
 	Type        string      `yaml:"type" default:"string"`
 	Default     interface{} `yaml:"default,omitempty"`
-	Required    bool        `yaml:"required" default:"false"`
+	Required    bool        `yaml:"required,omitempty" default:"false"`
 }
 
 type Type struct {
@@ -54,7 +53,6 @@ func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin
 	if err != nil {
 		return Plugin{}, errors.IOError.WithMessage(err.Error())
 	}
-	logger.Info.Printf(fmt.Sprintf("Reading plugin file %s", string(pluginBytes[:])))
 	plugin := Plugin{}
 	if err = yaml.Unmarshal(pluginBytes, &plugin); err != nil {
 		return Plugin{}, errors.ConversionError.WithMessage(err.Error())

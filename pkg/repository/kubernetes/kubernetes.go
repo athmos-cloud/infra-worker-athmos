@@ -44,6 +44,11 @@ func (r *Repository) Get(ctx context.Context, option option.Option) (interface{}
 	return resource, errors.OK
 }
 
+func (r *Repository) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r *Repository) GetAll(ctx context.Context, option option.Option) (interface{}, errors.Error) {
 	if option = option.SetType(reflect.TypeOf(GetListResourceRequest{}).String()); !option.Validate() {
 		return nil, errors.InvalidArgument.WithMessage(

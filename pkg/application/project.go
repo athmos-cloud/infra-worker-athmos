@@ -1,4 +1,4 @@
-package service
+package application
 
 import (
 	"context"
@@ -19,12 +19,32 @@ type ProjectService struct {
 	ProjectRepository repository.IRepository
 }
 
-func (ps *ProjectService) Create(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
 	newProject := domain.Project{
 		Name:      request.ProjectName,
 		OwnerID:   request.OwnerID,
 		Namespace: fmt.Sprintf("%s-%s", request.ProjectName, utils.RandomString(5)),
 	}
+
+	// Check if (name, owner) does not exist
+	exists, err := ps.ProjectRepository.Exists(ctx, option.Option{
+		Value: mongo.ExistsRequest{
+			CollectionName: config.Current.Mongo.ProjectCollection,
+			Filter:         bson.M{"name": newProject.Name, "owner_id": newProject.OwnerID},
+		},
+	})
+	logger.Info.Println("Resp", exists)
+
+	if !err.IsOk() {
+		return dto.CreateProjectResponse{}, err
+	}
+	if exists {
+		return dto.CreateProjectResponse{}, errors.AlreadyExists.WithMessage(
+			fmt.Sprintf("Project with name %s owned by %s already exists", newProject.Name, newProject.OwnerID),
+		)
+	}
+
+	// Persist
 	mongoResquest := mongo.CreateRequest{
 		Payload:        newProject,
 		CollectionName: config.Current.Mongo.ProjectCollection,
@@ -40,7 +60,8 @@ func (ps *ProjectService) Create(ctx context.Context, request dto.CreateProjectR
 	}, errors.OK
 }
 
-func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
+func (ps *ProjectService) UpdateProjectName(ctx context.Context, request dto.UpdateProjectRequest) errors.Error {
+	// Get existing record
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -48,6 +69,7 @@ func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectR
 	resp, err := mongo.Client.Get(ctx, option.Option{
 		Value: mongoGetRequest,
 	})
+
 	if !err.IsOk() {
 		return err
 	}
@@ -56,6 +78,23 @@ func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectR
 	if !err.IsOk() {
 		return err
 	}
+
+	// Check if (name, owner) does not exist
+	exists, err := ps.ProjectRepository.Exists(ctx, option.Option{
+		Value: mongo.ExistsRequest{
+			CollectionName: config.Current.Mongo.ProjectCollection,
+			Filter:         bson.M{"name": projectResp.Name, "owner_id": projectResp.OwnerID},
+		},
+	})
+	if !err.IsOk() {
+		return err
+	}
+	if exists {
+		return errors.AlreadyExists.WithMessage(
+			fmt.Sprintf("Project with name %s owned by %s already exists", request.ProjectName, projectResp.OwnerID),
+		)
+	}
+
 	projectResp.Name = request.ProjectName
 	if err = mongo.Client.Update(ctx, option.Option{
 		Value: mongo.UpdateRequest{
@@ -69,7 +108,7 @@ func (ps *ProjectService) Update(ctx context.Context, request dto.UpdateProjectR
 	return errors.OK
 }
 
-func (ps *ProjectService) GetByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
+func (ps *ProjectService) GetProjectByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -89,7 +128,7 @@ func (ps *ProjectService) GetByID(ctx context.Context, request dto.GetProjectByI
 	}, errors.OK
 }
 
-func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
+func (ps *ProjectService) GetProjectByOwnerID(ctx context.Context, request dto.GetProjectByOwnerIDRequest) (dto.GetProjectByOwnerIDResponse, errors.Error) {
 	mongoGetRequest := mongo.GetAllRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Filter: bson.M{
@@ -102,6 +141,8 @@ func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProje
 	if !err.IsOk() {
 		return dto.GetProjectByOwnerIDResponse{}, err
 	}
+
+	// From mongo raw to Project entity
 	var projects []domain.Project
 	for _, p := range resp.(mongo.GetAllResponse).Payload {
 		primitive := p.(bson.D)
@@ -115,23 +156,20 @@ func (ps *ProjectService) GetByOwnerID(ctx context.Context, request dto.GetProje
 		}
 		projects = append(projects, projectItem)
 	}
+
 	return dto.GetProjectByOwnerIDResponse{
 		Payload: projects,
 	}, errors.OK
 }
 
-func (ps *ProjectService) Delete(ctx context.Context, request dto.DeleteRequest) errors.Error {
+func (ps *ProjectService) DeleteProject(ctx context.Context, request dto.DeleteRequest) errors.Error {
 	mongoDeleteRequest := mongo.DeleteRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
 	}
-	if err := mongo.Client.Delete(ctx, option.Option{
+	return mongo.Client.Delete(ctx, option.Option{
 		Value: mongoDeleteRequest,
-	}); !err.IsOk() {
-		return err
-	}
-
-	return errors.OK
+	})
 }
 
 func fromBsonRaw(raw bson.Raw) (domain.Project, errors.Error) {

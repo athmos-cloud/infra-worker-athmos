@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"github.com/PaulBarrie/infra-worker/pkg/common"
-	"github.com/PaulBarrie/infra-worker/pkg/plugin"
+	"github.com/PaulBarrie/infra-worker/pkg/domain/plugin"
 )
 
 type GetPluginRequest struct {

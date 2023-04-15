@@ -17,6 +17,11 @@ type GetRequest struct {
 	Payload        interface{}
 }
 
+type ExistsRequest struct {
+	CollectionName string
+	Filter         bson.M
+}
+
 type GetResponse struct {
 	Payload bson.Raw
 }

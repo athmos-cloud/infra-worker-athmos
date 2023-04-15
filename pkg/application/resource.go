@@ -1,15 +1,15 @@
-package service
+package application
 
 import (
 	"context"
 	"fmt"
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/domain"
+	"github.com/PaulBarrie/infra-worker/pkg/domain/plugin"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
-	"github.com/PaulBarrie/infra-worker/pkg/plugin"
 	"github.com/PaulBarrie/infra-worker/pkg/repository"
 	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -66,7 +66,7 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dto.
 		Tags:             payload.ResourceSpecs["tags"].(map[string]string),
 	})
 
-	//_, err = service.PluginRepository.Create(ctx, option.Option{
+	//_, err = application.PluginRepository.CreateProject(ctx, option.Option{
 	//	Value: helm.CreateHelmReleaseRequest{
 	//		ChartName:    pluginReference.ChartName,
 	//		ChartVersion: pluginReference.ChartVersion,
