@@ -14,20 +14,20 @@ const (
 	RandomKubeConfigUUIDLength = 6
 )
 
-type Repository struct {
+type DAO struct {
 	Client dynamic.Interface
 }
 
-func Connect(ctx context.Context) (*Repository, errors.Error) {
+func Connect(ctx context.Context) (*DAO, errors.Error) {
 	// Build the configuration object
-	r := &Repository{}
+	r := &DAO{}
 	config := ctrl.GetConfigOrDie()
 	dynamicCli := dynamic.NewForConfigOrDie(config)
 	r.Client = dynamicCli
 	return r, errors.OK
 }
 
-func (r *Repository) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (r *DAO) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {
 	if option = option.SetType(reflect.TypeOf(GetResourceRequest{}).String()); !option.Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetResourceRequest{resourceId, namespace, name}",
@@ -44,12 +44,12 @@ func (r *Repository) Get(ctx context.Context, option option.Option) (interface{}
 	return resource, errors.OK
 }
 
-func (r *Repository) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
+func (r *DAO) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repository) GetAll(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (r *DAO) GetAll(ctx context.Context, option option.Option) (interface{}, errors.Error) {
 	if option = option.SetType(reflect.TypeOf(GetListResourceRequest{}).String()); !option.Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetListResourceRequest{resourceId, namespace, labels}",
@@ -69,22 +69,22 @@ func (r *Repository) GetAll(ctx context.Context, option option.Option) (interfac
 	return list.Items, errors.OK
 }
 
-func (r *Repository) Create(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (r *DAO) Create(ctx context.Context, option option.Option) (interface{}, errors.Error) {
 	//TODO implement
 	panic("implement me")
 }
 
-func (r *Repository) Update(ctx context.Context, option option.Option) errors.Error {
+func (r *DAO) Update(ctx context.Context, option option.Option) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repository) Delete(ctx context.Context, option option.Option) errors.Error {
+func (r *DAO) Delete(ctx context.Context, option option.Option) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repository) Close(context context.Context) errors.Error {
+func (r *DAO) Close(context context.Context) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }

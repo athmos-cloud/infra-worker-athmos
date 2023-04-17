@@ -9,7 +9,7 @@ type Metadata struct {
 	ID               string            `bson:"_id"`
 	Name             string            `bson:"name"`
 	Monitored        bool              `bson:"monitored,default=true"`
-	Tags             map[string]string `bson:"tags"`
+	Tags             map[string]string `bson:"tags,omitempty"`
 	ReleaseReference ReleaseReference  `bson:"releaseReference"`
 }
 

@@ -17,10 +17,10 @@ import (
 	"sync"
 )
 
-var Client *Mongo
+var Client *DAO
 var lock = &sync.Mutex{}
 
-type Mongo struct {
+type DAO struct {
 	Client   *mongo.Client
 	Database *mongo.Database
 }
@@ -43,7 +43,7 @@ func init() {
 			panic(err)
 		}
 		matchDB := client.Database(config.Database)
-		Client = &Mongo{
+		Client = &DAO{
 			Client:   client,
 			Database: matchDB,
 		}
@@ -51,7 +51,7 @@ func init() {
 }
 
 // Create args - context.Context - Payload interface{}
-func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -70,7 +70,7 @@ func (m *Mongo) Create(ctx context.Context, optn option.Option) (interface{}, er
 	return CreateResponse{Id: objectID.Hex()}, errors.OK
 }
 
-func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	// Collection string - Payload interface{} - Filter interface{}
 	if !optn.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
@@ -98,7 +98,7 @@ func (m *Mongo) Get(ctx context.Context, optn option.Option) (interface{}, error
 	return GetResponse{Payload: res}, errors.OK
 }
 
-func (m *Mongo) Exists(ctx context.Context, optn option.Option) (bool, errors.Error) {
+func (m *DAO) Exists(ctx context.Context, optn option.Option) (bool, errors.Error) {
 	if !optn.SetType(reflect.TypeOf(ExistsRequest{}).String()).Validate() {
 		return false, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -115,7 +115,7 @@ func (m *Mongo) Exists(ctx context.Context, optn option.Option) (bool, errors.Er
 	return count > 0, errors.OK
 }
 
-func (m *Mongo) GetAll(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) GetAll(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	if !optn.SetType(reflect.TypeOf(GetAllRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -149,7 +149,7 @@ func (m *Mongo) GetAll(ctx context.Context, optn option.Option) (interface{}, er
 	return GetAllResponse{Payload: res}, errors.OK
 }
 
-func (m *Mongo) Update(ctx context.Context, optn option.Option) errors.Error {
+func (m *DAO) Update(ctx context.Context, optn option.Option) errors.Error {
 	if !optn.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
 		return errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -165,7 +165,7 @@ func (m *Mongo) Update(ctx context.Context, optn option.Option) errors.Error {
 	return errors.OK
 }
 
-func (m *Mongo) Delete(ctx context.Context, optn option.Option) errors.Error {
+func (m *DAO) Delete(ctx context.Context, optn option.Option) errors.Error {
 	if !optn.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
 		return errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -186,7 +186,7 @@ func (m *Mongo) Delete(ctx context.Context, optn option.Option) errors.Error {
 	return errors.NoContent
 }
 
-func (m *Mongo) Close(ctx context.Context) errors.Error {
+func (m *DAO) Close(ctx context.Context) errors.Error {
 	err := m.Client.Disconnect(ctx)
 	if err != nil {
 		return errors.ExternalServiceError.WithMessage(err)

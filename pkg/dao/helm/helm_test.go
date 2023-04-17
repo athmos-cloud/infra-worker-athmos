@@ -29,7 +29,7 @@ func TestReleaseRepository_Create(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &ReleaseRepository{
+			r := &ReleaseDAO{
 				HelmClient: tt.fields.HelmClient,
 				Namespace:  tt.fields.Namespace,
 			}
@@ -63,7 +63,7 @@ func TestReleaseRepository_Delete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &ReleaseRepository{
+			r := &ReleaseDAO{
 				HelmClient: tt.fields.HelmClient,
 				Namespace:  tt.fields.Namespace,
 			}
@@ -94,7 +94,7 @@ func TestReleaseRepository_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &ReleaseRepository{
+			r := &ReleaseDAO{
 				HelmClient: tt.fields.HelmClient,
 				Namespace:  tt.fields.Namespace,
 			}
@@ -129,7 +129,7 @@ func TestReleaseRepository_GetAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &ReleaseRepository{
+			r := &ReleaseDAO{
 				HelmClient: tt.fields.HelmClient,
 				Namespace:  tt.fields.Namespace,
 			}
@@ -163,7 +163,7 @@ func TestReleaseRepository_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &ReleaseRepository{
+			r := &ReleaseDAO{
 				HelmClient: tt.fields.HelmClient,
 				Namespace:  tt.fields.Namespace,
 			}

@@ -84,7 +84,7 @@ func validateMetadataPlugin(entry map[string]interface{}) (map[string]interface{
 	return entry, errors.OK
 }
 
-func (p *Plugin) ValidateAndComplete(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
+func (p *Plugin) ValidateAndCompletePluginEntry(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
 	entry, err := validateMetadataPlugin(entry)
 	if !err.IsOk() {
 		return entry, err
@@ -101,7 +101,10 @@ func (p *Plugin) ValidateAndComplete(entry map[string]interface{}) (map[string]i
 }
 
 func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error {
-	validateVar := func(input Input, entry map[string]interface{}) errors.Error {
+	notAPrimaryTypeError := func(inputType string) errors.Error {
+		return errors.ValidationError.WithMessage(fmt.Sprintf("%s is not a primary type", inputType))
+	}
+	validatePrimitiveType := func(input Input, entry map[string]interface{}) errors.Error {
 		val := entry[input.Name]
 		if val == nil && input.Default == nil && input.Required {
 			return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
@@ -135,16 +138,18 @@ func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error
 			}
 			return errors.OK
 		}
-		return errors.ValidationError.WithMessage(fmt.Sprintf("%s is not a primary type", input.Type))
+		return notAPrimaryTypeError(input.Type)
 	}
-	if err := validateVar(i, entry); err.IsOk() {
+	if err := validatePrimitiveType(i, entry); err.IsOk() {
 		return errors.OK
 	}
 	for _, t := range types {
 		if t.Name == i.Type {
 			for name, input := range t.Fields {
 				input.Name = name
-				if err := validateVar(input, entry[t.Name].(map[string]interface{})); !err.IsOk() {
+				if err := validatePrimitiveType(input, entry[t.Name].(map[string]interface{})); reflect.DeepEqual(err, notAPrimaryTypeError(input.Type)) {
+					return input.Validate(entry[t.Name].(map[string]interface{}), types)
+				} else if !err.IsOk() {
 					return err
 				}
 			}
@@ -153,7 +158,7 @@ func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error
 			subEntry := entry[i.Name].([]map[string]interface{})
 			for _, sub := range subEntry {
 				for _, input := range t.Fields {
-					if err := validateVar(input, sub); !err.IsOk() {
+					if err := validatePrimitiveType(input, sub); !err.IsOk() {
 						return err
 					}
 				}

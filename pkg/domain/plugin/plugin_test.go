@@ -27,7 +27,7 @@ import (
 //panic(err)
 //}
 ////logger.Info.Println(plugin.Types[0])
-//if err1 := plugin.ValidateAndComplete(pluginEntry); !err1.IsOk() {
+//if err1 := plugin.ValidateAndCompletePluginEntry(pluginEntry); !err1.IsOk() {
 //logger.Info.Println(err1)
 //}
 
@@ -54,7 +54,7 @@ func TestValidateWithSubtypesShouldReturnOK(t *testing.T) {
 		t.Errorf("Error getting plugin: %v", err)
 	}
 	//logger.Info.Println(plugin.Types[0])
-	if _, err1 := plugin.ValidateAndComplete(pluginEntry); !err1.IsOk() {
+	if _, err1 := plugin.ValidateAndCompletePluginEntry(pluginEntry); !err1.IsOk() {
 		t.Errorf("Error validating plugin: %v", err1)
 	}
 }
@@ -81,7 +81,7 @@ func TestValidationWithSubtypeShouldReturnMissingValue(t *testing.T) {
 		t.Errorf("Error getting plugin: %v", err)
 	}
 	//logger.Info.Println(plugin.Types[0])
-	if _, err1 := plugin.ValidateAndComplete(pluginEntry); err1.IsOk() {
+	if _, err1 := plugin.ValidateAndCompletePluginEntry(pluginEntry); err1.IsOk() {
 		logger.Info.Println(err1)
 		t.Errorf("Validation should have failed")
 	}

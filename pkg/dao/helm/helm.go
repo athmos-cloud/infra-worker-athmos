@@ -22,10 +22,10 @@ const (
 	DefaultNamespace = "default"
 )
 
-var ReleaseClient *ReleaseRepository
+var ReleaseClient *ReleaseDAO
 var lock = &sync.Mutex{}
 
-type ReleaseRepository struct {
+type ReleaseDAO struct {
 	HelmClient helmclient.Client
 	Namespace  string
 }
@@ -43,7 +43,7 @@ func init() {
 	}
 }
 
-func client() (*ReleaseRepository, errors.Error) {
+func client() (*ReleaseDAO, errors.Error) {
 	kubeConfig, errFile := os.ReadFile(config.Current.Kubernetes.ConfigPath)
 	if errFile != nil {
 		msg := fmt.Sprintf("Error reading kube config file: %s", errFile)
@@ -74,19 +74,19 @@ func client() (*ReleaseRepository, errors.Error) {
 		})
 	logger.Info.Print("Plugins repo added")
 	if err != nil {
-		logger.Error.Printf("Error connecting to artifact repository:  %v", err)
+		logger.Error.Printf("Error connecting to artifact dao:  %v", err)
 		return nil, errors.ExternalServiceError.WithMessage(err)
 	}
-	helmClient := &ReleaseRepository{
+	helmClient := &ReleaseDAO{
 		HelmClient: cli,
 	}
 	return helmClient, errors.OK
 }
 
-// Get retrieves a Helm chart from the Helm repository
+// Get retrieves a Helm chart from the Helm dao
 // The argument must be a GetHelmReleaseRequest{chartName, chartVersion}
 // The return value is a map[string]interface{} representing the values of the Helm chart
-func (r *ReleaseRepository) Get(_ context.Context, optn option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) Get(_ context.Context, optn option.Option) (interface{}, errors.Error) {
 	if optn = optn.SetType(reflect.TypeOf(GetHelmReleaseRequest{}).String()); !optn.Validate() {
 		return nil, errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}")
 	}
@@ -98,12 +98,12 @@ func (r *ReleaseRepository) Get(_ context.Context, optn option.Option) (interfac
 	return GetHelmReleaseResponse{release}, errors.OK
 }
 
-func (r *ReleaseRepository) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
+func (r *ReleaseDAO) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *ReleaseRepository) Create(ctx context.Context, request option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interface{}, errors.Error) {
 	if request = request.SetType(reflect.TypeOf(CreateHelmReleaseRequest{}).String()); !request.Validate() {
 		return nil, errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}")
 	}
@@ -134,7 +134,7 @@ func (r *ReleaseRepository) Create(ctx context.Context, request option.Option) (
 	return release, errors.Created
 }
 
-func (r *ReleaseRepository) Update(ctx context.Context, request option.Option) errors.Error {
+func (r *ReleaseDAO) Update(ctx context.Context, request option.Option) errors.Error {
 	if request = request.SetType(reflect.TypeOf(CreateHelmReleaseRequest{}).String()); !request.Validate() {
 		return errors.InvalidArgument.WithMessage("Argument must be a UpdateHelmReleaseRequest{ReleaseName, ChartName, Namespace, Values}")
 	}
@@ -157,7 +157,7 @@ func (r *ReleaseRepository) Update(ctx context.Context, request option.Option) e
 	return errors.Accepted
 }
 
-func (r *ReleaseRepository) Delete(ctx context.Context, request option.Option) errors.Error {
+func (r *ReleaseDAO) Delete(ctx context.Context, request option.Option) errors.Error {
 	if request = request.SetType(reflect.TypeOf(DeleteHelmReleaseRequest{}).String()); !request.Validate() {
 		return errors.InvalidArgument.WithMessage("Argument must be a DeleteHelmReleaseRequest{ReleaseName}")
 	}
@@ -168,11 +168,11 @@ func (r *ReleaseRepository) Delete(ctx context.Context, request option.Option) e
 	return errors.OK
 }
 
-func (r *ReleaseRepository) GetAll(_ context.Context, _ option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
-func (r *ReleaseRepository) Close(_ context.Context) errors.Error {
+func (r *ReleaseDAO) Close(_ context.Context) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }

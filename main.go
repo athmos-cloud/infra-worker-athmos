@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/application"
+	"github.com/PaulBarrie/infra-worker/pkg/dao/mongo"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/http"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/queue"
-	"github.com/PaulBarrie/infra-worker/pkg/repository/mongo"
 )
 
 var (
@@ -20,8 +20,8 @@ func main() {
 	}
 	pluginService := application.PluginService{}
 	resourceService := application.ResourceService{
-		ProjectRepository: mongo.Client,
-		PluginRepository:  PluginRepository,
+		MongoDAO:         mongo.Client,
+		PluginRepository: PluginRepository,
 	}
 	server := http.New(&projectService, &pluginService, &resourceService)
 	queue.Queue.SetServices(&resourceService)
