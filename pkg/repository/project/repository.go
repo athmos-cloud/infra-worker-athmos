@@ -21,7 +21,7 @@ const (
 )
 
 type Repository struct {
-	MongoDAO mongo.DAO
+	MongoDAO *mongo.DAO
 }
 
 func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
@@ -86,7 +86,7 @@ func (repository *Repository) Get(ctx context.Context, optn option.Option) (inte
 	}, errors.OK
 }
 
-func (repository *Repository) Watch(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (repository *Repository) Watch(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }

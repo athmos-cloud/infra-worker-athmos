@@ -5,11 +5,11 @@ import (
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
-	repository "github.com/PaulBarrie/infra-worker/pkg/repository/project"
+	projectRepository "github.com/PaulBarrie/infra-worker/pkg/repository/project"
 )
 
 type ProjectService struct {
-	ProjectRepository repository.Repository
+	ProjectRepository *projectRepository.Repository
 }
 
 func (ps *ProjectService) CreateProject(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {

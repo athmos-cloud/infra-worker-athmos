@@ -8,23 +8,30 @@ import (
 	"k8s.io/client-go/dynamic"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sync"
 )
 
 const (
 	RandomKubeConfigUUIDLength = 6
 )
 
+var Client *DAO
+var lock = &sync.Mutex{}
+
 type DAO struct {
 	Client dynamic.Interface
 }
 
-func Connect(ctx context.Context) (*DAO, errors.Error) {
-	// Build the configuration object
-	r := &DAO{}
-	config := ctrl.GetConfigOrDie()
-	dynamicCli := dynamic.NewForConfigOrDie(config)
-	r.Client = dynamicCli
-	return r, errors.OK
+func init() {
+	lock.Lock()
+	defer lock.Unlock()
+	if Client == nil {
+		config := ctrl.GetConfigOrDie()
+		dynamicCli := dynamic.NewForConfigOrDie(config)
+		Client = &DAO{
+			Client: dynamicCli,
+		}
+	}
 }
 
 func (r *DAO) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {

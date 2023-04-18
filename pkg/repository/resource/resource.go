@@ -14,20 +14,20 @@ import (
 )
 
 type Repository struct {
-	KubernetesDAO kubernetes.DAO
-	HelmDAO       helm.ReleaseDAO
+	KubernetesDAO *kubernetes.DAO
+	HelmDAO       *helm.ReleaseDAO
 }
 
 func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if optn.SetType(reflect.TypeOf(dtoResource.CreateResourceRequest{}).String()).Validate() {
+	if optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v",
-				reflect.TypeOf(dtoResource.CreateResourceRequest{}).Kind(), optn.Value,
+				reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
 			),
 		)
 	}
-	request := optn.Value.(dtoResource.CreateResourceRequest)
+	request := optn.Value.(CreateRequest)
 	curPlugin, err := plugin.Get(request.ProviderType, request.ResourceType)
 	if !err.IsOk() {
 		return dtoResource.CreateResourceResponse{}, err
