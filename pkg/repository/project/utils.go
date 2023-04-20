@@ -1,8 +1,8 @@
 package project
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/domain"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

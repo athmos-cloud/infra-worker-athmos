@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/common"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 )
 
 type GetListResourceRequest struct {

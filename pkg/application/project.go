@@ -2,10 +2,10 @@ package application
 
 import (
 	"context"
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
-	projectRepository "github.com/PaulBarrie/infra-worker/pkg/repository/project"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
 )
 
 type ProjectService struct {

@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/PaulBarrie/infra-worker/pkg/application"
-	"github.com/PaulBarrie/infra-worker/pkg/dao/mongo"
-	"github.com/PaulBarrie/infra-worker/pkg/exposition/http"
-	"github.com/PaulBarrie/infra-worker/pkg/exposition/queue"
-	projectRepository "github.com/PaulBarrie/infra-worker/pkg/repository/project"
-	resourceRepository "github.com/PaulBarrie/infra-worker/pkg/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/http"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/queue"
+	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
+	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
 )
 
 var (

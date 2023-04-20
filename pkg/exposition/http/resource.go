@@ -3,8 +3,8 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/common"
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/gin-gonic/gin"
 )
 

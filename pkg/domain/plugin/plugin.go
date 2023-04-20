@@ -2,9 +2,9 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/common"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"

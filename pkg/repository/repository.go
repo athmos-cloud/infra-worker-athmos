@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 )
 
 type IRepository interface {

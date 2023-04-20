@@ -3,8 +3,8 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"

@@ -2,8 +2,8 @@ package helm
 
 import (
 	"context"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	helmclient "github.com/mittwald/go-helm-client"
 	"reflect"
 	"testing"

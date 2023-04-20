@@ -3,7 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	dtoProject "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
+	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/gin-gonic/gin"
 )
 

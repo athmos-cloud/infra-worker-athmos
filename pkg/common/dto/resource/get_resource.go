@@ -1,6 +1,6 @@
 package resource
 
-import "github.com/PaulBarrie/infra-worker/pkg/common"
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 
 type GetResourceRequest struct {
 	Provider     common.ProviderType `json:"provider"`

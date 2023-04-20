@@ -3,10 +3,10 @@ package project
 import (
 	"context"
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/dao/mongo"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"go.mongodb.org/mongo-driver/bson"
 )
 

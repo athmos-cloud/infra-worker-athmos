@@ -1,6 +1,6 @@
 package resource
 
-import "github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 type DeleteResourceRequest struct {
 	ProjectID    string `json:"project_id"`

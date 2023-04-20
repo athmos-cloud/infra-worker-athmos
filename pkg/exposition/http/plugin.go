@@ -1,8 +1,8 @@
 package http
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/common"
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/plugin"
 	"github.com/gin-gonic/gin"
 )
 

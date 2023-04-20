@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"testing"
 )
 

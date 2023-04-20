@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/domain"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 )
 
 type GetProjectByIDRequest struct {

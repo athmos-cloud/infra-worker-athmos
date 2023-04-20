@@ -3,7 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"reflect"
 	"strconv"
 )

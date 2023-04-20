@@ -2,9 +2,9 @@ package queue
 
 import (
 	"context"
-	"github.com/PaulBarrie/infra-worker/pkg/application"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/streadway/amqp"
 	"log"
 	"sync"

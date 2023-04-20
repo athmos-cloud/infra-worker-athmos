@@ -1,8 +1,8 @@
 package domain
 
 import (
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
 
 type Subnetwork struct {

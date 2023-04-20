@@ -3,9 +3,9 @@ package queue
 import (
 	"context"
 	"encoding/json"
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/streadway/amqp"
 )
 

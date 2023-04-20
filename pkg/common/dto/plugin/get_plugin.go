@@ -1,8 +1,8 @@
 package plugin
 
 import (
-	"github.com/PaulBarrie/infra-worker/pkg/common"
-	"github.com/PaulBarrie/infra-worker/pkg/domain/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/plugin"
 )
 
 type GetPluginRequest struct {

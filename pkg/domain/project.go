@@ -2,7 +2,7 @@ package domain
 
 import (
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
 

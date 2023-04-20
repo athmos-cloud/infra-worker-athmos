@@ -2,13 +2,13 @@ package application
 
 import (
 	"context"
-	dtoProject "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
-	dtoResource "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
-	"github.com/PaulBarrie/infra-worker/pkg/repository"
-	resourceRepository "github.com/PaulBarrie/infra-worker/pkg/repository/resource"
+	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
+	dtoResource "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
+	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
 	"helm.sh/helm/v3/pkg/release"
 )
 

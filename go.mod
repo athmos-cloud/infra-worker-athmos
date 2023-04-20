@@ -1,4 +1,4 @@
-module github.com/PaulBarrie/infra-worker
+module github.com/athmos-cloud/infra-worker-athmos
 
 go 1.19
 

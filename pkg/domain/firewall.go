@@ -2,11 +2,11 @@ package domain
 
 import (
 	"fmt"
-	"github.com/PaulBarrie/infra-worker/pkg/common"
-	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
-	"github.com/PaulBarrie/infra-worker/pkg/kernel/utils"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 )
 
 type Firewall struct {
