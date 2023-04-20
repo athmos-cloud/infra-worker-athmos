@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"github.com/PaulBarrie/infra-worker/pkg/application"
-	"github.com/PaulBarrie/infra-worker/pkg/dao/helm"
-	"github.com/PaulBarrie/infra-worker/pkg/dao/kubernetes"
 	"github.com/PaulBarrie/infra-worker/pkg/dao/mongo"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/http"
 	"github.com/PaulBarrie/infra-worker/pkg/exposition/queue"
@@ -19,20 +17,13 @@ var (
 
 func main() {
 	ctx := context.Background()
-	projectRepo := &projectRepository.Repository{
-		MongoDAO: mongo.Client,
-	}
-	pluginRepo := &resourceRepository.Repository{
-		KubernetesDAO: kubernetes.Client,
-		HelmDAO:       helm.ReleaseClient,
-	}
 	projectService := application.ProjectService{
-		ProjectRepository: projectRepo,
+		ProjectRepository: projectRepository.ProjectRepository,
 	}
 	pluginService := application.PluginService{}
 	resourceService := application.ResourceService{
-		ProjectRepository:  projectRepo,
-		ResourceRepository: pluginRepo,
+		ProjectRepository:  projectRepository.ProjectRepository,
+		ResourceRepository: resourceRepository.ResourceRepository,
 	}
 	server := http.New(&projectService, &pluginService, &resourceService)
 	queue.Queue.SetServices(&resourceService)

@@ -9,9 +9,25 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/domain"
 	"github.com/PaulBarrie/infra-worker/pkg/domain/plugin"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"reflect"
+	"sync"
 )
+
+var ResourceRepository *Repository
+var lock = &sync.Mutex{}
+
+func init() {
+	lock.Lock()
+	defer lock.Unlock()
+	if ResourceRepository == nil {
+		ResourceRepository = &Repository{
+			KubernetesDAO: kubernetes.Client,
+			HelmDAO:       helm.ReleaseClient,
+		}
+	}
+}
 
 type Repository struct {
 	KubernetesDAO *kubernetes.DAO
@@ -19,14 +35,15 @@ type Repository struct {
 }
 
 func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
+	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
 		return nil, errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v",
+				"Invalid argument type, expected CreateRequest, got %v",
 				reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
 			),
 		)
 	}
+	logger.Info.Printf("Creating resource %v", optn.Value)
 	request := optn.Value.(CreateRequest)
 	curPlugin, err := plugin.Get(request.ProviderType, request.ResourceType)
 	if !err.IsOk() {
@@ -52,18 +69,31 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 		NotMonitored:     !(completedPayload["monitored"].(bool)),
 		Tags:             completedPayload["tags"].(map[string]string),
 	})
+	logger.Info.Printf("Creating resource %s", pluginReference.ChartName)
 
-	return repository.HelmDAO.Create(ctx, option.Option{
-		Value: option.Option{
-			Value: helm.CreateHelmReleaseRequest{
-				ReleaseName:  resource.GetMetadata().Name,
-				ChartName:    pluginReference.ChartName,
-				ChartVersion: pluginReference.ChartVersion,
-				Values:       completedPayload,
-				Namespace:    request.ProjectNamespace,
-			},
+	resp, err := repository.HelmDAO.Create(ctx, option.Option{
+		Value: helm.CreateHelmReleaseRequest{
+			ReleaseName:  resource.GetMetadata().Name,
+			ChartName:    pluginReference.ChartName,
+			ChartVersion: pluginReference.ChartVersion,
+			Values:       completedPayload,
+			Namespace:    request.ProjectNamespace,
 		},
 	})
+	if !err.IsOk() {
+		logger.Info.Printf("Error creating resource %s", resource.GetMetadata().Name)
+		return dtoResource.CreateResourceResponse{}, err
+	}
+	// Parse manifest
+
+	// Insert into project
+
+	// Persist project
+
+	return dtoResource.CreateResourceResponse{
+		ResourceID:  resource.GetMetadata().ID,
+		HelmRelease: resp.(helm.CreateHelmReleaseResponse).Release,
+	}, errors.OK
 }
 
 func (repository *Repository) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {
@@ -82,7 +112,6 @@ func (repository *Repository) List(ctx context.Context, option option.Option) (i
 }
 
 func (repository *Repository) Update(ctx context.Context, option option.Option) errors.Error {
-	//TODO implement me
 	panic("implement me")
 }
 

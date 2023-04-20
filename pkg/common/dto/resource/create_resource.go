@@ -2,6 +2,7 @@ package resource
 
 import (
 	"github.com/PaulBarrie/infra-worker/pkg/common"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 type CreateResourceRequest struct {
@@ -12,5 +13,6 @@ type CreateResourceRequest struct {
 }
 
 type CreateResourceResponse struct {
-	ResourceID string
+	ResourceID  string
+	HelmRelease *release.Release
 }

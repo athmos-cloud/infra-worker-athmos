@@ -3,12 +3,13 @@ package helm
 import (
 	"context"
 	"fmt"
+	"github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"github.com/ghodss/yaml"
-	"github.com/mittwald/go-helm-client"
+	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/repo"
 	"os"
 	"reflect"
@@ -20,6 +21,7 @@ const (
 	RepositoryCache  = "/tmp/.helmcache"
 	RepositoryConfig = "/tmp/.helmconfig"
 	DefaultNamespace = "default"
+	pluginsRepoName  = "plugins"
 )
 
 var ReleaseClient *ReleaseDAO
@@ -67,12 +69,12 @@ func client() (*ReleaseDAO, errors.Error) {
 	}
 	err = cli.AddOrUpdateChartRepo(
 		repo.Entry{
-			Name:     "plugins",
+			Name:     pluginsRepoName,
 			URL:      config.Current.Plugins.Crossplane.Registry.Address,
 			Username: config.Current.Plugins.Crossplane.Registry.Username,
 			Password: config.Current.Plugins.Crossplane.Registry.Password,
 		})
-	logger.Info.Print("Plugins repo added")
+	logger.Info.Printf("Plugins repo added: %s", config.Current.Plugins.Crossplane.Registry.Address)
 	if err != nil {
 		logger.Error.Printf("Error connecting to artifact dao:  %v", err)
 		return nil, errors.ExternalServiceError.WithMessage(err)
@@ -112,10 +114,11 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interfa
 	if err1 != nil {
 		return "", errors.InternalError.WithMessage(err1)
 	}
+
 	release, err2 := r.HelmClient.InstallChart(
 		ctx,
 		&helmclient.ChartSpec{
-			ChartName:     args.ChartName,
+			ChartName:     fmt.Sprintf("%s/%s", pluginsRepoName, args.ChartName),
 			ReleaseName:   args.ReleaseName,
 			Version:       args.ChartVersion,
 			ValuesYaml:    string(yamlBytes),
@@ -124,6 +127,7 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interfa
 		},
 		&helmclient.GenericHelmOptions{},
 	)
+
 	if err2 != nil {
 		logger.Error.Printf("Error installing chart :  %v", err2)
 		return nil, errors.ExternalServiceError.WithMessage(
@@ -131,12 +135,12 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interfa
 		)
 	}
 
-	return release, errors.Created
+	return resource.CreateResourceResponse{HelmRelease: release}, errors.Created
 }
 
 func (r *ReleaseDAO) Update(ctx context.Context, request option.Option) errors.Error {
 	if request = request.SetType(reflect.TypeOf(CreateHelmReleaseRequest{}).String()); !request.Validate() {
-		return errors.InvalidArgument.WithMessage("Argument must be a UpdateHelmReleaseRequest{ReleaseName, ChartName, Namespace, Values}")
+		return errors.InvalidArgument.WithMessage("Argument must be a UpdateHelmReleaseRequest{ReleaseName, Chart, Namespace, Values}")
 	}
 	args := request.Get().(CreateHelmReleaseRequest)
 	yamlBytes, err1 := yaml.Marshal(args.Values)
@@ -172,6 +176,7 @@ func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) (interface{}, er
 	//TODO implement me
 	panic("implement me")
 }
+
 func (r *ReleaseDAO) Close(_ context.Context) errors.Error {
 	//TODO implement me
 	panic("implement me")

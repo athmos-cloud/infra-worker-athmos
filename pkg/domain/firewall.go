@@ -53,7 +53,7 @@ func (firewall *Firewall) GetPluginReference(request dto.GetPluginReferenceReque
 	switch request.ProviderType {
 	case common.GCP:
 		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Firewall.ChartName,
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Firewall.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Firewall.Version,
 		}, errors.Error{}
 	}

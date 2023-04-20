@@ -13,3 +13,7 @@ type GetListResourceRequest struct {
 	Namespace  string
 	Labels     map[string]string
 }
+
+type CreateNamespaceRequest struct {
+	Name string
+}

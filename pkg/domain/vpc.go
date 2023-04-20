@@ -26,7 +26,7 @@ func (vpc *VPC) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.G
 	switch request.ProviderType {
 	case common.GCP:
 		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.VPC.ChartName,
+			ChartName:    config.Current.Plugins.Crossplane.GCP.VPC.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.VPC.Version,
 		}, errors.Error{}
 	}

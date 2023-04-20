@@ -32,11 +32,11 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		if errUnmarshall != nil {
 			return
 		}
-		logger.Info.Println(payload)
-		_, svcErr := queue.ResourceService.CreateResource(ctx, payload)
+		resp, svcErr := queue.ResourceService.CreateResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
+		logger.Info.Printf("Message response : %s", resp)
 	case UPDATE:
 		var payload dto.UpdateResourceRequest
 

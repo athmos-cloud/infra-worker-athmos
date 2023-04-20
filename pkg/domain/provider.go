@@ -29,7 +29,7 @@ func (provider *Provider) GetPluginReference(request dto.GetPluginReferenceReque
 	switch request.ProviderType {
 	case common.GCP:
 		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.ChartName,
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Provider.Version,
 		}, errors.Error{}
 	}

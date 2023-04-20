@@ -8,3 +8,9 @@ type CreateRequest struct {
 	ResourceType     common.ResourceType
 	ResourceSpecs    map[string]interface{}
 }
+
+type UpdateRequest struct {
+	ReleaseName      string
+	ReleaseVersion   string
+	NewResourceSpecs map[string]interface{}
+}

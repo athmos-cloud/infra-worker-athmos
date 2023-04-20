@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	dto "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
+	"github.com/PaulBarrie/infra-worker/pkg/dao/kubernetes"
 	"github.com/PaulBarrie/infra-worker/pkg/dao/mongo"
 	"github.com/PaulBarrie/infra-worker/pkg/domain"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
+	"sync"
 )
 
 const (
@@ -20,8 +22,23 @@ const (
 	OwnerIDDocumentKey = "owner_id"
 )
 
+var ProjectRepository *Repository
+var lock = &sync.Mutex{}
+
 type Repository struct {
-	MongoDAO *mongo.DAO
+	MongoDAO      *mongo.DAO
+	kubernetesDAO *kubernetes.DAO
+}
+
+func init() {
+	lock.Lock()
+	defer lock.Unlock()
+	if ProjectRepository == nil {
+		ProjectRepository = &Repository{
+			MongoDAO:      mongo.Client,
+			kubernetesDAO: kubernetes.Client,
+		}
+	}
 }
 
 func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
@@ -37,11 +54,20 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 		return nil, err
 	}
 
+	projectNamespace := fmt.Sprintf("%s-%s", request.ProjectName, utils.RandomString(5))
+	_, err := repository.kubernetesDAO.Create(ctx, option.Option{
+		Value: kubernetes.CreateNamespaceRequest{
+			Name: projectNamespace,
+		},
+	})
+	if !err.IsOk() {
+		return nil, err
+	}
 	// Persist
 	newProject := domain.Project{
 		Name:      request.ProjectName,
 		OwnerID:   request.OwnerID,
-		Namespace: fmt.Sprintf("%s-%s", request.ProjectName, utils.RandomString(5)),
+		Namespace: projectNamespace,
 	}
 	mongoRequest := mongo.CreateRequest{
 		Payload:        newProject,

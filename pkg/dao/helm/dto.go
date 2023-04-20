@@ -18,6 +18,9 @@ type CreateHelmReleaseRequest struct {
 	Namespace    string
 }
 
+type CreateHelmReleaseResponse struct {
+	Release *release.Release
+}
 type UpdateHelmReleaseRequest struct {
 	ReleaseName string
 	ChartName   string

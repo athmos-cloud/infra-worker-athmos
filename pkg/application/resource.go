@@ -5,9 +5,11 @@ import (
 	dtoProject "github.com/PaulBarrie/infra-worker/pkg/common/dto/project"
 	dtoResource "github.com/PaulBarrie/infra-worker/pkg/common/dto/resource"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/errors"
+	"github.com/PaulBarrie/infra-worker/pkg/kernel/logger"
 	"github.com/PaulBarrie/infra-worker/pkg/kernel/option"
 	"github.com/PaulBarrie/infra-worker/pkg/repository"
 	resourceRepository "github.com/PaulBarrie/infra-worker/pkg/repository/resource"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 type ResourceService struct {
@@ -26,9 +28,9 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dtoR
 	if !err.IsOk() {
 		return dtoResource.CreateResourceResponse{}, err
 	}
-
+	logger.Info.Printf("Current project: %v", currentProject)
 	// Install Resource
-	_, err = service.ResourceRepository.Create(ctx, option.Option{
+	resp, err := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
 			ProjectNamespace: currentProject.Namespace,
 			ProviderType:     payload.ProviderType,
@@ -37,7 +39,13 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dtoR
 		},
 	})
 
-	return dtoResource.CreateResourceResponse{}, errors.OK
+	logger.Info.Printf("Response: %v", resp)
+	if !err.IsOk() {
+		logger.Info.Printf("Error creating resource : %v", err)
+		return dtoResource.CreateResourceResponse{}, err
+	}
+
+	return dtoResource.CreateResourceResponse{ResourceID: "", HelmRelease: resp.(*release.Release)}, errors.OK
 }
 
 func (service *ResourceService) GetResource(ctx context.Context, payload dtoResource.GetResourceRequest) (dtoResource.CreateResourceResponse, errors.Error) {

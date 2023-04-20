@@ -75,8 +75,8 @@ type ProviderPlugins struct {
 }
 
 type ProviderPluginItem struct {
-	ChartName string `yaml:"chart"`
-	Version   string `yaml:"version"`
+	Chart   string `yaml:"chart"`
+	Version string `yaml:"version"`
 }
 
 type Mongo struct {
