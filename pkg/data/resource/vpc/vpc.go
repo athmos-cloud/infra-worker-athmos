@@ -4,18 +4,26 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	domain2 "github.com/athmos-cloud/infra-worker-athmos/pkg/data/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 )
 
 type VPC struct {
-	Metadata domain.Metadata              `bson:"metadata"`
-	Provider string                       `bson:"provider"`
-	Networks map[string]resources.Network `bson:"networks"`
+	Metadata            domain.Metadata              `bson:"metadata"`
+	KubernetesResources kubernetes.ResourceList      `bson:"kubernetesResources"`
+	Identifier          VPCIdentifier                `bson:"hierarchyLocation"`
+	Provider            string                       `bson:"provider"`
+	Networks            map[string]resources.Network `bson:"networks"`
+}
+
+type VPCIdentifier struct {
+	ID         string
+	ProviderID string
+	SubnetID   string
 }
 
 func (vpc *VPC) WithMetadata(request domain.CreateMetadataRequest) {
@@ -38,12 +46,6 @@ func (vpc *VPC) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.G
 }
 
 func (vpc *VPC) FromMap(data map[string]interface{}) errors.Error {
-	*vpc = VPC{}
-	if data["id"] == nil {
-		vpc.Metadata.ID = utils.GenerateUUID()
-	} else {
-		vpc.Metadata.ID = data["id"].(string)
-	}
 	if data["name"] == nil {
 		return errors.InvalidArgument.WithMessage("name is required")
 	}
@@ -53,13 +55,18 @@ func (vpc *VPC) FromMap(data map[string]interface{}) errors.Error {
 func (vpc *VPC) InsertIntoProject(project domain2.Project, upsert bool) errors.Error {
 	for _, r := range project.Resources {
 		for _, v := range r.VPCs {
-			if v.Metadata.ID == vpc.Metadata.ID && upsert {
+			if v.Identifier.ID == vpc.Identifier.ID && upsert {
 				v = *vpc
 				return errors.OK
-			} else if v.Metadata.ID == vpc.Metadata.ID && !upsert {
+			} else if v.Identifier.ID == vpc.Identifier.ID && !upsert {
 				return errors.AlreadyExists.WithMessage("vpc already exists")
 			}
 		}
 	}
 	return errors.OK
+}
+
+func (vpc *VPC) ToDomain() (interface{}, errors.Error) {
+	//TODO implement me
+	panic("implement me")
 }

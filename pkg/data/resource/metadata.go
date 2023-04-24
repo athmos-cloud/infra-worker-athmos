@@ -6,7 +6,6 @@ import (
 )
 
 type Metadata struct {
-	ID               string            `bson:"_id"`
 	Name             string            `bson:"name"`
 	Monitored        bool              `bson:"monitored,default=true"`
 	Tags             map[string]string `bson:"tags,omitempty"`
@@ -22,7 +21,6 @@ type CreateMetadataRequest struct {
 
 func New(request CreateMetadataRequest) Metadata {
 	return Metadata{
-		ID:        utils.GenerateUUID(),
 		Name:      request.Name,
 		Monitored: !request.NotMonitored,
 		Tags:      request.Tags,

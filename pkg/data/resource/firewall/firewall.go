@@ -13,18 +13,19 @@ import (
 )
 
 type Firewall struct {
-	Metadata            domain.Metadata `bson:"metadata"`
-	KubernetesResources kubernetes.ResourceList
-	Network             string   `bson:"network"`
-	HierarchyLocation   string   `bson:"hierarchyLocation"`
-	Allow               RuleList `bson:"allow"`
-	Deny                RuleList `bson:"deny"`
+	Metadata            domain.Metadata         `bson:"metadata"`
+	Identifier          Identifier              `bson:"identifier"`
+	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
+	Network             string                  `bson:"network"`
+	Allow               RuleList                `bson:"allow"`
+	Deny                RuleList                `bson:"deny"`
 }
 
-type FirewallHierarchyLocation struct {
-	ProviderID string
-	VPCID      string
-	NetworkID  string
+type Identifier struct {
+	ID         string `bson:"id"`
+	ProviderID string `bson:"providerId"`
+	VPCID      string `bson:"vpcId"`
+	NetworkID  string `bson:"networkId"`
 }
 
 type Rule struct {
@@ -74,9 +75,9 @@ func (firewall *Firewall) GetPluginReference(request dto.GetPluginReferenceReque
 func (firewall *Firewall) FromMap(data map[string]interface{}) errors.Error {
 	*firewall = Firewall{}
 	if data["id"] == nil {
-		firewall.Metadata.ID = utils.GenerateUUID()
+		firewall.Identifier.ID = utils.GenerateUUID()
 	} else {
-		firewall.Metadata.ID = data["id"].(string)
+		firewall.Identifier.ID = data["id"].(string)
 	}
 	if data["name"] == nil {
 		return errors.InvalidArgument.WithMessage("name is required")
@@ -100,5 +101,10 @@ func (firewall *Firewall) FromMap(data map[string]interface{}) errors.Error {
 }
 
 func (firewall *Firewall) InsertIntoProject(project domain2.Project, upsert bool) errors.Error {
+	panic("implement me")
+}
+
+func (firewall *Firewall) ToDomain() (interface{}, errors.Error) {
+	//TODO implement me
 	panic("implement me")
 }

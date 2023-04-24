@@ -9,6 +9,7 @@ import (
 
 type VM struct {
 	Metadata    domain.Metadata `bson:"metadata"`
+	Identifier  VMIdentifier    `bson:"identifier"`
 	VPC         string          `bson:"vpc"`
 	Network     string          `bson:"network"`
 	Subnetwork  string          `bson:"subnetwork"`
@@ -19,7 +20,8 @@ type VM struct {
 	OS          OS              `bson:"os"`
 }
 
-type VMHierarchyLocation struct {
+type VMIdentifier struct {
+	ID         string
 	ProviderID string
 	VPCID      string
 	NetworkID  string
@@ -69,6 +71,11 @@ func (vm *VM) FromMap(data map[string]interface{}) errors.Error {
 }
 
 func (vm *VM) InsertIntoProject(project domain2.Project, upsert bool) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (vm *VM) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }

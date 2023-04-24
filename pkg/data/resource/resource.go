@@ -11,5 +11,6 @@ type IResource interface {
 	FromMap(map[string]interface{}) errors.Error
 	WithMetadata(metadata CreateMetadataRequest)
 	GetMetadata() Metadata
+	ToDomain() (interface{}, errors.Error)
 	InsertIntoProject(project domain.Project, upsert bool) errors.Error
 }

@@ -2,6 +2,7 @@ package resources
 
 import (
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	domain2 "github.com/athmos-cloud/infra-worker-athmos/pkg/data/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/firewall"
@@ -10,12 +11,15 @@ import (
 )
 
 type Network struct {
-	Metadata    domain.Metadata                  `bson:"metadata"`
-	Subnetworks map[string]resources2.Subnetwork `bson:"subnetworks"`
-	Firewalls   map[string]resources.Firewall    `bson:"firewalls"`
+	Metadata            domain.Metadata                  `bson:"metadata"`
+	Identifier          Identifier                       `bson:"identifier"`
+	KubernetesResources kubernetes.ResourceList          `bson:"kubernetesResources"`
+	Subnetworks         map[string]resources2.Subnetwork `bson:"subnetworks"`
+	Firewalls           map[string]resources.Firewall    `bson:"firewalls"`
 }
 
-type NetworkHierarchyLocation struct {
+type Identifier struct {
+	ID         string
 	ProviderID string
 	VPCID      string
 }
@@ -39,6 +43,11 @@ func (network *Network) FromMap(m map[string]interface{}) errors.Error {
 }
 
 func (network *Network) InsertIntoProject(project domain2.Project, upsert bool) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (network *Network) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
 }
