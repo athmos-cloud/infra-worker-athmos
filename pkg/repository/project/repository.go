@@ -6,7 +6,7 @@ import (
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"

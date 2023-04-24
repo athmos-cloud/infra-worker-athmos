@@ -2,23 +2,25 @@ package domain
 
 import (
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/provider"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
 
 type Project struct {
-	ID        string       `bson:"_id,omitempty"`
-	Name      string       `bson:"name"`
-	Namespace string       `bson:"namespace"`
-	OwnerID   string       `bson:"owner_id"`
-	Resources ProviderList `bson:"providers"`
+	ID        string                 `bson:"_id,omitempty"`
+	Name      string                 `bson:"name"`
+	Namespace string                 `bson:"namespace"`
+	OwnerID   string                 `bson:"owner_id"`
+	Resources resources.ProviderList `bson:"providers"`
 }
 
-func (project *Project) Insert(resource IResource) errors.Error {
-	if reflect.TypeOf(resource) != reflect.TypeOf(&Provider{}) {
+func (project *Project) Insert(resource domain.IResource) errors.Error {
+	if reflect.TypeOf(resource) != reflect.TypeOf(&resources.Provider{}) {
 
 	}
-	provider := resource.(*Provider)
+	provider := resource.(*resources.Provider)
 	for _, p := range project.Resources {
 		if p.Metadata.Name == provider.Metadata.Name {
 			return errors.AlreadyExists.WithMessage(

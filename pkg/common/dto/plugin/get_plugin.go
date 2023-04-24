@@ -2,7 +2,7 @@ package plugin
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 )
 
 type GetPluginRequest struct {

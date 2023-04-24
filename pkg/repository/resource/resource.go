@@ -6,8 +6,8 @@ import (
 	dtoResource "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/helm"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	domain2 "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -53,7 +53,7 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 	if !err.IsOk() {
 		return dtoResource.CreateResourceResponse{}, err
 	}
-	resource := domain.Factory(request.ResourceType)
+	resource := domain2.Factory(request.ResourceType)
 	// Execute curPlugin
 	pluginReference, err := resource.GetPluginReference(dtoResource.GetPluginReferenceRequest{
 		ProviderType: request.ProviderType,
@@ -63,7 +63,7 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 	}
 	// Validator
 	resource.FromMap(request.ResourceSpecs)
-	resource.WithMetadata(domain.CreateMetadataRequest{
+	resource.WithMetadata(domain2.CreateMetadataRequest{
 		Name:             completedPayload["name"].(string),
 		ProjectNamespace: request.ProjectNamespace,
 		NotMonitored:     !(completedPayload["monitored"].(bool)),

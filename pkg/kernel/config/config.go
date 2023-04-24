@@ -98,9 +98,13 @@ type Postgres struct {
 }
 
 func init() {
-	Current = &Config{}
-	readEnv()
-	readFile()
+	lock.Lock()
+	defer lock.Unlock()
+	if Current == nil {
+		Current = &Config{}
+		readEnv()
+		readFile()
+	}
 }
 
 func readFile() {
