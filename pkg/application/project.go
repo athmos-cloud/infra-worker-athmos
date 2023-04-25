@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -33,7 +34,7 @@ func (ps *ProjectService) UpdateProjectName(ctx context.Context, request dto.Upd
 }
 
 func (ps *ProjectService) GetProjectByID(ctx context.Context, request dto.GetProjectByIDRequest) (dto.GetProjectByIDResponse, errors.Error) {
-	resp, err := ps.ProjectRepository.Create(ctx, option.Option{
+	resp, err := ps.ProjectRepository.Get(ctx, option.Option{
 		Value: request,
 	})
 	if !err.IsOk() {

@@ -1,8 +1,9 @@
-FROM golang:1.19.3-alpine
+FROM golang:1.20-bullseye
+
+RUN apt-get update && apt-get install -y gcc openssl git curl\
+    make openssh-client
 
 WORKDIR /go/src/app
-
-RUN apk add -U build-base bash
 
 ADD . .
 ADD _plugins /etc/athmos/plugins
