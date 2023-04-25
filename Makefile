@@ -13,10 +13,14 @@ _clear-plugins:
 	@rm -rf .plugins
 .PHONY: _clear-plugins
 
-test: _plugins
+test-docker: _plugins
 	$(MAKE) _build-docker DOCKERFILE=Dockerfile_test DOCKER_IMAGE=infra-worker-test
 	@docker run --env CONFIG_FILE_LOCATION="/go/src/app/config.yaml" infra-worker-test
 	$(MAKE)  _clear-plugins
+.PHONY: test
+
+test:
+	@CONFIG_FILE_LOCATION="$(shell pwd)/config.yaml" go test -v ./...
 .PHONY: test
 
 _build-docker:

@@ -1,4 +1,4 @@
-package domain
+package metadata
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ func New(request CreateMetadataRequest) Metadata {
 		ReleaseReference: ReleaseReference{
 			Name:      fmt.Sprintf("%s-%s", request.Name, utils.GenerateUUID()),
 			Namespace: request.ProjectNamespace,
-			Versions:  []string{},
+			Versions:  make([]string, 0),
 		},
 	}
 }

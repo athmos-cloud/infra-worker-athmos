@@ -18,7 +18,7 @@ type ResourceService struct {
 }
 
 func (service *ResourceService) CreateResource(ctx context.Context, payload dtoResource.CreateResourceRequest) (dtoResource.CreateResourceResponse, errors.Error) {
-	// Get project
+	// Get resource
 	response, err := service.ProjectRepository.Get(ctx, option.Option{
 		Value: dtoProject.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
@@ -28,7 +28,7 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dtoR
 	if !err.IsOk() {
 		return dtoResource.CreateResourceResponse{}, err
 	}
-	logger.Info.Printf("Current project: %v", currentProject)
+	logger.Info.Printf("Current resource: %v", currentProject)
 	// Install Resource
 	resp, err := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{

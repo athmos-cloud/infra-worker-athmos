@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine
+FROM --platform linux/amd64 golang:1.19.3-alpine
 
 RUN apk add -U build-base git curl\
     make openssh-client
