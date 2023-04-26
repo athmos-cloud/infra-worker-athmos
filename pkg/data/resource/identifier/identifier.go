@@ -1,5 +1,7 @@
 package identifier
 
+type ID interface{}
+
 type Provider struct {
 	ID string `bson:"id"`
 }

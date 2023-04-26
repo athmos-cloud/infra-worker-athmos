@@ -10,26 +10,6 @@ import (
 	"testing"
 )
 
-func TestNewSubnetwork(t *testing.T) {
-	type args struct {
-		id identifier.Subnetwork
-	}
-	tests := []struct {
-		name string
-		args args
-		want Subnetwork
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewSubnetwork(tt.args.id); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewSubnetwork() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestSubnetwork_FromMap(t *testing.T) {
 	type fields struct {
 		Metadata            metadata.Metadata
@@ -66,43 +46,6 @@ func TestSubnetwork_FromMap(t *testing.T) {
 			}
 			if got := subnet.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSubnetwork_GetMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   metadata.Metadata
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			if got := subnet.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -302,44 +245,6 @@ func TestSubnetwork_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
-		})
-	}
-}
-
-func TestSubnetwork_WithMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
-	}
-	type args struct {
-		request metadata.CreateMetadataRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			subnet.WithMetadata(tt.args.request)
 		})
 	}
 }

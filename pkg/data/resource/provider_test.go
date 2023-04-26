@@ -2,7 +2,6 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	domain "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
@@ -44,79 +43,6 @@ func TestProvider_FromMap(t *testing.T) {
 			}
 			if got := provider.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestProvider_GetMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Provider
-		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
-		Auth                domain.Auth
-		VPCs                VPCCollection
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   metadata.Metadata
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
-			}
-			if got := provider.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestProvider_GetPluginReference(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Provider
-		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
-		Auth                domain.Auth
-		VPCs                VPCCollection
-	}
-	type args struct {
-		request resource.GetPluginReferenceRequest
-	}
-	var tests []struct {
-		name   string
-		fields fields
-		args   args
-		want   resource.GetPluginReferenceResponse
-		want1  errors.Error
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
-			}
-			got, got1 := provider.GetPluginReference(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetPluginReference() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -282,40 +208,6 @@ func TestProvider_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
-		})
-	}
-}
-
-func TestProvider_WithMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Provider
-		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
-		Auth                domain.Auth
-		VPCs                VPCCollection
-	}
-	type args struct {
-		request metadata.CreateMetadataRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
-			}
-			provider.WithMetadata(tt.args.request)
 		})
 	}
 }

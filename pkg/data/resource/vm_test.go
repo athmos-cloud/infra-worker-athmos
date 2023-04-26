@@ -1,33 +1,12 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 	"testing"
 )
-
-func TestNewVM(t *testing.T) {
-	type args struct {
-		id identifier.VM
-	}
-	tests := []struct {
-		name string
-		args args
-		want VM
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewVM(tt.args.id); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewVM() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestVM_FromMap(t *testing.T) {
 	type fields struct {
@@ -69,97 +48,6 @@ func TestVM_FromMap(t *testing.T) {
 			}
 			if got := vm.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestVM_GetMetadata(t *testing.T) {
-	type fields struct {
-		Metadata    metadata.Metadata
-		Identifier  identifier.VM
-		VPC         string
-		Network     string
-		Subnetwork  string
-		Zone        string
-		MachineType string
-		Auths       []VMAuth
-		Disks       []Disk
-		OS          OS
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   metadata.Metadata
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vm := &VM{
-				Metadata:    tt.fields.Metadata,
-				Identifier:  tt.fields.Identifier,
-				VPC:         tt.fields.VPC,
-				Network:     tt.fields.Network,
-				Subnetwork:  tt.fields.Subnetwork,
-				Zone:        tt.fields.Zone,
-				MachineType: tt.fields.MachineType,
-				Auths:       tt.fields.Auths,
-				Disks:       tt.fields.Disks,
-				OS:          tt.fields.OS,
-			}
-			if got := vm.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestVM_GetPluginReference(t *testing.T) {
-	type fields struct {
-		Metadata    metadata.Metadata
-		Identifier  identifier.VM
-		VPC         string
-		Network     string
-		Subnetwork  string
-		Zone        string
-		MachineType string
-		Auths       []VMAuth
-		Disks       []Disk
-		OS          OS
-	}
-	type args struct {
-		request resource.GetPluginReferenceRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   resource.GetPluginReferenceResponse
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vm := &VM{
-				Metadata:    tt.fields.Metadata,
-				Identifier:  tt.fields.Identifier,
-				VPC:         tt.fields.VPC,
-				Network:     tt.fields.Network,
-				Subnetwork:  tt.fields.Subnetwork,
-				Zone:        tt.fields.Zone,
-				MachineType: tt.fields.MachineType,
-				Auths:       tt.fields.Auths,
-				Disks:       tt.fields.Disks,
-				OS:          tt.fields.OS,
-			}
-			got, got1 := vm.GetPluginReference(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetPluginReference() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -320,48 +208,6 @@ func TestVM_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
-		})
-	}
-}
-
-func TestVM_WithMetadata(t *testing.T) {
-	type fields struct {
-		Metadata    metadata.Metadata
-		Identifier  identifier.VM
-		VPC         string
-		Network     string
-		Subnetwork  string
-		Zone        string
-		MachineType string
-		Auths       []VMAuth
-		Disks       []Disk
-		OS          OS
-	}
-	type args struct {
-		request metadata.CreateMetadataRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vm := &VM{
-				Metadata:    tt.fields.Metadata,
-				Identifier:  tt.fields.Identifier,
-				VPC:         tt.fields.VPC,
-				Network:     tt.fields.Network,
-				Subnetwork:  tt.fields.Subnetwork,
-				Zone:        tt.fields.Zone,
-				MachineType: tt.fields.MachineType,
-				Auths:       tt.fields.Auths,
-				Disks:       tt.fields.Disks,
-				OS:          tt.fields.OS,
-			}
-			vm.WithMetadata(tt.args.request)
 		})
 	}
 }

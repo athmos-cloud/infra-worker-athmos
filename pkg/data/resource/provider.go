@@ -11,6 +11,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"reflect"
 )
 
 type Provider struct {
@@ -34,6 +35,14 @@ func NewProvider(id identifier.Provider) Provider {
 	}
 }
 
+func (provider *Provider) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Provider{}) {
+		return nil, errors.InvalidArgument.WithMessage("invalid id type")
+	}
+	res := NewProvider(id.(identifier.Provider))
+	return &res, errors.OK
+}
+
 func (provider *Provider) GetMetadata() metadata.Metadata {
 	return provider.Metadata
 }
@@ -54,6 +63,9 @@ func (provider *Provider) GetPluginReference(request dto.GetPluginReferenceReque
 
 func (provider *Provider) FromMap(m map[string]interface{}) errors.Error {
 	*provider = Provider{}
+	provider.WithMetadata(metadata.CreateMetadataRequest{
+		Name: m["name"].(string),
+	})
 	if m["id"] == nil {
 		provider.Identifier.ID = utils.GenerateUUID()
 	} else {
@@ -85,4 +97,19 @@ func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
 func (provider *Provider) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (provider *Provider) Remove(project Project) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func validateEntryMap(entry map[string]interface{}) errors.Error {
+	if entry["name"] == "" || reflect.TypeOf(entry["name"]).Kind() != reflect.String {
+		return errors.InvalidArgument.WithMessage("a string name is required")
+	}
+	if entry["value"] == "" {
+		return errors.InvalidArgument.WithMessage("value is required")
+	}
+	return errors.OK
 }

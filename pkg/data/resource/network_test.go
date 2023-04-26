@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
@@ -40,77 +39,6 @@ func TestNetwork_FromMap(t *testing.T) {
 			}
 			if got := network.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNetwork_GetMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Network
-		KubernetesResources kubernetes.ResourceList
-		Subnetworks         SubnetworkCollection
-		Firewalls           FirewallCollection
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   metadata.Metadata
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			network := &Network{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Subnetworks:         tt.fields.Subnetworks,
-				Firewalls:           tt.fields.Firewalls,
-			}
-			if got := network.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNetwork_GetPluginReference(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Network
-		KubernetesResources kubernetes.ResourceList
-		Subnetworks         SubnetworkCollection
-		Firewalls           FirewallCollection
-	}
-	type args struct {
-		request resource.GetPluginReferenceRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   resource.GetPluginReferenceResponse
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			network := &Network{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Subnetworks:         tt.fields.Subnetworks,
-				Firewalls:           tt.fields.Firewalls,
-			}
-			got, got1 := network.GetPluginReference(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetPluginReference() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -255,58 +183,6 @@ func TestNetwork_ToDomain(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func TestNetwork_WithMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Network
-		KubernetesResources kubernetes.ResourceList
-		Subnetworks         SubnetworkCollection
-		Firewalls           FirewallCollection
-	}
-	type args struct {
-		request metadata.CreateMetadataRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			network := &Network{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Subnetworks:         tt.fields.Subnetworks,
-				Firewalls:           tt.fields.Firewalls,
-			}
-			network.WithMetadata(tt.args.request)
-		})
-	}
-}
-
-func TestNewNetwork(t *testing.T) {
-	type args struct {
-		id identifier.Network
-	}
-	tests := []struct {
-		name string
-		args args
-		want Network
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewNetwork(tt.args.id); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewNetwork() = %v, want %v", got, tt.want)
 			}
 		})
 	}
