@@ -10,39 +10,17 @@ import (
 	"testing"
 )
 
-func TestNewSubnetwork(t *testing.T) {
-	type args struct {
-		id identifier.Subnetwork
-	}
-	tests := []struct {
-		name string
-		args args
-		want Subnetwork
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewSubnetwork(tt.args.id); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewSubnetwork() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSubnetwork_FromMap(t *testing.T) {
+func TestFirewall_FromMap(t *testing.T) {
 	type fields struct {
 		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
+		Identifier          identifier.Firewall
 		KubernetesResources kubernetes.ResourceList
-		VPC                 string
 		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Allow               RuleList
+		Deny                RuleList
 	}
 	type args struct {
-		m map[string]interface{}
+		data map[string]interface{}
 	}
 	tests := []struct {
 		name   string
@@ -54,33 +32,29 @@ func TestSubnetwork_FromMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
+			firewall := &Firewall{
 				Metadata:            tt.fields.Metadata,
 				Identifier:          tt.fields.Identifier,
 				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
 				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
+				Allow:               tt.fields.Allow,
+				Deny:                tt.fields.Deny,
 			}
-			if got := subnet.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
+			if got := firewall.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestSubnetwork_GetMetadata(t *testing.T) {
+func TestFirewall_GetMetadata(t *testing.T) {
 	type fields struct {
 		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
+		Identifier          identifier.Firewall
 		KubernetesResources kubernetes.ResourceList
-		VPC                 string
 		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Allow               RuleList
+		Deny                RuleList
 	}
 	tests := []struct {
 		name   string
@@ -91,33 +65,29 @@ func TestSubnetwork_GetMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
+			firewall := &Firewall{
 				Metadata:            tt.fields.Metadata,
 				Identifier:          tt.fields.Identifier,
 				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
 				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
+				Allow:               tt.fields.Allow,
+				Deny:                tt.fields.Deny,
 			}
-			if got := subnet.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
+			if got := firewall.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestSubnetwork_GetPluginReference(t *testing.T) {
+func TestFirewall_GetPluginReference(t *testing.T) {
 	type fields struct {
 		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
+		Identifier          identifier.Firewall
 		KubernetesResources kubernetes.ResourceList
-		VPC                 string
 		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Allow               RuleList
+		Deny                RuleList
 	}
 	type args struct {
 		request resource.GetPluginReferenceRequest
@@ -133,17 +103,15 @@ func TestSubnetwork_GetPluginReference(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
+			firewall := &Firewall{
 				Metadata:            tt.fields.Metadata,
 				Identifier:          tt.fields.Identifier,
 				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
 				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
+				Allow:               tt.fields.Allow,
+				Deny:                tt.fields.Deny,
 			}
-			got, got1 := subnet.GetPluginReference(tt.args.request)
+			got, got1 := firewall.GetPluginReference(tt.args.request)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
 			}
@@ -154,35 +122,35 @@ func TestSubnetwork_GetPluginReference(t *testing.T) {
 	}
 }
 
-func TestSubnetwork_Insert(t *testing.T) {
+func TestFirewall_Insert(t *testing.T) {
 	type fields struct {
-		subnetwork Subnetwork
+		firewall Firewall
 	}
 	type args struct {
 		project Project
 		update  []bool
 	}
 	type want struct {
-		err        errors.Error
-		subnetwork Subnetwork
+		err      errors.Error
+		firewall Firewall
 	}
 	providerID := "test"
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	subnetwork3 := subnetwork1
-	subnetwork3.Metadata.Tags = map[string]string{"test": "test"}
-	subnetwork4 := subnetwork3
-	subnetwork4.Metadata.Tags = map[string]string{"hello": "world"}
-	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall3 := firewall1
+	firewall3.Metadata.Tags = map[string]string{"test": "test"}
+	firewall4 := firewall3
+	firewall4.Metadata.Tags = map[string]string{"hello": "world"}
+	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
 
 	testProject := NewProject("test", "owner_test")
 	testProvider := NewProvider(identifier.Provider{ID: providerID})
 	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
 	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
-	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
+	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -194,87 +162,81 @@ func TestSubnetwork_Insert(t *testing.T) {
 		want   want
 	}{
 		{
-			name: "Insert non existing subnetwork (creation)",
+			name: "Insert non existing firewall (creation)",
 			fields: fields{
-				subnetwork: subnetwork2,
+				firewall: firewall2,
 			},
 			args: args{
 				testProject,
 				[]bool{},
 			},
 			want: want{
-				err:        errors.OK,
-				subnetwork: subnetwork2,
+				err:      errors.OK,
+				firewall: firewall2,
 			},
 		},
 		{
-			name: "Update existing subnetwork (update)",
+			name: "Update existing firewall (update)",
 			fields: fields{
-				subnetwork: subnetwork3,
+				firewall: firewall3,
 			},
 			args: args{
 				testProject,
 				[]bool{true},
 			},
 			want: want{
-				err:        errors.OK,
-				subnetwork: subnetwork3,
+				err:      errors.OK,
+				firewall: firewall3,
 			},
 		},
 		{
-			name: "Update existing subnetwork (no update)",
+			name: "Update existing firewall (no update)",
 			fields: fields{
-				subnetwork: subnetwork4,
+				firewall: firewall4,
 			},
 			args: args{
 				testProject,
 				[]bool{},
 			},
 			want: want{
-				err:        errors.Conflict,
-				subnetwork: subnetwork3,
+				err:      errors.Conflict,
+				firewall: firewall3,
 			},
 		},
 		{
-			name: "Update non existing subnetwork",
+			name: "Update non existing firewall",
 			fields: fields{
-				subnetwork: subnetwork5,
+				firewall: firewall5,
 			},
 			args: args{
 				testProject,
 				[]bool{true},
 			},
 			want: want{
-				err:        errors.NotFound,
-				subnetwork: Subnetwork{},
+				err:      errors.NotFound,
+				firewall: Firewall{},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := tt.fields.subnetwork
-			if got := subnet.Insert(tt.args.project, tt.args.update...); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
+			firewall := tt.fields.firewall
+			if got := firewall.Insert(tt.args.project, tt.args.update...); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
 				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
 			}
-			id := tt.fields.subnetwork.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID], tt.want.subnetwork) {
-				t.Errorf("Insert() = %v, want %v", subnet, tt.want.subnetwork)
+			id := tt.fields.firewall.Identifier
+			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID], tt.want.firewall) {
+				t.Errorf("Insert() = %v, want %v", firewall, tt.want.firewall)
 			}
 		})
 	}
 }
 
-func TestSubnetwork_ToDomain(t *testing.T) {
+func TestFirewall_ToDomain(t *testing.T) {
 	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Firewall Firewall
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -285,17 +247,8 @@ func TestSubnetwork_ToDomain(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			got, got1 := subnet.ToDomain()
+			firewall := tt.fields.Firewall
+			got, got1 := firewall.ToDomain()
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
 			}
@@ -306,16 +259,14 @@ func TestSubnetwork_ToDomain(t *testing.T) {
 	}
 }
 
-func TestSubnetwork_WithMetadata(t *testing.T) {
+func TestFirewall_WithMetadata(t *testing.T) {
 	type fields struct {
 		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
+		Identifier          identifier.Firewall
 		KubernetesResources kubernetes.ResourceList
-		VPC                 string
 		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Allow               RuleList
+		Deny                RuleList
 	}
 	type args struct {
 		request metadata.CreateMetadataRequest
@@ -329,17 +280,56 @@ func TestSubnetwork_WithMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
+			firewall := &Firewall{
 				Metadata:            tt.fields.Metadata,
 				Identifier:          tt.fields.Identifier,
 				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
 				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
+				Allow:               tt.fields.Allow,
+				Deny:                tt.fields.Deny,
 			}
-			subnet.WithMetadata(tt.args.request)
+			firewall.WithMetadata(tt.args.request)
+		})
+	}
+}
+
+func TestNewFirewall(t *testing.T) {
+	type args struct {
+		id identifier.Firewall
+	}
+	tests := []struct {
+		name string
+		args args
+		want Firewall
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewFirewall(tt.args.id); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewFirewall() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRuleList_FromMap(t *testing.T) {
+	type args struct {
+		data []interface{}
+	}
+	tests := []struct {
+		name  string
+		rules RuleList
+		args  args
+		want  errors.Error
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.rules.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FromMap() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

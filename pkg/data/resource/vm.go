@@ -77,11 +77,15 @@ func (vm *VM) Insert(project Project, update ...bool) errors.Error {
 	if len(update) > 0 {
 		shouldUpdate = update[0]
 	}
-	identifier := vm.Identifier
-	if _, ok := project.Resources[identifier.ProviderID].VPCs[identifier.VPCID].Networks[identifier.NetworkID].Subnetworks[identifier.SubnetID].VMs[identifier.ID]; !ok && !shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", identifier.ID, identifier.SubnetID))
+	id := vm.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
+	if !ok && shouldUpdate {
+		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", id.ID, id.SubnetID))
 	}
-	project.Resources[identifier.ProviderID].VPCs[identifier.VPCID].Networks[identifier.NetworkID].Subnetworks[identifier.SubnetID].VMs[identifier.ID] = *vm
+	if ok && !shouldUpdate {
+		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", id.ID, id.SubnetID))
+	}
+	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID] = *vm
 	return errors.OK
 }
 

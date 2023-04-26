@@ -93,7 +93,7 @@ var (
 	NoContent            = New("No content", "204")
 	InvalidArgument      = New("Invalid argument", "400")
 	ValidationError      = New("Validation error", "400")
-	Conflict             = New("Already exists", "409")
+	Conflict             = New("Conflict", "409")
 	NotFound             = New("Not found", "404")
 	ConfigError          = New("Config error", "500")
 	ParseError           = New("Parse error", "500")

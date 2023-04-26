@@ -110,8 +110,12 @@ func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
 		shouldUpdate = update[0]
 	}
 	id := firewall.Identifier
-	if _, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]; !ok && !shouldUpdate {
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
+	if !ok && shouldUpdate {
 		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+	}
+	if ok && !shouldUpdate {
+		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID] = *firewall
 	return errors.OK

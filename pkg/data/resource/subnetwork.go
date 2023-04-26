@@ -55,8 +55,12 @@ func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
 		shouldUpdate = update[0]
 	}
 	id := subnet.Identifier
-	if _, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]; !ok && !shouldUpdate {
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
+	if !ok && shouldUpdate {
 		return errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID))
+	}
+	if ok && !shouldUpdate {
+		return errors.Conflict.WithMessage(fmt.Sprintf("subnet %s already exists in network %s", id.ID, id.NetworkID))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID] = *subnet
 	return errors.OK
