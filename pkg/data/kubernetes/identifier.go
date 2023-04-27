@@ -19,6 +19,12 @@ type Identifier struct {
 	Namespace  string
 }
 
+func (identifier Identifier) Equals(other Identifier) bool {
+	return identifier.ResourceID == other.ResourceID &&
+		identifier.Name == other.Name &&
+		identifier.Namespace == other.Namespace
+}
+
 func GetResourcesIdentifiersFromManifests(manifests string) ([]Identifier, errors.Error) {
 	var identifierList []Identifier
 	manifestList := strings.Split(manifests, manifestSeparatorString)

@@ -9,41 +9,6 @@ import (
 	"testing"
 )
 
-func TestNetwork_FromMap(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Network
-		KubernetesResources kubernetes.ResourceList
-		Subnetworks         SubnetworkCollection
-		Firewalls           FirewallCollection
-	}
-	type args struct {
-		m map[string]interface{}
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			network := &Network{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Subnetworks:         tt.fields.Subnetworks,
-				Firewalls:           tt.fields.Firewalls,
-			}
-			if got := network.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNetwork_Insert(t *testing.T) {
 	type fields struct {
 		network Network
@@ -145,7 +110,8 @@ func TestNetwork_Insert(t *testing.T) {
 				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
 			}
 			id := tt.fields.network.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID], tt.want.network) {
+			networkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
+			if !networkGot.Equals(tt.want.network) {
 				t.Errorf("Insert() = %v, want %v", network, tt.want.network)
 			}
 		})

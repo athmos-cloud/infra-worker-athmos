@@ -2,7 +2,7 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	domain "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
+	auth "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
@@ -13,36 +13,85 @@ import (
 
 func TestProvider_FromMap(t *testing.T) {
 	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Provider
-		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
-		Auth                domain.Auth
-		VPCs                VPCCollection
+		Provider Provider
 	}
 	type args struct {
 		m map[string]interface{}
 	}
+	type want struct {
+		err      errors.Error
+		provider Provider
+	}
+	provider := NewProvider(identifier.Provider{ID: "test"})
+	expectedProvider1 := provider
+	expectedProvider1.Auth = auth.Auth{
+		AuthType: auth.AuthTypeSecret,
+		SecretAuth: auth.SecretAuth{
+			SecretName: "key-secret",
+			SecretKey:  "key.json",
+			Namespace:  "default",
+		},
+	}
+	expectedProvider1.VPC = "vpc-test"
+	expectedProvider2 := provider
+	expectedProvider2.VPC = "vpc-test"
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   errors.Error
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "FromMap with valid data",
+			fields: fields{
+				Provider: provider,
+			},
+			args: args{
+				m: map[string]interface{}{
+					"vpc": "vpc-test",
+					"auth": map[string]interface{}{
+						"authType": "secret",
+						"secret": map[string]interface{}{
+							"key":       "key.json",
+							"name":      "key-secret",
+							"namespace": "default",
+						},
+					},
+				},
+			},
+			want: want{
+				err:      errors.OK,
+				provider: expectedProvider1,
+			},
+		}, {
+			name: "FromMap with invalid data",
+			fields: fields{
+				Provider: provider,
+			},
+			args: args{
+				m: map[string]interface{}{
+					"vpc": "vpc-test",
+					"auth": map[string]interface{}{
+						"authType": "azaz",
+					},
+				},
+			},
+			want: want{
+				err:      errors.InvalidArgument,
+				provider: expectedProvider2,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
+			curProvider := tt.fields.Provider
+			got := curProvider.FromMap(tt.args.m)
+			if got.Code != tt.want.err.Code {
+				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
 			}
-			if got := provider.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
+			if !curProvider.Equals(tt.want.provider) {
+				t.Errorf("FromMap() = %v, want %v", curProvider, tt.want.provider)
 			}
 		})
 	}
@@ -54,7 +103,7 @@ func TestProvider_Insert(t *testing.T) {
 		Identifier          identifier.Provider
 		KubernetesResources kubernetes.ResourceList
 		Type                common.ProviderType
-		Auth                domain.Auth
+		Auth                auth.Auth
 		VPCs                VPCCollection
 	}
 	type args struct {
@@ -180,7 +229,7 @@ func TestProvider_ToDomain(t *testing.T) {
 		Identifier          identifier.Provider
 		KubernetesResources kubernetes.ResourceList
 		Type                common.ProviderType
-		Auth                domain.Auth
+		Auth                auth.Auth
 		VPCs                VPCCollection
 	}
 	tests := []struct {
@@ -205,7 +254,7 @@ func TestProvider_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
+			if !got1.Equals(tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

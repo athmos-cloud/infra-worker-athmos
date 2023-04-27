@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
@@ -12,86 +11,51 @@ import (
 
 func TestSubnetwork_FromMap(t *testing.T) {
 	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
+		Subnetwork Subnetwork
 	}
 	type args struct {
-		m map[string]interface{}
+		data map[string]interface{}
 	}
+	type want struct {
+		err        errors.Error
+		subnetwork Subnetwork
+	}
+	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"})
+	expectedSubnet := subnet
+	expectedSubnet.Region = "eu-west-1"
+	expectedSubnet.IPCIDRRange = "10.0.0.0/8"
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   errors.Error
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "FromMap with valid data",
+			fields: fields{
+				Subnetwork: subnet,
+			},
+			args: args{
+				data: map[string]interface{}{
+					"region":      "eu-west-1",
+					"ipCidrRange": "10.0.0.0/8",
+				},
+			},
+			want: want{
+				err:        errors.OK,
+				subnetwork: expectedSubnet,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			if got := subnet.FromMap(tt.args.m); !reflect.DeepEqual(got, tt.want) {
+			curVpc := tt.fields.Subnetwork
+			if got := curVpc.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func TestSubnetwork_GetPluginReference(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
-	}
-	type args struct {
-		request resource.GetPluginReferenceRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   resource.GetPluginReferenceResponse
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			got, got1 := subnet.GetPluginReference(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetPluginReference() got1 = %v, want %v", got1, tt.want1)
+			if !curVpc.Equals(tt.want.subnetwork) {
+				t.Errorf("FromMap() = %v, want %v", curVpc, tt.want.subnetwork)
 			}
 		})
 	}
@@ -200,7 +164,8 @@ func TestSubnetwork_Insert(t *testing.T) {
 				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
 			}
 			id := tt.fields.subnetwork.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID], tt.want.subnetwork) {
+			subnetworkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
+			if !subnetworkGot.Equals(tt.want.subnetwork) {
 				t.Errorf("Insert() = %v, want %v", subnet, tt.want.subnetwork)
 			}
 		})
@@ -242,7 +207,7 @@ func TestSubnetwork_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
+			if !got1.Equals(tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

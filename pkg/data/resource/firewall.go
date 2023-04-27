@@ -5,20 +5,22 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"reflect"
 )
 
 type Firewall struct {
 	Metadata            metadata.Metadata       `bson:"metadata"`
 	Identifier          identifier.Firewall     `bson:"identifier"`
 	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	Network             string                  `bson:"network"`
-	Allow               RuleList                `bson:"allow"`
-	Deny                RuleList                `bson:"deny"`
+	Network             string                  `bson:"network" plugin:"network"`
+	Allow               RuleList                `bson:"allow" plugin:"allow"`
+	Deny                RuleList                `bson:"deny" plugin:"deny"`
 }
 
 func NewFirewall(id identifier.Firewall) Firewall {
@@ -32,29 +34,53 @@ func NewFirewall(id identifier.Firewall) Firewall {
 
 type FirewallCollection map[string]Firewall
 
+func (collection *FirewallCollection) Equals(other FirewallCollection) bool {
+	if len(*collection) != len(other) {
+		return false
+	}
+	for key, value := range *collection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (firewall *Firewall) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Firewall{}) {
+		return nil, errors.InvalidArgument.WithMessage("id type is not FirewallID")
+	}
+	res := NewFirewall(id.(identifier.Firewall))
+	return &res, errors.OK
+}
+
 type Rule struct {
-	Protocol string `bson:"protocol"`
-	Ports    []int  `bson:"ports"`
+	Protocol string `bson:"protocol" plugin:"protocol"`
+	Ports    []int  `bson:"ports" plugin:"ports"`
+}
+
+func (rule *Rule) Equals(other Rule) bool {
+	return rule.Protocol == other.Protocol && utils.IntSliceEquals(rule.Ports, other.Ports)
 }
 
 type RuleList []Rule
 
-func (rules *RuleList) FromMap(data []interface{}) errors.Error {
-	*rules = []Rule{}
-	for _, rule := range data {
-		ruleMap := rule.(map[string]interface{})
-		if ruleMap["protocol"] == nil {
-			return errors.InvalidArgument.WithMessage("protocol is required")
-		}
-		if ruleMap["ports"] == nil {
-			return errors.InvalidArgument.WithMessage("ports is required")
-		}
-		*rules = append(*rules, Rule{
-			Protocol: ruleMap["protocol"].(string),
-			Ports:    ruleMap["ports"].([]int),
-		})
+func (list RuleList) Equals(other RuleList) bool {
+	if len(list) != len(other) {
+		return false
 	}
-	return errors.OK
+	for _, value := range list {
+		equals := false
+		for _, otherValue := range other {
+			if value.Equals(otherValue) {
+				equals = true
+			}
+		}
+		if !equals {
+			return false
+		}
+	}
+	return true
 }
 
 func (firewall *Firewall) GetMetadata() metadata.Metadata {
@@ -77,31 +103,7 @@ func (firewall *Firewall) GetPluginReference(request dto.GetPluginReferenceReque
 }
 
 func (firewall *Firewall) FromMap(data map[string]interface{}) errors.Error {
-	*firewall = Firewall{}
-	if data["id"] == nil {
-		firewall.Identifier.ID = utils.GenerateUUID()
-	} else {
-		firewall.Identifier.ID = data["id"].(string)
-	}
-	if data["name"] == nil {
-		return errors.InvalidArgument.WithMessage("name is required")
-	}
-	if data["allow"] == nil && data["deny"] == nil {
-		return errors.InvalidArgument.WithMessage("allow or deny field is required")
-	}
-	if data["allow"] != nil {
-		firewall.Allow = RuleList{}
-		if err := firewall.Allow.FromMap(data["allow"].([]interface{})); !err.IsOk() {
-			return err
-		}
-	}
-	if data["deny"] != nil {
-		firewall.Deny = RuleList{}
-		if err := firewall.Deny.FromMap(data["deny"].([]interface{})); !err.IsOk() {
-			return err
-		}
-	}
-	return errors.OK
+	return resourcePlugin.InjectMapIntoStruct(data, firewall)
 }
 
 func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
@@ -121,7 +123,20 @@ func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
 	return errors.OK
 }
 
+func (firewall *Firewall) Remove(project Project) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (firewall *Firewall) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (firewall *Firewall) Equals(other Firewall) bool {
+	return firewall.Metadata.Equals(other.Metadata) &&
+		firewall.Identifier.Equals(other.Identifier) &&
+		firewall.Network == other.Network &&
+		firewall.Allow.Equals(other.Allow) &&
+		firewall.Deny.Equals(other.Deny)
 }

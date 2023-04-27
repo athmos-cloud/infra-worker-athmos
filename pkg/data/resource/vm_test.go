@@ -3,51 +3,126 @@ package resource
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"reflect"
 	"testing"
 )
 
 func TestVM_FromMap(t *testing.T) {
 	type fields struct {
-		Metadata    metadata.Metadata
-		Identifier  identifier.VM
-		VPC         string
-		Network     string
-		Subnetwork  string
-		Zone        string
-		MachineType string
-		Auths       []VMAuth
-		Disks       []Disk
-		OS          OS
+		VM VM
 	}
 	type args struct {
 		data map[string]interface{}
 	}
+	type want struct {
+		err errors.Error
+		vm  VM
+	}
+	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"})
+	expectedVM1 := vm
+	expectedVM1.VPC = "vpc-test"
+	expectedVM1.Zone = "europe-west1-a"
+	expectedVM1.MachineType = "f1-micro"
+	expectedVM1.Disks = []Disk{
+		{
+			Type:       "SSD",
+			Mode:       types.ReadOnly,
+			SizeGib:    10,
+			AutoDelete: true,
+		},
+		{
+			Type:       "SSD",
+			Mode:       types.ReadWrite,
+			SizeGib:    100,
+			AutoDelete: false,
+		},
+	}
+	expectedVM1.Auths = []VMAuth{
+		{
+			Username:     "admin",
+			SSHPublicKey: "cfrezverververvre",
+		},
+	}
+	expectedVM2 := vm
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   errors.Error
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "FromMap with valid data",
+			fields: fields{
+				VM: vm,
+			},
+			args: args{
+				data: map[string]interface{}{
+					"vpc":         "vpc-test",
+					"zone":        "europe-west1-a",
+					"machineType": "f1-micro",
+					"disks": []map[string]interface{}{
+						{
+							"type":       "SSD",
+							"diskMode":   "READ_ONLY",
+							"sizeGib":    10,
+							"autoDelete": true,
+						},
+						{
+							"type":     "SSD",
+							"diskMode": "READ_WRITE",
+							"sizeGib":  100,
+						},
+					},
+					"auths": []map[string]interface{}{
+						{
+							"username":     "admin",
+							"sshPublicKey": "cfrezverververvre",
+						},
+					},
+				},
+			},
+			want: want{
+				err: errors.OK,
+				vm:  expectedVM1,
+			},
+		}, {
+			name: "FromMap with invalid data",
+			fields: fields{
+				VM: vm,
+			},
+			args: args{
+				data: map[string]interface{}{
+					"disks": []map[string]interface{}{
+						{
+							"type":       "SSD",
+							"diskMode":   "wakanda",
+							"sizeGib":    10,
+							"autoDelete": true,
+						},
+					},
+				},
+			},
+			want: want{
+				err: errors.InvalidArgument,
+				vm:  expectedVM2,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vm := &VM{
-				Metadata:    tt.fields.Metadata,
-				Identifier:  tt.fields.Identifier,
-				VPC:         tt.fields.VPC,
-				Network:     tt.fields.Network,
-				Subnetwork:  tt.fields.Subnetwork,
-				Zone:        tt.fields.Zone,
-				MachineType: tt.fields.MachineType,
-				Auths:       tt.fields.Auths,
-				Disks:       tt.fields.Disks,
-				OS:          tt.fields.OS,
+			curVM := tt.fields.VM
+			got := curVM.FromMap(tt.args.data)
+			if got.Code != tt.want.err.Code {
+				logger.Info.Println(got)
+				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
+				return
 			}
-			if got := vm.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
+			if !curVM.Equals(tt.want.vm) {
+				t.Errorf("FromMap() = %v, want %v", curVM, tt.want.vm)
 			}
 		})
 	}
@@ -159,7 +234,8 @@ func TestVM_Insert(t *testing.T) {
 				t.Errorf("Insert() = %v, want %v", got, tt.want)
 			}
 			id := tt.fields.vm.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID], tt.want.vm) {
+			gotVM := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
+			if !gotVM.Equals(tt.want.vm) {
 				t.Errorf("Insert() = %v, want %v", vm, tt.want.vm)
 			}
 		})
@@ -205,7 +281,7 @@ func TestVM_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
+			if !got1.Equals(tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

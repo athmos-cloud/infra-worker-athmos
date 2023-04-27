@@ -1,122 +1,97 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"reflect"
 	"testing"
 )
 
 func TestFirewall_FromMap(t *testing.T) {
 	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Firewall
-		KubernetesResources kubernetes.ResourceList
-		Network             string
-		Allow               RuleList
-		Deny                RuleList
+		Firewall Firewall
 	}
 	type args struct {
 		data map[string]interface{}
 	}
+	type want struct {
+		err      errors.Error
+		firewall Firewall
+	}
+	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"})
+	expectedFirewall := firewall
+	expectedFirewall.Allow = RuleList{
+		{
+			Protocol: "tcp",
+			Ports:    []int{22},
+		},
+		{
+			Protocol: "udp",
+			Ports:    []int{80, 8080},
+		},
+	}
+	expectedFirewall.Deny = RuleList{
+		{
+			Protocol: "tcp",
+			Ports:    []int{222},
+		},
+		{
+			Protocol: "udp",
+			Ports:    []int{81},
+		},
+	}
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   errors.Error
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "FromMap with valid data",
+			fields: fields{
+				Firewall: firewall,
+			},
+			args: args{
+				data: map[string]interface{}{
+					"allow": []map[string]interface{}{
+						{
+							"protocol": "tcp",
+							"ports":    []interface{}{22},
+						},
+						{
+							"protocol": "udp",
+							"ports":    []interface{}{80, 8080},
+						},
+					},
+					"deny": []map[string]interface{}{
+						{
+							"protocol": "tcp",
+							"ports":    []interface{}{222},
+						},
+						{
+							"protocol": "udp",
+							"ports":    []interface{}{81},
+						},
+					},
+				},
+			},
+			want: want{
+				err:      errors.OK,
+				firewall: expectedFirewall,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			firewall := &Firewall{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Network:             tt.fields.Network,
-				Allow:               tt.fields.Allow,
-				Deny:                tt.fields.Deny,
+			curFirewall := tt.fields.Firewall
+			if got := curFirewall.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
+				logger.Info.Println(got)
+				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
 			}
-			if got := firewall.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFirewall_GetMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Firewall
-		KubernetesResources kubernetes.ResourceList
-		Network             string
-		Allow               RuleList
-		Deny                RuleList
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   metadata.Metadata
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			firewall := &Firewall{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Network:             tt.fields.Network,
-				Allow:               tt.fields.Allow,
-				Deny:                tt.fields.Deny,
-			}
-			if got := firewall.GetMetadata(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFirewall_GetPluginReference(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Firewall
-		KubernetesResources kubernetes.ResourceList
-		Network             string
-		Allow               RuleList
-		Deny                RuleList
-	}
-	type args struct {
-		request resource.GetPluginReferenceRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   resource.GetPluginReferenceResponse
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			firewall := &Firewall{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Network:             tt.fields.Network,
-				Allow:               tt.fields.Allow,
-				Deny:                tt.fields.Deny,
-			}
-			got, got1 := firewall.GetPluginReference(tt.args.request)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPluginReference() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("GetPluginReference() got1 = %v, want %v", got1, tt.want1)
+			if !curFirewall.Equals(tt.want.firewall) {
+				t.Errorf("FromMap() = %v, want %v", curFirewall, tt.want.firewall)
 			}
 		})
 	}
@@ -225,7 +200,8 @@ func TestFirewall_Insert(t *testing.T) {
 				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
 			}
 			id := tt.fields.firewall.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID], tt.want.firewall) {
+			firewallGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
+			if !firewallGot.Equals(tt.want.firewall) {
 				t.Errorf("Insert() = %v, want %v", firewall, tt.want.firewall)
 			}
 		})
@@ -255,40 +231,6 @@ func TestFirewall_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
-		})
-	}
-}
-
-func TestFirewall_WithMetadata(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Firewall
-		KubernetesResources kubernetes.ResourceList
-		Network             string
-		Allow               RuleList
-		Deny                RuleList
-	}
-	type args struct {
-		request metadata.CreateMetadataRequest
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			firewall := &Firewall{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Network:             tt.fields.Network,
-				Allow:               tt.fields.Allow,
-				Deny:                tt.fields.Deny,
-			}
-			firewall.WithMetadata(tt.args.request)
 		})
 	}
 }

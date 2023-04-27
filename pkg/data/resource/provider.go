@@ -5,22 +5,34 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	auth "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"reflect"
 )
 
 type Provider struct {
 	Metadata            metadata.Metadata       `bson:"metadata"`
 	Identifier          identifier.Provider     `bson:"identifier"`
+	VPC                 string                  `bson:"vpc" plugin:"vpc"`
 	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	Type                common.ProviderType     `bson:"type"`
-	Auth                auth.Auth               `bson:"auth"`
+	Type                common.ProviderType     `bson:"type" plugin:"type"`
+	Auth                auth.Auth               `bson:"auth" plugin:"auth"`
 	VPCs                VPCCollection           `bson:"vpcs"`
+}
+
+func (provider *Provider) Equals(other Provider) bool {
+	return provider.Metadata.Equals(other.Metadata) &&
+		provider.Identifier.Equals(other.Identifier) &&
+		provider.VPC == other.VPC &&
+		provider.KubernetesResources.Equals(other.KubernetesResources) &&
+		provider.Type == other.Type &&
+		provider.Auth.Equals(other.Auth) &&
+		provider.VPCs.Equals(other.VPCs)
 }
 
 type ProviderCollection map[string]Provider
@@ -62,20 +74,7 @@ func (provider *Provider) GetPluginReference(request dto.GetPluginReferenceReque
 }
 
 func (provider *Provider) FromMap(m map[string]interface{}) errors.Error {
-	*provider = Provider{}
-	provider.WithMetadata(metadata.CreateMetadataRequest{
-		Name: m["name"].(string),
-	})
-	if m["id"] == nil {
-		provider.Identifier.ID = utils.GenerateUUID()
-	} else {
-		provider.Identifier.ID = m["id"].(string)
-	}
-	if m["name"] == nil {
-		return errors.InvalidArgument.WithMessage("name is required")
-	}
-	provider.Metadata.Name = m["name"].(string)
-	return errors.OK
+	return resourcePlugin.InjectMapIntoStruct(m, provider)
 }
 
 func (provider *Provider) Insert(project Project, update ...bool) errors.Error {

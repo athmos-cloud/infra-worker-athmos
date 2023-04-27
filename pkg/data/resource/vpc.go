@@ -5,21 +5,35 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"reflect"
 )
 
 type VPC struct {
 	Metadata            metadata.Metadata       `bson:"metadata"`
 	Identifier          identifier.VPC          `bson:"identifier"`
 	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	Provider            string                  `bson:"provider"`
+	Provider            string                  `bson:"provider" plugin:"provider"`
 	Networks            NetworkCollection       `bson:"networks"`
 }
 
 type VPCCollection map[string]VPC
+
+func (collection *VPCCollection) Equals(other VPCCollection) bool {
+	if len(*collection) != len(other) {
+		return false
+	}
+	for key, value := range *collection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
+}
 
 func NewVPC(id identifier.VPC) VPC {
 	return VPC{
@@ -29,6 +43,14 @@ func NewVPC(id identifier.VPC) VPC {
 		Identifier: id,
 		Networks:   make(NetworkCollection),
 	}
+}
+
+func (vpc *VPC) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VPC{}) {
+		return nil, errors.InvalidArgument.WithMessage("invalid id type")
+	}
+	res := NewVPC(id.(identifier.VPC))
+	return &res, errors.OK
 }
 
 func (vpc *VPC) WithMetadata(request metadata.CreateMetadataRequest) {
@@ -51,10 +73,7 @@ func (vpc *VPC) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.G
 }
 
 func (vpc *VPC) FromMap(data map[string]interface{}) errors.Error {
-	if data["name"] == nil {
-		return errors.InvalidArgument.WithMessage("name is required")
-	}
-	return errors.OK
+	return resourcePlugin.InjectMapIntoStruct(data, vpc)
 }
 
 func (vpc *VPC) Insert(project Project, update ...bool) errors.Error {
@@ -76,4 +95,16 @@ func (vpc *VPC) Insert(project Project, update ...bool) errors.Error {
 func (vpc *VPC) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (vpc *VPC) Remove(project Project) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (vpc *VPC) Equals(other VPC) bool {
+	return vpc.Metadata.Equals(other.Metadata) &&
+		vpc.Identifier.Equals(other.Identifier) &&
+		vpc.Provider == other.Provider &&
+		vpc.Networks.Equals(other.Networks)
 }

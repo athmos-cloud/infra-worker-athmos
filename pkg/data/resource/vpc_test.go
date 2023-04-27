@@ -11,34 +11,49 @@ import (
 
 func TestVPC_FromMap(t *testing.T) {
 	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.VPC
-		KubernetesResources kubernetes.ResourceList
-		Provider            string
-		Networks            NetworkCollection
+		VPC VPC
 	}
 	type args struct {
 		data map[string]interface{}
 	}
+	type want struct {
+		err errors.Error
+		vpc VPC
+	}
+	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"})
+	expectedVPC := vpc
+	expectedVPC.Provider = "test"
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   errors.Error
+		want   want
 	}{
-		// TODO: Add test cases.
+		{
+			name: "FromMap with valid data",
+			fields: fields{
+				VPC: vpc,
+			},
+			args: args{
+				data: map[string]interface{}{
+					"provider": "test",
+				},
+			},
+			want: want{
+				err: errors.OK,
+				vpc: expectedVPC,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vpc := &VPC{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Provider:            tt.fields.Provider,
-				Networks:            tt.fields.Networks,
-			}
-			if got := vpc.FromMap(tt.args.data); !reflect.DeepEqual(got, tt.want) {
+			curVpc := tt.fields.VPC
+			if got := curVpc.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
 				t.Errorf("FromMap() = %v, want %v", got, tt.want)
+			}
+			if !curVpc.Equals(tt.want.vpc) {
+				t.Errorf("FromMap() = %v, want %v", curVpc, tt.want.vpc)
 			}
 		})
 	}
@@ -137,7 +152,8 @@ func TestVPC_Insert(t *testing.T) {
 				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
 			}
 			id := tt.fields.vpc.Identifier
-			if !reflect.DeepEqual(testProject.Resources[id.ProviderID].VPCs[id.ID], tt.want.vpc) {
+			vpcGot := testProject.Resources[id.ProviderID].VPCs[id.ID]
+			if !vpcGot.Equals(tt.want.vpc) {
 				t.Errorf("Insert() = %v, want %v", testProject.Resources[providerID].VPCs[tt.fields.vpc.Identifier.ID], tt.want.vpc)
 			}
 		})
@@ -173,7 +189,7 @@ func TestVPC_ToDomain(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
+			if !got1.Equals(tt.want1) {
 				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})

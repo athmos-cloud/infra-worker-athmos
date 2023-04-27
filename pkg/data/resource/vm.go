@@ -2,23 +2,28 @@ package resource
 
 import (
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"reflect"
 )
 
 type VM struct {
 	Metadata    metadata.Metadata `bson:"metadata"`
 	Identifier  identifier.VM     `bson:"identifier"`
-	VPC         string            `bson:"vpc"`
-	Network     string            `bson:"network"`
-	Subnetwork  string            `bson:"subnetwork"`
-	Zone        string            `bson:"zone"`
-	MachineType string            `bson:"machineType"`
-	Auths       []VMAuth          `bson:"auths"`
-	Disks       []Disk            `bson:"disks"`
-	OS          OS                `bson:"os"`
+	VPC         string            `bson:"vpc" plugin:"vpc"`
+	Network     string            `bson:"network" plugin:"network"`
+	Subnetwork  string            `bson:"subnetwork" plugin:"subnetwork"`
+	Zone        string            `bson:"zone" plugin:"zone"`
+	MachineType string            `bson:"machineType" plugin:"machineType"`
+	Auths       VMAuthList        `bson:"auths" plugin:"auths"`
+	Disks       DiskList          `bson:"disks" plugin:"disks"`
+	OS          OS                `bson:"os" plugin:"os"`
 }
 
 func NewVM(id identifier.VM) VM {
@@ -30,28 +35,94 @@ func NewVM(id identifier.VM) VM {
 
 type VMCollection map[string]VM
 
-type Disk struct {
-	Type       string   `bson:"type"`
-	Mode       DiskMode `bson:"mode"`
-	SizeGib    int      `bson:"sizeGib"`
-	AutoDelete bool     `bson:"autoDelete"`
+func (collection *VMCollection) Equals(other VMCollection) bool {
+	if len(*collection) != len(other) {
+		return false
+	}
+	for key, value := range *collection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
 }
 
-type DiskMode string
+type Disk struct {
+	Type       string         `bson:"type" plugin:"type"`
+	Mode       types.DiskMode `bson:"mode" plugin:"diskMode"`
+	SizeGib    int            `bson:"sizeGib" plugin:"sizeGib"`
+	AutoDelete bool           `bson:"autoDelete" plugin:"autoDelete"`
+}
 
-const (
-	READ_ONLY  DiskMode = "READ_ONLY"
-	READ_WRITE DiskMode = "READ_WRITE"
-)
+func (disk *Disk) Equals(other Disk) bool {
+	return disk.Type == other.Type && disk.Mode == other.Mode && disk.SizeGib == other.SizeGib && disk.AutoDelete == other.AutoDelete
+}
+
+type DiskList []Disk
+
+func (diskList *DiskList) Equals(other DiskList) bool {
+	if len(*diskList) != len(other) {
+		return false
+	}
+	for i, disk := range *diskList {
+		if !disk.Equals(other[i]) {
+			return false
+		}
+	}
+	return true
+}
 
 type VMAuth struct {
-	Username     string `bson:"username"`
-	SSHPublicKey string `bson:"sshPublicKey"`
+	Username     string `bson:"username" plugin:"username"`
+	SSHPublicKey string `bson:"sshPublicKey" plugin:"sshPublicKey"`
+}
+
+func (auth *VMAuth) Equals(other VMAuth) bool {
+	return auth.Username == other.Username && auth.SSHPublicKey == other.SSHPublicKey
+}
+
+type VMAuthList []VMAuth
+
+func (authList *VMAuthList) Equals(other VMAuthList) bool {
+	if len(*authList) != len(other) {
+		return false
+	}
+	for i, auth := range *authList {
+		if !auth.Equals(other[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 type OS struct {
-	Type    string `bson:"type"`
-	Version string `bson:"version"`
+	Type    string `bson:"type" plugin:"osType"`
+	Version string `bson:"version" plugin:"version"`
+}
+
+func (os *OS) Equals(other OS) bool {
+	return os.Type == other.Type && os.Version == other.Version
+}
+
+func (vm *VM) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VM{}) {
+		return nil, errors.InvalidArgument.WithMessage("identifier is not of type VM")
+	}
+	res := NewVM(id.(identifier.VM))
+	return &res, errors.OK
+}
+
+func (vm *VM) Equals(other VM) bool {
+	return vm.Metadata.Equals(other.Metadata) &&
+		vm.Identifier.Equals(other.Identifier) &&
+		vm.VPC == other.VPC &&
+		vm.Network == other.Network &&
+		vm.Subnetwork == other.Subnetwork &&
+		vm.Zone == other.Zone &&
+		vm.MachineType == other.MachineType &&
+		vm.Auths.Equals(other.Auths) &&
+		vm.Disks.Equals(other.Disks) &&
+		vm.OS.Equals(other.OS)
 }
 
 func (vm *VM) GetMetadata() metadata.Metadata {
@@ -63,13 +134,18 @@ func (vm *VM) WithMetadata(request metadata.CreateMetadataRequest) {
 }
 
 func (vm *VM) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	//TODO implement me
-	panic("implement me")
+	switch request.ProviderType {
+	case common.GCP:
+		return dto.GetPluginReferenceResponse{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.VM.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.VM.Version,
+		}, errors.Error{}
+	}
+	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
 }
 
 func (vm *VM) FromMap(data map[string]interface{}) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	return resourcePlugin.InjectMapIntoStruct(data, vm)
 }
 
 func (vm *VM) Insert(project Project, update ...bool) errors.Error {
@@ -87,6 +163,11 @@ func (vm *VM) Insert(project Project, update ...bool) errors.Error {
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID] = *vm
 	return errors.OK
+}
+
+func (vm *VM) Remove(project Project) errors.Error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (vm *VM) ToDomain() (interface{}, errors.Error) {

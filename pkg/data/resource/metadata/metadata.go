@@ -19,6 +19,15 @@ type CreateMetadataRequest struct {
 	Tags             map[string]string
 }
 
+func (metadata *Metadata) Equals(other Metadata) bool {
+	return metadata.Name == other.Name &&
+		metadata.Monitored == other.Monitored &&
+		utils.MapEquals(metadata.Tags, other.Tags) &&
+		metadata.ReleaseReference.Name == other.ReleaseReference.Name &&
+		metadata.ReleaseReference.Namespace == other.ReleaseReference.Namespace &&
+		utils.SliceEquals(metadata.ReleaseReference.Versions, other.ReleaseReference.Versions)
+}
+
 func New(request CreateMetadataRequest) Metadata {
 	return Metadata{
 		Name:      request.Name,

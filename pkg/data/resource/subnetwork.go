@@ -2,21 +2,25 @@ package resource
 
 import (
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"reflect"
 )
 
 type Subnetwork struct {
 	Metadata            metadata.Metadata       `bson:"metadata"`
 	Identifier          identifier.Subnetwork   `bson:"hierarchyLocation"`
 	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	VPC                 string                  `bson:"vpc"`
-	Network             string                  `bson:"network"`
-	Region              string                  `bson:"region"`
-	IPCIDRRange         string                  `bson:"ipCidrRange"`
+	VPC                 string                  `bson:"vpc" plugin:"vpc"`
+	Network             string                  `bson:"network" plugin:"network"`
+	Region              string                  `bson:"region" plugin:"region"`
+	IPCIDRRange         string                  `bson:"ipCidrRange" plugin:"ipCidrRange"`
 	VMs                 VMCollection            `bson:"vmList"`
 }
 
@@ -31,6 +35,26 @@ func NewSubnetwork(id identifier.Subnetwork) Subnetwork {
 
 type SubnetworkCollection map[string]Subnetwork
 
+func (collection *SubnetworkCollection) Equals(other SubnetworkCollection) bool {
+	if len(*collection) != len(other) {
+		return false
+	}
+	for key, value := range *collection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (subnet *Subnetwork) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Subnetwork{}) {
+		return nil, errors.InvalidArgument.WithMessage("id type is not SubnetworkID")
+	}
+	res := NewSubnetwork(id.(identifier.Subnetwork))
+	return &res, errors.OK
+}
+
 func (subnet *Subnetwork) GetMetadata() metadata.Metadata {
 	return subnet.Metadata
 }
@@ -40,13 +64,19 @@ func (subnet *Subnetwork) WithMetadata(request metadata.CreateMetadataRequest) {
 }
 
 func (subnet *Subnetwork) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	//TODO implement me
-	panic("implement me")
+	switch request.ProviderType {
+	case common.GCP:
+		return dto.GetPluginReferenceResponse{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+		}, errors.Error{}
+	}
+	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
 }
 
-func (subnet *Subnetwork) FromMap(m map[string]interface{}) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func (subnet *Subnetwork) FromMap(data map[string]interface{}) errors.Error {
+	return resourcePlugin.InjectMapIntoStruct(data, subnet)
+
 }
 
 func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
@@ -66,7 +96,22 @@ func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
 	return errors.OK
 }
 
+func (subnet *Subnetwork) Remove(project Project) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (subnet *Subnetwork) ToDomain() (interface{}, errors.Error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (subnet *Subnetwork) Equals(other Subnetwork) bool {
+	return subnet.Metadata.Equals(other.Metadata) &&
+		subnet.Identifier.Equals(other.Identifier) &&
+		subnet.VPC == other.VPC &&
+		subnet.Network == other.Network &&
+		subnet.Region == other.Region &&
+		subnet.IPCIDRRange == other.IPCIDRRange &&
+		subnet.VMs.Equals(other.VMs)
 }

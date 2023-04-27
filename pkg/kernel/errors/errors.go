@@ -9,8 +9,8 @@ import (
 )
 
 type Error struct {
-	Err  string
 	Code int
+	Err  string
 }
 
 // New : msg string, err error, code int
@@ -43,7 +43,7 @@ func (e *Error) WithMessage(msg interface{}) Error {
 	}
 	if reflect.TypeOf(msg).Kind() == reflect.TypeOf(errors.New("")).Kind() {
 		return Error{
-			Err:  fmt.Sprintf("%s: %s", e.Err, msg.(error).Error()),
+			Err:  fmt.Sprintf("%s %s", e.Err, msg.(error).Error()),
 			Code: e.Code,
 		}
 	}
