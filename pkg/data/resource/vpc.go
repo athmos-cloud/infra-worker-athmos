@@ -92,11 +92,6 @@ func (vpc *VPC) Insert(project Project, update ...bool) errors.Error {
 	return errors.OK
 }
 
-func (vpc *VPC) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (vpc *VPC) Remove(project Project) errors.Error {
 	//TODO implement me
 	panic("implement me")

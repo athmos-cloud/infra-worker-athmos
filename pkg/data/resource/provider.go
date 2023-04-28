@@ -93,11 +93,6 @@ func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
 	return errors.OK
 }
 
-func (provider *Provider) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (provider *Provider) Remove(project Project) errors.Error {
 	//TODO implement me
 	panic("implement me")

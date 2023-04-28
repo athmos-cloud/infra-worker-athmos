@@ -128,11 +128,6 @@ func (firewall *Firewall) Remove(project Project) errors.Error {
 	panic("implement me")
 }
 
-func (firewall *Firewall) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (firewall *Firewall) Equals(other Firewall) bool {
 	return firewall.Metadata.Equals(other.Metadata) &&
 		firewall.Identifier.Equals(other.Identifier) &&

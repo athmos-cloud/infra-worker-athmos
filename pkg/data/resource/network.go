@@ -98,11 +98,6 @@ func (network *Network) Remove(project Project) errors.Error {
 	panic("implement me")
 }
 
-func (network *Network) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (network *Network) Equals(other Network) bool {
 	return network.Metadata.Equals(other.Metadata) &&
 		network.Identifier.Equals(other.Identifier) &&

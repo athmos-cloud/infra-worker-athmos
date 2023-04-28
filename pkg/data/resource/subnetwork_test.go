@@ -1,9 +1,7 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 	"testing"
@@ -167,48 +165,6 @@ func TestSubnetwork_Insert(t *testing.T) {
 			subnetworkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
 			if !subnetworkGot.Equals(tt.want.subnetwork) {
 				t.Errorf("Insert() = %v, want %v", subnet, tt.want.subnetwork)
-			}
-		})
-	}
-}
-
-func TestSubnetwork_ToDomain(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Subnetwork
-		KubernetesResources kubernetes.ResourceList
-		VPC                 string
-		Network             string
-		Region              string
-		IPCIDRRange         string
-		VMs                 VMCollection
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			subnet := &Subnetwork{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				VPC:                 tt.fields.VPC,
-				Network:             tt.fields.Network,
-				Region:              tt.fields.Region,
-				IPCIDRRange:         tt.fields.IPCIDRRange,
-				VMs:                 tt.fields.VMs,
-			}
-			got, got1 := subnet.ToDomain()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
-			}
-			if !got1.Equals(tt.want1) {
-				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

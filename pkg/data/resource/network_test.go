@@ -1,11 +1,8 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"reflect"
 	"testing"
 )
 
@@ -113,42 +110,6 @@ func TestNetwork_Insert(t *testing.T) {
 			networkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
 			if !networkGot.Equals(tt.want.network) {
 				t.Errorf("Insert() = %v, want %v", network, tt.want.network)
-			}
-		})
-	}
-}
-
-func TestNetwork_ToDomain(t *testing.T) {
-	type fields struct {
-		Metadata            metadata.Metadata
-		Identifier          identifier.Network
-		KubernetesResources kubernetes.ResourceList
-		Subnetworks         SubnetworkCollection
-		Firewalls           FirewallCollection
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			network := &Network{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Subnetworks:         tt.fields.Subnetworks,
-				Firewalls:           tt.fields.Firewalls,
-			}
-			got, got1 := network.ToDomain()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

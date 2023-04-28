@@ -101,11 +101,6 @@ func (subnet *Subnetwork) Remove(project Project) errors.Error {
 	panic("implement me")
 }
 
-func (subnet *Subnetwork) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (subnet *Subnetwork) Equals(other Subnetwork) bool {
 	return subnet.Metadata.Equals(other.Metadata) &&
 		subnet.Identifier.Equals(other.Identifier) &&

@@ -2,7 +2,6 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -237,52 +236,6 @@ func TestVM_Insert(t *testing.T) {
 			gotVM := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 			if !gotVM.Equals(tt.want.vm) {
 				t.Errorf("Insert() = %v, want %v", vm, tt.want.vm)
-			}
-		})
-	}
-}
-
-func TestVM_ToDomain(t *testing.T) {
-	type fields struct {
-		Metadata    metadata.Metadata
-		Identifier  identifier.VM
-		VPC         string
-		Network     string
-		Subnetwork  string
-		Zone        string
-		MachineType string
-		Auths       []VMAuth
-		Disks       []Disk
-		OS          OS
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vm := &VM{
-				Metadata:    tt.fields.Metadata,
-				Identifier:  tt.fields.Identifier,
-				VPC:         tt.fields.VPC,
-				Network:     tt.fields.Network,
-				Subnetwork:  tt.fields.Subnetwork,
-				Zone:        tt.fields.Zone,
-				MachineType: tt.fields.MachineType,
-				Auths:       tt.fields.Auths,
-				Disks:       tt.fields.Disks,
-				OS:          tt.fields.OS,
-			}
-			got, got1 := vm.ToDomain()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
-			}
-			if !got1.Equals(tt.want1) {
-				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

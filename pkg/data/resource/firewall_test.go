@@ -207,30 +207,3 @@ func TestFirewall_Insert(t *testing.T) {
 		})
 	}
 }
-
-func TestFirewall_ToDomain(t *testing.T) {
-	type fields struct {
-		Firewall Firewall
-	}
-
-	tests := []struct {
-		name   string
-		fields fields
-		want   interface{}
-		want1  errors.Error
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			firewall := tt.fields.Firewall
-			got, got1 := firewall.ToDomain()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToDomain() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("ToDomain() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}

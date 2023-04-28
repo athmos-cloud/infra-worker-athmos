@@ -169,8 +169,3 @@ func (vm *VM) Remove(project Project) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
-
-func (vm *VM) ToDomain() (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
