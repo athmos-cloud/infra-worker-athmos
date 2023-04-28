@@ -93,8 +93,12 @@ func (vpc *VPC) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (vpc *VPC) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	_, ok := project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("vpc %s in provider %s not found", vpc.Identifier.ID, vpc.Identifier.ProviderID))
+	}
+	delete(project.Resources[vpc.Identifier.ProviderID].VPCs, vpc.Identifier.ID)
+	return errors.NoContent
 }
 
 func (vpc *VPC) Equals(other VPC) bool {

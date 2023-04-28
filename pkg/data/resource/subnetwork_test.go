@@ -169,3 +169,71 @@ func TestSubnetwork_Insert(t *testing.T) {
 		})
 	}
 }
+
+func TestSubnetwork_Remove(t *testing.T) {
+	type fields struct {
+		Subnetwork Subnetwork
+	}
+	type args struct {
+		project Project
+	}
+	type want struct {
+		err errors.Error
+	}
+
+	providerID := "test"
+	vpcID := "test"
+	networkID := "test"
+
+	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+
+	testProject := NewProject("test", "owner_test")
+	testProvider := NewProvider(identifier.Provider{ID: providerID})
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
+	testVPC.Networks[networkID] = testNetwork
+	testProvider.VPCs[vpcID] = testVPC
+	testProject.Resources[providerID] = testProvider
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "Remove existing subnetwork",
+			fields: fields{
+				Subnetwork: subnetwork1,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NoContent,
+			},
+		},
+		{
+			name: "Remove non-existing subnetwork",
+			fields: fields{
+				Subnetwork: subnetwork2,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NotFound,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subnet := tt.fields.Subnetwork
+			if got := subnet.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
+				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
+			}
+		})
+	}
+}

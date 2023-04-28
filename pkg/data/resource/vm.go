@@ -166,6 +166,11 @@ func (vm *VM) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (vm *VM) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	id := vm.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", id.ID, id.SubnetID))
+	}
+	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs, id.ID)
+	return errors.NoContent
 }

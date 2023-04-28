@@ -97,8 +97,13 @@ func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (subnet *Subnetwork) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	id := subnet.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID))
+	}
+	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks, id.ID)
+	return errors.NoContent
 }
 
 func (subnet *Subnetwork) Equals(other Subnetwork) bool {

@@ -124,8 +124,13 @@ func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (firewall *Firewall) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	id := firewall.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+	}
+	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls, id.ID)
+	return errors.NoContent
 }
 
 func (firewall *Firewall) Equals(other Firewall) bool {

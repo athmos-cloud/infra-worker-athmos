@@ -240,3 +240,73 @@ func TestVM_Insert(t *testing.T) {
 		})
 	}
 }
+
+func TestVM_Remove(t *testing.T) {
+	type fields struct {
+		vm VM
+	}
+	type args struct {
+		project Project
+	}
+	type want struct {
+		err errors.Error
+	}
+	providerID := "test"
+	vpcID := "test"
+	networkID := "test"
+	subnetID := "test"
+
+	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
+	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
+
+	testProject := NewProject("test", "owner_test")
+	testProvider := NewProvider(identifier.Provider{ID: providerID})
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	testSubnet.VMs[vm1.Identifier.ID] = vm1
+	testNetwork.Subnetworks[subnetID] = testSubnet
+	testVPC.Networks[networkID] = testNetwork
+	testProvider.VPCs[vpcID] = testVPC
+	testProject.Resources[providerID] = testProvider
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "Remove existing vm",
+			fields: fields{
+				vm: vm1,
+			},
+			args: args{
+				testProject,
+			},
+			want: want{
+				err: errors.NoContent,
+			},
+		},
+		{
+			name: "Remove non-existing vm",
+			fields: fields{
+				vm: vm2,
+			},
+			args: args{
+				testProject,
+			},
+			want: want{
+				err: errors.NotFound,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vm := tt.fields.vm
+			if got := vm.Remove(tt.args.project); got.Code != tt.want.err.Code {
+				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
+			}
+		})
+	}
+}

@@ -3,6 +3,7 @@ package resource
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"reflect"
 	"testing"
 )
 
@@ -110,6 +111,71 @@ func TestNetwork_Insert(t *testing.T) {
 			networkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
 			if !networkGot.Equals(tt.want.network) {
 				t.Errorf("Insert() = %v, want %v", network, tt.want.network)
+			}
+		})
+	}
+}
+
+func TestNetwork_Remove(t *testing.T) {
+	type fields struct {
+		Network Network
+	}
+	type args struct {
+		project Project
+	}
+	type want struct {
+		err errors.Error
+	}
+
+	providerID := "test"
+	vpcID := "test"
+
+	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID})
+	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID})
+
+	testProject := NewProject("test", "owner_test")
+	testProvider := NewProvider(identifier.Provider{ID: providerID})
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testVPC.Networks[network1.Identifier.ID] = network1
+	testProvider.VPCs[vpcID] = testVPC
+	testProject.Resources[providerID] = testProvider
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "Remove existing network",
+			fields: fields{
+				Network: network1,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NoContent,
+			},
+		},
+		{
+			name: "Remove non-existing network",
+			fields: fields{
+				Network: network2,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NotFound,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			network := tt.fields.Network
+			if got := network.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
+				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
 			}
 		})
 	}

@@ -207,3 +207,71 @@ func TestFirewall_Insert(t *testing.T) {
 		})
 	}
 }
+
+func TestFirewall_Remove(t *testing.T) {
+	type fields struct {
+		Firewall Firewall
+	}
+	type args struct {
+		project Project
+	}
+	type want struct {
+		err errors.Error
+	}
+
+	providerID := "test"
+	vpcID := "test"
+	networkID := "test"
+
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+
+	testProject := NewProject("test", "owner_test")
+	testProvider := NewProvider(identifier.Provider{ID: providerID})
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
+	testVPC.Networks[networkID] = testNetwork
+	testProvider.VPCs[vpcID] = testVPC
+	testProject.Resources[providerID] = testProvider
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "Remove existing firewall",
+			fields: fields{
+				Firewall: firewall1,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NoContent,
+			},
+		},
+		{
+			name: "Remove non-existing firewall",
+			fields: fields{
+				Firewall: firewall2,
+			},
+			args: args{
+				project: testProject,
+			},
+			want: want{
+				err: errors.NotFound,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			firewall := tt.fields.Firewall
+			if got := firewall.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
+				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
+			}
+		})
+	}
+}

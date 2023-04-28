@@ -94,8 +94,13 @@ func (network *Network) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (network *Network) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	id := network.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+	}
+	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks, id.ID)
+	return errors.NoContent
 }
 
 func (network *Network) Equals(other Network) bool {

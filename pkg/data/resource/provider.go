@@ -94,16 +94,11 @@ func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
 }
 
 func (provider *Provider) Remove(project Project) errors.Error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func validateEntryMap(entry map[string]interface{}) errors.Error {
-	if entry["name"] == "" || reflect.TypeOf(entry["name"]).Kind() != reflect.String {
-		return errors.InvalidArgument.WithMessage("a string name is required")
+	id := provider.Identifier
+	_, ok := project.Resources[provider.Identifier.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID))
 	}
-	if entry["value"] == "" {
-		return errors.InvalidArgument.WithMessage("value is required")
-	}
-	return errors.OK
+	delete(project.Resources, provider.Identifier.ID)
+	return errors.NoContent
 }

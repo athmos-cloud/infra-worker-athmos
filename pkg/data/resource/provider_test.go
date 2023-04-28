@@ -222,3 +222,77 @@ func TestProvider_Insert(t *testing.T) {
 		})
 	}
 }
+
+func TestProvider_Remove(t *testing.T) {
+	type fields struct {
+		Metadata            metadata.Metadata
+		Identifier          identifier.Provider
+		KubernetesResources kubernetes.ResourceList
+		Type                common.ProviderType
+		Auth                auth.Auth
+		VPCs                VPCCollection
+	}
+	type args struct {
+		project Project
+	}
+	type want struct {
+		err errors.Error
+	}
+	testProject := NewProject("test", "owner_test")
+	providerTest1 := Provider{
+		Identifier: identifier.Provider{
+			ID: "test-1",
+		},
+	}
+	testProject.Resources[providerTest1.Identifier.ID] = providerTest1
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "Remove existing provider",
+			fields: fields{
+				Identifier: identifier.Provider{
+					ID: "test-1",
+				},
+			},
+			args: args{
+				testProject,
+			},
+			want: want{
+				err: errors.NoContent,
+			},
+		},
+		{
+			name: "Remove non-existing provider",
+			fields: fields{
+				Identifier: identifier.Provider{
+					ID: "test-2",
+				},
+			},
+			args: args{
+				testProject,
+			},
+			want: want{
+				err: errors.NotFound,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := &Provider{
+				Metadata:            tt.fields.Metadata,
+				Identifier:          tt.fields.Identifier,
+				KubernetesResources: tt.fields.KubernetesResources,
+				Type:                tt.fields.Type,
+				Auth:                tt.fields.Auth,
+				VPCs:                tt.fields.VPCs,
+			}
+			if got := provider.Remove(tt.args.project); got.Code != tt.want.err.Code {
+				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
+			}
+		})
+	}
+}
