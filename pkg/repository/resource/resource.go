@@ -87,7 +87,7 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 	}
 	// Parse manifest
 
-	// Insert into resource
+	// Insert resource into project
 
 	// Persist resource
 

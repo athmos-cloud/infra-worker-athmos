@@ -26,3 +26,13 @@ func (project *Project) Insert(resource IResource) *Project {
 	resource.Insert(*project)
 	return project
 }
+
+func (project *Project) Update(resource IResource) *Project {
+	resource.Insert(*project, true)
+	return project
+}
+
+func (project *Project) Delete(resource IResource) *Project {
+	resource.Remove(*project)
+	return project
+}
