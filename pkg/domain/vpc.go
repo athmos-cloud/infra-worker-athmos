@@ -3,9 +3,9 @@ package domain
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type VPC struct {
-	Name      string
-	Monitored bool
-	Networks  NetworkCollection
+	Name      string            `json:"name"`
+	Monitored bool              `json:"monitored"`
+	Networks  NetworkCollection `json:"networks"`
 }
 
 func FromVPCDataMapper(vpc resource.VPC) VPC {

@@ -3,15 +3,17 @@ package domain
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type Subnetwork struct {
-	Name        string
-	IPCIDRRange string
-	Region      string `bson:"region"`
-	VMs         VMCollection
+	Name        string       `json:"name"`
+	Monitored   bool         `json:"monitored"`
+	IPCIDRRange string       `json:"ip_cidr_range"`
+	Region      string       `json:"region"`
+	VMs         VMCollection `json:"vms"`
 }
 
 func FromSubnetworkDataMapper(subnet resource.Subnetwork) Subnetwork {
 	return Subnetwork{
 		Name:        subnet.Identifier.ID,
+		Monitored:   subnet.Metadata.Monitored,
 		IPCIDRRange: subnet.IPCIDRRange,
 		Region:      subnet.Region,
 		VMs:         FromVMCollectionDataMapper(subnet.VMs),

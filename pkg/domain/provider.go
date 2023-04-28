@@ -6,10 +6,10 @@ import (
 )
 
 type Provider struct {
-	Name         string
-	Monitored    bool
-	ProviderType common.ProviderType
-	VPCs         VPCCollection
+	Name         string              `json:"name"`
+	Monitored    bool                `json:"monitored"`
+	ProviderType common.ProviderType `json:"provider_type"`
+	VPCs         VPCCollection       `json:"vpcs"`
 }
 
 func FromProviderDataMapper(provider resource.Provider) Provider {

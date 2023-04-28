@@ -3,15 +3,16 @@ package domain
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type VM struct {
-	Name        string   `bson:"name"`
-	VPC         string   `bson:"vpc"`
-	Network     string   `bson:"network"`
-	Subnetwork  string   `bson:"subnetwork"`
-	Zone        string   `bson:"zone"`
-	MachineType string   `bson:"machineType"`
-	Auths       []VMAuth `bson:"auths"`
-	Disks       []Disk   `bson:"disks"`
-	OS          OS       `bson:"os"`
+	Name        string   `json:"name"`
+	Monitored   bool     `json:"monitored"`
+	VPC         string   `json:"vpc"`
+	Network     string   `json:"network"`
+	Subnetwork  string   `json:"subnetwork"`
+	Zone        string   `json:"zone"`
+	MachineType string   `json:"machineType"`
+	Auths       []VMAuth `json:"auths"`
+	Disks       []Disk   `json:"disks"`
+	OS          OS       `json:"os"`
 }
 
 type VMCollection map[string]VM
@@ -35,6 +36,7 @@ func FromVMDataMapper(vm resource.VM) VM {
 	}
 	return VM{
 		Name:        vm.Identifier.ID,
+		Monitored:   vm.Metadata.Monitored,
 		VPC:         vm.VPC,
 		Network:     vm.Network,
 		Subnetwork:  vm.Subnetwork,
@@ -54,10 +56,10 @@ func FromVMCollectionDataMapper(vmCollection resource.VMCollection) VMCollection
 }
 
 type Disk struct {
-	Type       string   `bson:"type"`
-	Mode       DiskMode `bson:"mode"`
-	SizeGib    int      `bson:"sizeGib"`
-	AutoDelete bool     `bson:"autoDelete"`
+	Type       string   `json:"type"`
+	Mode       DiskMode `json:"mode"`
+	SizeGib    int      `json:"sizeGib"`
+	AutoDelete bool     `json:"autoDelete"`
 }
 
 type DiskMode string
@@ -79,11 +81,11 @@ func DiskModeFromString(input string) DiskMode {
 }
 
 type VMAuth struct {
-	Username     string `bson:"username"`
-	SSHPublicKey string `bson:"sshPublicKey"`
+	Username     string `json:"username"`
+	SSHPublicKey string `json:"sshPublicKey"`
 }
 
 type OS struct {
-	Type    string `bson:"type"`
-	Version string `bson:"version"`
+	Type    string `json:"type"`
+	Version string `json:"version"`
 }
