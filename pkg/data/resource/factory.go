@@ -1,4 +1,4 @@
-package domain
+package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"

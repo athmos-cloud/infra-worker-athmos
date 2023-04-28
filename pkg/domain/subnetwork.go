@@ -1,36 +1,31 @@
 package domain
 
-import (
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-)
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type Subnetwork struct {
-	Metadata    Metadata `bson:"metadata"`
-	Region      string   `bson:"region"`
-	IPCIDRRange string   `bson:"ipCidrRange"`
-	VMs         []VM     `bson:"vmList"`
+	Name        string       `json:"name"`
+	Monitored   bool         `json:"monitored"`
+	IPCIDRRange string       `json:"ip_cidr_range"`
+	Region      string       `json:"region"`
+	VMs         VMCollection `json:"vms"`
 }
 
-func (subnet *Subnetwork) GetMetadata() Metadata {
-	return subnet.Metadata
+func FromSubnetworkDataMapper(subnet resource.Subnetwork) Subnetwork {
+	return Subnetwork{
+		Name:        subnet.Identifier.ID,
+		Monitored:   subnet.Metadata.Monitored,
+		IPCIDRRange: subnet.IPCIDRRange,
+		Region:      subnet.Region,
+		VMs:         FromVMCollectionDataMapper(subnet.VMs),
+	}
 }
 
-func (subnet *Subnetwork) WithMetadata(request CreateMetadataRequest) {
-	subnet.Metadata = New(request)
-}
+type SubnetworkCollection map[string]Subnetwork
 
-func (subnet *Subnetwork) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (subnet *Subnetwork) FromMap(m map[string]interface{}) errors.Error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (subnet *Subnetwork) InsertIntoProject(project Project, upsert bool) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func FromSubnetworkCollectionDataMapper(subnets resource.SubnetworkCollection) SubnetworkCollection {
+	result := make(SubnetworkCollection)
+	for _, subnet := range subnets {
+		result[subnet.Identifier.ID] = FromSubnetworkDataMapper(subnet)
+	}
+	return result
 }

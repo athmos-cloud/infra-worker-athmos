@@ -1,61 +1,27 @@
 package domain
 
-import (
-	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
-)
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type VPC struct {
-	Metadata Metadata  `bson:"metadata"`
-	Networks []Network `bson:"networks"`
+	Name      string            `json:"name"`
+	Monitored bool              `json:"monitored"`
+	Networks  NetworkCollection `json:"networks"`
 }
 
-func (vpc *VPC) WithMetadata(request CreateMetadataRequest) {
-	vpc.Metadata = New(request)
-}
-
-func (vpc *VPC) GetMetadata() Metadata {
-	return vpc.Metadata
-}
-
-func (vpc *VPC) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
-	case common.GCP:
-		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.VPC.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.VPC.Version,
-		}, errors.Error{}
+func FromVPCDataMapper(vpc resource.VPC) VPC {
+	return VPC{
+		Name:      vpc.Identifier.ID,
+		Monitored: vpc.Metadata.Monitored,
+		Networks:  FromNetworkCollectionDataMapper(vpc.Networks),
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
 }
 
-func (vpc *VPC) FromMap(data map[string]interface{}) errors.Error {
-	*vpc = VPC{}
-	if data["id"] == nil {
-		vpc.Metadata.ID = utils.GenerateUUID()
-	} else {
-		vpc.Metadata.ID = data["id"].(string)
-	}
-	if data["name"] == nil {
-		return errors.InvalidArgument.WithMessage("name is required")
-	}
-	return errors.OK
-}
+type VPCCollection map[string]VPC
 
-func (vpc *VPC) InsertIntoProject(project Project, upsert bool) errors.Error {
-	for _, r := range project.Resources {
-		for _, v := range r.VPCs {
-			if v.Metadata.ID == vpc.Metadata.ID && upsert {
-				v = *vpc
-				return errors.OK
-			} else if v.Metadata.ID == vpc.Metadata.ID && !upsert {
-				return errors.AlreadyExists.WithMessage("vpc already exists")
-			}
-		}
+func FromVPCCollectionDataMapper(vpcs resource.VPCCollection) VPCCollection {
+	result := make(VPCCollection)
+	for _, vpc := range vpcs {
+		result[vpc.Identifier.ID] = FromVPCDataMapper(vpc)
 	}
-	return errors.OK
+	return result
 }

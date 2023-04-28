@@ -21,7 +21,7 @@ func (repository *Repository) validateCreateUpdate(ctx context.Context, projectN
 		return err
 	}
 	if exists {
-		return errors.AlreadyExists.WithMessage(
+		return errors.Conflict.WithMessage(
 			fmt.Sprintf("Project with name %s owned by %s already exists", projectName, ownerID),
 		)
 	}

@@ -1,65 +1,91 @@
 package domain
 
-import (
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-)
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type VM struct {
-	Metadata    Metadata `bson:"metadata"`
-	VPC         string   `bson:"vpc"`
-	Network     string   `bson:"network"`
-	Subnetwork  string   `bson:"subnetwork"`
-	Zone        string   `bson:"zone"`
-	MachineType string   `bson:"machineType"`
-	Auths       []VMAuth `bson:"auths"`
-	Disks       []Disk   `bson:"disks"`
-	OS          OS       `bson:"os"`
+	Name        string   `json:"name"`
+	Monitored   bool     `json:"monitored"`
+	VPC         string   `json:"vpc"`
+	Network     string   `json:"network"`
+	Subnetwork  string   `json:"subnetwork"`
+	Zone        string   `json:"zone"`
+	MachineType string   `json:"machineType"`
+	Auths       []VMAuth `json:"auths"`
+	Disks       []Disk   `json:"disks"`
+	OS          OS       `json:"os"`
+}
+
+type VMCollection map[string]VM
+
+func FromVMDataMapper(vm resource.VM) VM {
+	auths := make([]VMAuth, len(vm.Auths))
+	for i, auth := range vm.Auths {
+		auths[i] = VMAuth{
+			Username:     auth.Username,
+			SSHPublicKey: auth.SSHPublicKey,
+		}
+	}
+	disks := make([]Disk, len(vm.Disks))
+	for i, disk := range vm.Disks {
+		disks[i] = Disk{
+			Type:       disk.Type,
+			Mode:       DiskModeFromString(string(disk.Mode)),
+			SizeGib:    disk.SizeGib,
+			AutoDelete: disk.AutoDelete,
+		}
+	}
+	return VM{
+		Name:        vm.Identifier.ID,
+		Monitored:   vm.Metadata.Monitored,
+		VPC:         vm.VPC,
+		Network:     vm.Network,
+		Subnetwork:  vm.Subnetwork,
+		Zone:        vm.Zone,
+		MachineType: vm.MachineType,
+		Auths:       auths,
+		Disks:       disks,
+	}
+}
+
+func FromVMCollectionDataMapper(vmCollection resource.VMCollection) VMCollection {
+	vms := VMCollection{}
+	for _, vm := range vmCollection {
+		vms[vm.Identifier.ID] = FromVMDataMapper(vm)
+	}
+	return vms
 }
 
 type Disk struct {
-	Type       string   `bson:"type"`
-	Mode       DiskMode `bson:"mode"`
-	SizeGib    int      `bson:"sizeGib"`
-	AutoDelete bool     `bson:"autoDelete"`
+	Type       string   `json:"type"`
+	Mode       DiskMode `json:"mode"`
+	SizeGib    int      `json:"sizeGib"`
+	AutoDelete bool     `json:"autoDelete"`
 }
 
 type DiskMode string
 
 const (
-	READ_ONLY  DiskMode = "READ_ONLY"
-	READ_WRITE DiskMode = "READ_WRITE"
+	ReadOnly  DiskMode = "READ_ONLY"
+	ReadWrite DiskMode = "READ_WRITE"
 )
 
+func DiskModeFromString(input string) DiskMode {
+	switch input {
+	case "READ_ONLY":
+		return ReadOnly
+	case "READ_WRITE":
+		return ReadWrite
+	default:
+		return ""
+	}
+}
+
 type VMAuth struct {
-	Username     string `bson:"username"`
-	SSHPublicKey string `bson:"sshPublicKey"`
+	Username     string `json:"username"`
+	SSHPublicKey string `json:"sshPublicKey"`
 }
 
 type OS struct {
-	Type    string `bson:"type"`
-	Version string `bson:"version"`
-}
-
-func (vm *VM) GetMetadata() Metadata {
-	return vm.Metadata
-}
-
-func (vm *VM) WithMetadata(request CreateMetadataRequest) {
-	vm.Metadata = New(request)
-}
-
-func (vm *VM) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (vm *VM) FromMap(data map[string]interface{}) errors.Error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (vm *VM) InsertIntoProject(project Project, upsert bool) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	Type    string `json:"type"`
+	Version string `json:"version"`
 }

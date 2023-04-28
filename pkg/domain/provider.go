@@ -1,56 +1,32 @@
 package domain
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 )
 
 type Provider struct {
-	Metadata Metadata            `bson:"metadata"`
-	Type     common.ProviderType `bson:"type"`
-	Auth     Auth                `bson:"auth"`
-	VPCs     []VPC               `bson:"vpcs"`
+	Name         string              `json:"name"`
+	Monitored    bool                `json:"monitored"`
+	ProviderType common.ProviderType `json:"provider_type"`
+	VPCs         VPCCollection       `json:"vpcs"`
 }
 
-type ProviderList []Provider
-
-func (provider *Provider) GetMetadata() Metadata {
-	return provider.Metadata
-}
-
-func (provider *Provider) WithMetadata(request CreateMetadataRequest) {
-	provider.Metadata = New(request)
-}
-func (provider *Provider) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
-	case common.GCP:
-		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.Provider.Version,
-		}, errors.Error{}
+func FromProviderDataMapper(provider resource.Provider) Provider {
+	return Provider{
+		Name:         provider.Identifier.ID,
+		Monitored:    provider.Metadata.Monitored,
+		ProviderType: provider.Type,
+		VPCs:         FromVPCCollectionDataMapper(provider.VPCs),
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
 }
 
-func (provider *Provider) FromMap(m map[string]interface{}) errors.Error {
-	*provider = Provider{}
-	if m["id"] == nil {
-		provider.Metadata.ID = utils.GenerateUUID()
-	} else {
-		provider.Metadata.ID = m["id"].(string)
-	}
-	if m["name"] == nil {
-		return errors.InvalidArgument.WithMessage("name is required")
-	}
-	provider.Metadata.Name = m["name"].(string)
-	return errors.OK
-}
+type ProviderCollection map[string]Provider
 
-func (provider *Provider) InsertIntoProject(project Project, upsert bool) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func FromProviderCollectionDataMapper(providers resource.ProviderCollection) ProviderCollection {
+	result := make(ProviderCollection)
+	for _, provider := range providers {
+		result[provider.Identifier.ID] = FromProviderDataMapper(provider)
+	}
+	return result
 }

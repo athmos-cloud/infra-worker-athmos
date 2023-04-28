@@ -1,0 +1,112 @@
+package resource
+
+import (
+	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
+	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"reflect"
+)
+
+type Network struct {
+	Metadata            metadata.Metadata       `bson:"metadata"`
+	Identifier          identifier.Network      `bson:"identifier"`
+	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
+	Subnetworks         SubnetworkCollection    `bson:"subnetworks"`
+	Firewalls           FirewallCollection      `bson:"firewalls"`
+}
+
+func NewNetwork(id identifier.Network) Network {
+	return Network{
+		Metadata:            metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
+		Identifier:          id,
+		KubernetesResources: kubernetes.ResourceList{},
+		Subnetworks:         make(SubnetworkCollection),
+		Firewalls:           make(FirewallCollection),
+	}
+}
+
+type NetworkCollection map[string]Network
+
+func (netCollection *NetworkCollection) Equals(other NetworkCollection) bool {
+	if len(*netCollection) != len(other) {
+		return false
+	}
+	for key, value := range *netCollection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (network *Network) New(id identifier.ID) (IResource, errors.Error) {
+	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Network{}) {
+		return nil, errors.InvalidArgument.WithMessage("id type is not NetworkID")
+	}
+	res := NewNetwork(id.(identifier.Network))
+	return &res, errors.OK
+}
+
+func (network *Network) GetMetadata() metadata.Metadata {
+	return network.Metadata
+}
+
+func (network *Network) WithMetadata(request metadata.CreateMetadataRequest) {
+	network.Metadata = metadata.New(request)
+}
+
+func (network *Network) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
+	switch request.ProviderType {
+	case common.GCP:
+		return dto.GetPluginReferenceResponse{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Network.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Network.Version,
+		}, errors.Error{}
+	}
+	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
+}
+
+func (network *Network) FromMap(data map[string]interface{}) errors.Error {
+	return resourcePlugin.InjectMapIntoStruct(data, network)
+}
+
+func (network *Network) Insert(project Project, update ...bool) errors.Error {
+	shouldUpdate := false
+	if len(update) > 0 {
+		shouldUpdate = update[0]
+	}
+	id := network.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
+	if !ok && shouldUpdate {
+		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+	}
+	if ok && !shouldUpdate {
+		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID))
+	}
+	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID] = *network
+	return errors.OK
+}
+
+func (network *Network) Remove(project Project) errors.Error {
+	id := network.Identifier
+	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
+	if !ok {
+		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+	}
+	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks, id.ID)
+	return errors.NoContent
+}
+
+func (network *Network) Equals(other Network) bool {
+	return network.Metadata.Equals(other.Metadata) &&
+		network.Identifier.Equals(other.Identifier) &&
+		network.KubernetesResources.Equals(other.KubernetesResources) &&
+		network.Subnetworks.Equals(other.Subnetworks) &&
+		network.Firewalls.Equals(other.Firewalls)
+}

@@ -6,12 +6,11 @@ import (
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
 	"sync"
@@ -54,21 +53,17 @@ func (repository *Repository) Create(ctx context.Context, optn option.Option) (i
 		return nil, err
 	}
 
-	projectNamespace := fmt.Sprintf("%s-%s", request.ProjectName, utils.RandomString(5))
+	newProject := resource.NewProject(request.ProjectName, request.OwnerID)
 	_, err := repository.kubernetesDAO.Create(ctx, option.Option{
 		Value: kubernetes.CreateNamespaceRequest{
-			Name: projectNamespace,
+			Name: newProject.Namespace,
 		},
 	})
 	if !err.IsOk() {
 		return nil, err
 	}
 	// Persist
-	newProject := domain.Project{
-		Name:      request.ProjectName,
-		OwnerID:   request.OwnerID,
-		Namespace: projectNamespace,
-	}
+
 	mongoRequest := mongo.CreateRequest{
 		Payload:        newProject,
 		CollectionName: config.Current.Mongo.ProjectCollection,
@@ -140,14 +135,14 @@ func (repository *Repository) List(ctx context.Context, optn option.Option) (int
 	}
 
 	// From mongo raw to Project entity
-	var projects []domain.Project
+	var projects []resource.Project
 	for _, p := range resp.(mongo.GetAllResponse).Payload {
 		primitive := p.(bson.D)
 		doc, errMarshal := bson.Marshal(primitive)
 		if errMarshal != nil {
 			logger.Error.Printf("Error marshalling bson: %v", errMarshal)
 		}
-		var projectItem domain.Project
+		var projectItem resource.Project
 		if errUnmarshall := bson.Unmarshal(doc, &projectItem); errUnmarshall != nil {
 			logger.Error.Printf("Error unmarshalling bson: %v", errUnmarshall)
 		}

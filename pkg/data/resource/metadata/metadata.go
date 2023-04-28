@@ -1,4 +1,4 @@
-package domain
+package metadata
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 )
 
 type Metadata struct {
-	ID               string            `bson:"_id"`
 	Name             string            `bson:"name"`
 	Monitored        bool              `bson:"monitored,default=true"`
 	Tags             map[string]string `bson:"tags,omitempty"`
@@ -20,16 +19,24 @@ type CreateMetadataRequest struct {
 	Tags             map[string]string
 }
 
+func (metadata *Metadata) Equals(other Metadata) bool {
+	return metadata.Name == other.Name &&
+		metadata.Monitored == other.Monitored &&
+		utils.MapEquals(metadata.Tags, other.Tags) &&
+		metadata.ReleaseReference.Name == other.ReleaseReference.Name &&
+		metadata.ReleaseReference.Namespace == other.ReleaseReference.Namespace &&
+		utils.SliceEquals(metadata.ReleaseReference.Versions, other.ReleaseReference.Versions)
+}
+
 func New(request CreateMetadataRequest) Metadata {
 	return Metadata{
-		ID:        utils.GenerateUUID(),
 		Name:      request.Name,
 		Monitored: !request.NotMonitored,
 		Tags:      request.Tags,
 		ReleaseReference: ReleaseReference{
 			Name:      fmt.Sprintf("%s-%s", request.Name, utils.GenerateUUID()),
 			Namespace: request.ProjectNamespace,
-			Versions:  []string{},
+			Versions:  make([]string, 0),
 		},
 	}
 }

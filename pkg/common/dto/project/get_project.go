@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 )
 
 type GetProjectByIDRequest struct {
@@ -9,7 +9,7 @@ type GetProjectByIDRequest struct {
 }
 
 type GetProjectByIDResponse struct {
-	Payload domain.Project `json:"payload"`
+	Payload resource.Project `json:"payload"`
 }
 
 type GetProjectByOwnerIDRequest struct {
@@ -17,5 +17,5 @@ type GetProjectByOwnerIDRequest struct {
 }
 
 type GetProjectByOwnerIDResponse struct {
-	Payload []domain.Project `json:"payload"`
+	Payload []resource.Project `json:"payload"`
 }

@@ -2,7 +2,7 @@ package application
 
 import (
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/plugin"
-	plugin2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/plugin"
+	plugin2 "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
 

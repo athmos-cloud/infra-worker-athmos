@@ -1,35 +1,29 @@
 package domain
 
-import (
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-)
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 
 type Network struct {
-	Metadata    Metadata     `bson:"metadata"`
-	Subnetworks []Subnetwork `bson:"subnetworks"`
-	Firewalls   []Firewall   `bson:"firewalls"`
+	Monitored   bool                 `json:"monitored"`
+	Name        string               `json:"name"`
+	Subnetworks SubnetworkCollection `json:"subnetworks"`
+	Firewalls   FirewallCollection   `json:"firewalls"`
 }
 
-func (network *Network) GetMetadata() Metadata {
-	return network.Metadata
+func FromNetworkDataMapper(network resource.Network) Network {
+	return Network{
+		Monitored:   network.Metadata.Monitored,
+		Name:        network.Identifier.ID,
+		Subnetworks: FromSubnetworkCollectionDataMapper(network.Subnetworks),
+		Firewalls:   FromFirewallCollectionDataMapper(network.Firewalls),
+	}
 }
 
-func (network *Network) WithMetadata(request CreateMetadataRequest) {
-	network.Metadata = New(request)
-}
+type NetworkCollection map[string]Network
 
-func (network *Network) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (network *Network) FromMap(m map[string]interface{}) errors.Error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (network *Network) InsertIntoProject(project Project, upsert bool) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func FromNetworkCollectionDataMapper(networks resource.NetworkCollection) NetworkCollection {
+	result := make(NetworkCollection)
+	for _, network := range networks {
+		result[network.Identifier.ID] = FromNetworkDataMapper(network)
+	}
+	return result
 }
