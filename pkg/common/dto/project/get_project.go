@@ -5,7 +5,7 @@ import (
 )
 
 type GetProjectByIDRequest struct {
-	ProjectID string `json:"project_id"`
+	ProjectID string `json:"projectID"`
 }
 
 type GetProjectByIDResponse struct {
@@ -13,7 +13,7 @@ type GetProjectByIDResponse struct {
 }
 
 type GetProjectByOwnerIDRequest struct {
-	OwnerID string `json:"owner_id"`
+	OwnerID string `json:"ownerId"`
 }
 
 type GetProjectByOwnerIDResponse struct {

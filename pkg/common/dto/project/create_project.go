@@ -1,10 +1,10 @@
 package project
 
 type CreateProjectRequest struct {
-	ProjectName string `json:"project_name"`
-	OwnerID     string `json:"owner_id"`
+	ProjectName string `json:"projectName"`
+	OwnerID     string `json:"ownerID"`
 }
 
 type CreateProjectResponse struct {
-	ProjectID string `json:"project_id"`
+	ProjectID string `json:"projectID"`
 }

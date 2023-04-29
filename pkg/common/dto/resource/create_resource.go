@@ -6,10 +6,10 @@ import (
 )
 
 type CreateResourceRequest struct {
-	ProjectID     string                 `json:"project_id"`
-	ProviderType  common.ProviderType    `json:"provider_type"`
-	ResourceType  common.ResourceType    `json:"resource_type"`
-	ResourceSpecs map[string]interface{} `json:"resource_specs"`
+	ProjectID     string                 `json:"projectId"`
+	ProviderType  common.ProviderType    `json:"providerType"`
+	ResourceType  common.ResourceType    `json:"resourceType"`
+	ResourceSpecs map[string]interface{} `json:"resourceSpecs"`
 }
 
 type CreateResourceResponse struct {

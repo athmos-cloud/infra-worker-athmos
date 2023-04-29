@@ -158,12 +158,12 @@ func (r *ReleaseDAO) Delete(_ context.Context, request option.Option) {
 	}
 }
 
-func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *ReleaseDAO) Close(_ context.Context) errors.Error {
+func (r *ReleaseDAO) Close(_ context.Context) {
 	//TODO implement me
 	panic("implement me")
 }
