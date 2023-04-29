@@ -2,7 +2,7 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	"helm.sh/helm/v3/pkg/release"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 )
 
 type CreateResourceRequest struct {
@@ -13,6 +13,6 @@ type CreateResourceRequest struct {
 }
 
 type CreateResourceResponse struct {
-	ResourceID  string
-	HelmRelease *release.Release
+	Resource resource.IResource
+	Project  resource.Project
 }

@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"gopkg.in/yaml.v3"
@@ -46,8 +45,10 @@ type Type struct {
 	Fields map[string]Input `yaml:"fields"`
 }
 
-func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin, errors.Error) {
+func Get(reference ResourceReference) (Plugin, errors.Error) {
 	//read plugin
+	provider := reference.ProviderType
+	resourceType := reference.ResourceType
 	mainPath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, MainPluginFile)
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {

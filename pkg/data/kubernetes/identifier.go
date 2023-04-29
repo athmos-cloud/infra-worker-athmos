@@ -42,7 +42,6 @@ func getResourceIdentifierFromManifest(manifest string) (Identifier, errors.Erro
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, gvk, err := decode([]byte(manifest), nil, nil)
 	if err != nil {
-		log.Fatal("Error decoding manifest:", err)
 		return Identifier{}, errors.InvalidArgument.WithMessage(err.Error())
 	}
 	groupVersionResource := schema.GroupVersionResource{

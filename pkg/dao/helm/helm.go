@@ -3,7 +3,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -135,7 +134,7 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interfa
 		)
 	}
 
-	return resource.CreateResourceResponse{HelmRelease: release}, errors.Created
+	return CreateHelmReleaseResponse{Release: release}, errors.Created
 }
 
 func (r *ReleaseDAO) Update(ctx context.Context, request option.Option) errors.Error {

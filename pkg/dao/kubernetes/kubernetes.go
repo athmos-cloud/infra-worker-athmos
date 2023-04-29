@@ -100,7 +100,7 @@ func (r *DAO) GetAll(ctx context.Context, option option.Option) (interface{}, er
 	return list.Items, errors.OK
 }
 
-// Create namspace from a given name string
+// Create namespace from a given name string
 func (r *DAO) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
 	if optn = optn.SetType(reflect.TypeOf(CreateNamespaceRequest{}).String()); !optn.Validate() {
 		return nil, errors.InvalidArgument.WithMessage(

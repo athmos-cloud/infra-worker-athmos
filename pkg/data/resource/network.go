@@ -3,31 +3,30 @@ package resource
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
 
 type Network struct {
-	Metadata            metadata.Metadata       `bson:"metadata"`
-	Identifier          identifier.Network      `bson:"identifier"`
-	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	Subnetworks         SubnetworkCollection    `bson:"subnetworks"`
-	Firewalls           FirewallCollection      `bson:"firewalls"`
+	Metadata    metadata.Metadata     `bson:"metadata"`
+	Identifier  identifier.Network    `bson:"identifier"`
+	Status      status.ResourceStatus `bson:"status"`
+	Subnetworks SubnetworkCollection  `bson:"subnetworks"`
+	Firewalls   FirewallCollection    `bson:"firewalls"`
 }
 
-func NewNetwork(id identifier.Network) Network {
+func NewNetwork(id identifier.Network, providerType common.ProviderType) Network {
 	return Network{
-		Metadata:            metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
-		Identifier:          id,
-		KubernetesResources: kubernetes.ResourceList{},
-		Subnetworks:         make(SubnetworkCollection),
-		Firewalls:           make(FirewallCollection),
+		Metadata:    metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
+		Identifier:  id,
+		Status:      status.New(id.ID, common.Network, providerType),
+		Subnetworks: make(SubnetworkCollection),
+		Firewalls:   make(FirewallCollection),
 	}
 }
 
@@ -45,11 +44,11 @@ func (netCollection *NetworkCollection) Equals(other NetworkCollection) bool {
 	return true
 }
 
-func (network *Network) New(id identifier.ID) (IResource, errors.Error) {
+func (network *Network) New(id identifier.ID, providerType common.ProviderType) (IResource, errors.Error) {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Network{}) {
 		return nil, errors.InvalidArgument.WithMessage("id type is not NetworkID")
 	}
-	res := NewNetwork(id.(identifier.Network))
+	res := NewNetwork(id.(identifier.Network), providerType)
 	return &res, errors.OK
 }
 
@@ -57,19 +56,31 @@ func (network *Network) GetMetadata() metadata.Metadata {
 	return network.Metadata
 }
 
-func (network *Network) WithMetadata(request metadata.CreateMetadataRequest) {
+func (network *Network) SetMetadata(request metadata.CreateMetadataRequest) {
 	network.Metadata = metadata.New(request)
 }
 
-func (network *Network) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
-	case common.GCP:
-		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Network.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.Network.Version,
-		}, errors.Error{}
+func (network *Network) SetStatus(resourceStatus status.ResourceStatus) {
+	network.Status = resourceStatus
+}
+
+func (network *Network) GetStatus() status.ResourceStatus {
+	return network.Status
+}
+
+func (network *Network) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+	if !network.Status.PluginReference.ChartReference.Empty() {
+		return network.Status.PluginReference, errors.OK
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
+	switch network.Status.PluginReference.ResourceReference.ProviderType {
+	case common.GCP:
+		network.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+		}
+		return network.Status.PluginReference, errors.OK
+	}
+	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("network type %s not supported", network.Status.PluginReference.ResourceReference.ProviderType))
 }
 
 func (network *Network) FromMap(data map[string]interface{}) errors.Error {
@@ -106,7 +117,7 @@ func (network *Network) Remove(project Project) errors.Error {
 func (network *Network) Equals(other Network) bool {
 	return network.Metadata.Equals(other.Metadata) &&
 		network.Identifier.Equals(other.Identifier) &&
-		network.KubernetesResources.Equals(other.KubernetesResources) &&
+		network.Status.Equals(other.Status) &&
 		network.Subnetworks.Equals(other.Subnetworks) &&
 		network.Firewalls.Equals(other.Firewalls)
 }

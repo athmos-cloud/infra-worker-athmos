@@ -7,7 +7,4 @@ type GetPluginReferenceRequest struct {
 }
 
 type GetPluginReferenceResponse struct {
-	ChartName    string `json:"chartName"`
-	ChartVersion string `json:"chartVersion"`
-	ReleaseName  string `json:"releaseName"`
 }

@@ -29,9 +29,9 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
-		config := config.Current.Mongo
+		conf := config.Current.Mongo
 		client, err := mongo.NewClient(options.Client().ApplyURI(
-			"mongodb://" + config.Username + ":" + config.Password + "@" + config.Address + ":" + strconv.Itoa(config.Port)),
+			"mongodb://" + conf.Username + ":" + conf.Password + "@" + conf.Address + ":" + strconv.Itoa(conf.Port)),
 		)
 		if err != nil {
 			logger.Error.Printf("Error creating mongo client: %s", err)
@@ -42,7 +42,7 @@ func init() {
 			logger.Error.Printf("Error connecting to mongo: %s", err)
 			panic(err)
 		}
-		matchDB := client.Database(config.Database)
+		matchDB := client.Database(conf.Database)
 		Client = &DAO{
 			Client:   client,
 			Database: matchDB,
