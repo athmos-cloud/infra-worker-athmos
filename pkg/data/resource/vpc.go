@@ -45,12 +45,12 @@ func NewVPC(id identifier.VPC, provider common.ProviderType) VPC {
 	}
 }
 
-func (vpc *VPC) New(id identifier.ID, provider common.ProviderType) (IResource, errors.Error) {
+func (vpc *VPC) New(id identifier.ID, provider common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VPC{}) {
-		return nil, errors.InvalidArgument.WithMessage("invalid id type")
+		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
 	res := NewVPC(id.(identifier.VPC), provider)
-	return &res, errors.OK
+	return &res
 }
 
 func (vpc *VPC) SetMetadata(request metadata.CreateMetadataRequest) {
@@ -69,9 +69,9 @@ func (vpc *VPC) GetStatus() status.ResourceStatus {
 	return vpc.Status
 }
 
-func (vpc *VPC) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+func (vpc *VPC) GetPluginReference() resourcePlugin.Reference {
 	if !vpc.Status.PluginReference.ChartReference.Empty() {
-		return vpc.Status.PluginReference, errors.OK
+		return vpc.Status.PluginReference
 	}
 	switch vpc.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
@@ -79,38 +79,39 @@ func (vpc *VPC) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
 			ChartName:    config.Current.Plugins.Crossplane.GCP.VPC.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.VPC.Version,
 		}
-		return vpc.Status.PluginReference, errors.OK
+		return vpc.Status.PluginReference
 	}
-	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", vpc.Status.PluginReference.ResourceReference.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", vpc.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (vpc *VPC) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, vpc)
+func (vpc *VPC) FromMap(data map[string]interface{}) {
+	err := resourcePlugin.InjectMapIntoStruct(data, vpc)
+	if !err.IsOk() {
+		panic(err)
+	}
 }
 
-func (vpc *VPC) Insert(project Project, update ...bool) errors.Error {
+func (vpc *VPC) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
 	}
 	_, ok := project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", vpc.Identifier.ProviderID))
+		errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", vpc.Identifier.ProviderID))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("vpc %s in provider %s already exists", vpc.Identifier.ID, vpc.Identifier.ProviderID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("vpc %s in provider %s already exists", vpc.Identifier.ID, vpc.Identifier.ProviderID)))
 	}
 	project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID] = *vpc
-	return errors.OK
 }
 
-func (vpc *VPC) Remove(project Project) errors.Error {
+func (vpc *VPC) Remove(project Project) {
 	_, ok := project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vpc %s in provider %s not found", vpc.Identifier.ID, vpc.Identifier.ProviderID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vpc %s in provider %s not found", vpc.Identifier.ID, vpc.Identifier.ProviderID)))
 	}
 	delete(project.Resources[vpc.Identifier.ProviderID].VPCs, vpc.Identifier.ID)
-	return errors.NoContent
 }
 
 func (vpc *VPC) Equals(other VPC) bool {

@@ -46,12 +46,12 @@ func (collection *FirewallCollection) Equals(other FirewallCollection) bool {
 	return true
 }
 
-func (firewall *Firewall) New(id identifier.ID, providerType common.ProviderType) (IResource, errors.Error) {
+func (firewall *Firewall) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Firewall{}) {
-		return nil, errors.InvalidArgument.WithMessage("id type is not FirewallID")
+		panic(errors.InvalidArgument.WithMessage("id type is not FirewallID"))
 	}
 	res := NewFirewall(id.(identifier.Firewall), providerType)
-	return &res, errors.OK
+	return &res
 }
 
 type Rule struct {
@@ -99,9 +99,9 @@ func (firewall *Firewall) GetStatus() status.ResourceStatus {
 	return firewall.Status
 }
 
-func (firewall *Firewall) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+func (firewall *Firewall) GetPluginReference() resourcePlugin.Reference {
 	if !firewall.Status.PluginReference.ChartReference.Empty() {
-		return firewall.Status.PluginReference, errors.OK
+		return firewall.Status.PluginReference
 	}
 	switch firewall.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
@@ -109,16 +109,18 @@ func (firewall *Firewall) GetPluginReference() (resourcePlugin.Reference, errors
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
 		}
-		return firewall.Status.PluginReference, errors.OK
+		return firewall.Status.PluginReference
 	}
-	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("firewall type %s not supported", firewall.Status.PluginReference.ResourceReference.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("firewall type %s not supported", firewall.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (firewall *Firewall) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, firewall)
+func (firewall *Firewall) FromMap(data map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(data, firewall); !err.IsOk() {
+		panic(err)
+	}
 }
 
-func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
+func (firewall *Firewall) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -126,23 +128,21 @@ func (firewall *Firewall) Insert(project Project, update ...bool) errors.Error {
 	id := firewall.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID)))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID] = *firewall
-	return errors.OK
 }
 
-func (firewall *Firewall) Remove(project Project) errors.Error {
+func (firewall *Firewall) Remove(project Project) {
 	id := firewall.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
 	}
 	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls, id.ID)
-	return errors.NoContent
 }
 
 func (firewall *Firewall) Equals(other Firewall) bool {

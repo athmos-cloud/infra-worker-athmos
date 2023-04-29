@@ -1,9 +1,9 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"reflect"
 	"testing"
 )
 
@@ -23,17 +23,17 @@ func TestNetwork_Insert(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID})
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID})
+	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, common.Azure)
+	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, common.Azure)
 	network3 := network1
 	network3.Metadata.Tags = map[string]string{"test": "test"}
 	network4 := network3
 	network4.Metadata.Tags = map[string]string{"hello": "world"}
-	network5 := NewNetwork(identifier.Network{ID: "test-5", ProviderID: providerID, VPCID: vpcID})
+	network5 := NewNetwork(identifier.Network{ID: "test-5", ProviderID: providerID, VPCID: vpcID}, common.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
 	testVPC.Networks[network1.Identifier.ID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -54,7 +54,6 @@ func TestNetwork_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err:     errors.OK,
 				network: network2,
 			},
 		},
@@ -68,7 +67,6 @@ func TestNetwork_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err:     errors.OK,
 				network: network3,
 			},
 		},
@@ -104,9 +102,15 @@ func TestNetwork_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			network := tt.fields.network
-			if got := network.Insert(tt.args.project, tt.args.update...); got.Code != tt.want.err.Code {
-				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			network.Insert(tt.args.project, tt.args.update...)
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
 			id := tt.fields.network.Identifier
 			networkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
 			if !networkGot.Equals(tt.want.network) {
@@ -130,12 +134,12 @@ func TestNetwork_Remove(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID})
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID})
+	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, common.Azure)
+	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, common.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
 	testVPC.Networks[network1.Identifier.ID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -174,9 +178,15 @@ func TestNetwork_Remove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			network := tt.fields.Network
-			if got := network.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			network.Remove(tt.args.project)
 		})
 	}
 }

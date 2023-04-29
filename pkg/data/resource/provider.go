@@ -47,12 +47,12 @@ func NewProvider(id identifier.Provider, providerType common.ProviderType) Provi
 	}
 }
 
-func (provider *Provider) New(id identifier.ID, providerType common.ProviderType) (IResource, errors.Error) {
+func (provider *Provider) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Provider{}) {
-		return nil, errors.InvalidArgument.WithMessage("invalid id type")
+		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
 	res := NewProvider(id.(identifier.Provider), providerType)
-	return &res, errors.OK
+	return &res
 }
 
 func (provider *Provider) GetMetadata() metadata.Metadata {
@@ -71,9 +71,9 @@ func (provider *Provider) SetMetadata(request metadata.CreateMetadataRequest) {
 	provider.Metadata = metadata.New(request)
 }
 
-func (provider *Provider) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+func (provider *Provider) GetPluginReference() resourcePlugin.Reference {
 	if !provider.Status.PluginReference.ChartReference.Empty() {
-		return provider.Status.PluginReference, errors.OK
+		return provider.Status.PluginReference
 	}
 	switch provider.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
@@ -81,16 +81,18 @@ func (provider *Provider) GetPluginReference() (resourcePlugin.Reference, errors
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
 		}
-		return provider.Status.PluginReference, errors.OK
+		return provider.Status.PluginReference
 	}
-	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", provider.Status.PluginReference.ResourceReference.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", provider.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (provider *Provider) FromMap(m map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(m, provider)
+func (provider *Provider) FromMap(m map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(m, provider); !err.IsOk() {
+		panic(err)
+	}
 }
 
-func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
+func (provider *Provider) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -98,20 +100,18 @@ func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
 	id := provider.Identifier
 	_, ok := project.Resources[provider.Identifier.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID)))
 	} else if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", id.ID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", id.ID)))
 	}
 	project.Resources[provider.Identifier.ID] = *provider
-	return errors.OK
 }
 
-func (provider *Provider) Remove(project Project) errors.Error {
+func (provider *Provider) Remove(project Project) {
 	id := provider.Identifier
 	_, ok := project.Resources[provider.Identifier.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID)))
 	}
 	delete(project.Resources, provider.Identifier.ID)
-	return errors.NoContent
 }

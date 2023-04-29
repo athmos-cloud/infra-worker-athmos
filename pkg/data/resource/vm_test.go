@@ -1,11 +1,10 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"reflect"
 	"testing"
 )
 
@@ -20,7 +19,7 @@ func TestVM_FromMap(t *testing.T) {
 		err errors.Error
 		vm  VM
 	}
-	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"})
+	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"}, common.Azure)
 	expectedVM1 := vm
 	expectedVM1.VPC = "vpc-test"
 	expectedVM1.Zone = "europe-west1-a"
@@ -85,8 +84,7 @@ func TestVM_FromMap(t *testing.T) {
 				},
 			},
 			want: want{
-				err: errors.OK,
-				vm:  expectedVM1,
+				vm: expectedVM1,
 			},
 		}, {
 			name: "FromMap with invalid data",
@@ -114,12 +112,15 @@ func TestVM_FromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			curVM := tt.fields.VM
-			got := curVM.FromMap(tt.args.data)
-			if got.Code != tt.want.err.Code {
-				logger.Info.Println(got)
-				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
-				return
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			curVM.FromMap(tt.args.data)
 			if !curVM.Equals(tt.want.vm) {
 				t.Errorf("FromMap() = %v, want %v", curVM, tt.want.vm)
 			}
@@ -144,19 +145,19 @@ func TestVM_Insert(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
+	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
+	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
 	vm3 := vm1
 	vm3.Metadata.Tags = map[string]string{"test": "test"}
 	vm4 := vm3
 	vm4.Metadata.Tags = map[string]string{"hello": "world"}
-	vm5 := NewVM(identifier.VM{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
+	vm5 := NewVM(identifier.VM{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
+	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
 	testSubnet.VMs[vm1.Identifier.ID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork
@@ -179,8 +180,7 @@ func TestVM_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err: errors.OK,
-				vm:  vm2,
+				vm: vm2,
 			},
 		},
 		{
@@ -193,8 +193,7 @@ func TestVM_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err: errors.OK,
-				vm:  vm3,
+				vm: vm3,
 			},
 		},
 		{
@@ -229,9 +228,15 @@ func TestVM_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vm := tt.fields.vm
-			if got := vm.Insert(tt.args.project, tt.args.update...); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Insert() = %v, want %v", got, tt.want)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			vm.Insert(tt.args.project, tt.args.update...)
 			id := tt.fields.vm.Identifier
 			gotVM := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 			if !gotVM.Equals(tt.want.vm) {
@@ -256,14 +261,14 @@ func TestVM_Remove(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID})
+	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
+	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
+	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
 	testSubnet.VMs[vm1.Identifier.ID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork
@@ -284,9 +289,7 @@ func TestVM_Remove(t *testing.T) {
 			args: args{
 				testProject,
 			},
-			want: want{
-				err: errors.NoContent,
-			},
+			want: want{},
 		},
 		{
 			name: "Remove non-existing vm",
@@ -304,9 +307,15 @@ func TestVM_Remove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vm := tt.fields.vm
-			if got := vm.Remove(tt.args.project); got.Code != tt.want.err.Code {
-				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			vm.Remove(tt.args.project)
 		})
 	}
 }

@@ -108,12 +108,12 @@ func (os *OS) Equals(other OS) bool {
 	return os.Type == other.Type && os.Version == other.Version
 }
 
-func (vm *VM) New(id identifier.ID, providerType common.ProviderType) (IResource, errors.Error) {
+func (vm *VM) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VM{}) {
-		return nil, errors.InvalidArgument.WithMessage("identifier is not of type VM")
+		panic(errors.InvalidArgument.WithMessage("identifier is not of type VM"))
 	}
 	res := NewVM(id.(identifier.VM), providerType)
-	return &res, errors.OK
+	return &res
 }
 
 func (vm *VM) Equals(other VM) bool {
@@ -146,9 +146,9 @@ func (vm *VM) GetStatus() status.ResourceStatus {
 	return vm.Status
 }
 
-func (vm *VM) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+func (vm *VM) GetPluginReference() resourcePlugin.Reference {
 	if !vm.Status.PluginReference.ChartReference.Empty() {
-		return vm.Status.PluginReference, errors.OK
+		return vm.Status.PluginReference
 	}
 	switch vm.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
@@ -156,16 +156,18 @@ func (vm *VM) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
 		}
-		return vm.Status.PluginReference, errors.OK
+		return vm.Status.PluginReference
 	}
-	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", vm.Status.PluginReference.ResourceReference.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", vm.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (vm *VM) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, vm)
+func (vm *VM) FromMap(data map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(data, vm); err.IsOk() {
+		panic(err)
+	}
 }
 
-func (vm *VM) Insert(project Project, update ...bool) errors.Error {
+func (vm *VM) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -173,21 +175,19 @@ func (vm *VM) Insert(project Project, update ...bool) errors.Error {
 	id := vm.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID)))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in vm %s", id.ID, id.SubnetID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in vm %s", id.ID, id.SubnetID)))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID] = *vm
-	return errors.OK
 }
 
-func (vm *VM) Remove(project Project) errors.Error {
+func (vm *VM) Remove(project Project) {
 	id := vm.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID)))
 	}
 	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs, id.ID)
-	return errors.NoContent
 }

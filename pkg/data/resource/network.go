@@ -44,12 +44,12 @@ func (netCollection *NetworkCollection) Equals(other NetworkCollection) bool {
 	return true
 }
 
-func (network *Network) New(id identifier.ID, providerType common.ProviderType) (IResource, errors.Error) {
+func (network *Network) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Network{}) {
-		return nil, errors.InvalidArgument.WithMessage("id type is not NetworkID")
+		panic(errors.InvalidArgument.WithMessage("id type is not NetworkID"))
 	}
 	res := NewNetwork(id.(identifier.Network), providerType)
-	return &res, errors.OK
+	return &res
 }
 
 func (network *Network) GetMetadata() metadata.Metadata {
@@ -68,9 +68,9 @@ func (network *Network) GetStatus() status.ResourceStatus {
 	return network.Status
 }
 
-func (network *Network) GetPluginReference() (resourcePlugin.Reference, errors.Error) {
+func (network *Network) GetPluginReference() resourcePlugin.Reference {
 	if !network.Status.PluginReference.ChartReference.Empty() {
-		return network.Status.PluginReference, errors.OK
+		return network.Status.PluginReference
 	}
 	switch network.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
@@ -78,16 +78,16 @@ func (network *Network) GetPluginReference() (resourcePlugin.Reference, errors.E
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
 		}
-		return network.Status.PluginReference, errors.OK
+		return network.Status.PluginReference
 	}
-	return resourcePlugin.Reference{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("network type %s not supported", network.Status.PluginReference.ResourceReference.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("network type %s not supported", network.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (network *Network) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, network)
+func (network *Network) FromMap(data map[string]interface{}) {
+	panic(resourcePlugin.InjectMapIntoStruct(data, network))
 }
 
-func (network *Network) Insert(project Project, update ...bool) errors.Error {
+func (network *Network) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -95,23 +95,21 @@ func (network *Network) Insert(project Project, update ...bool) errors.Error {
 	id := network.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID)))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID] = *network
-	return errors.OK
 }
 
-func (network *Network) Remove(project Project) errors.Error {
+func (network *Network) Remove(project Project) {
 	id := network.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
 	}
 	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks, id.ID)
-	return errors.NoContent
 }
 
 func (network *Network) Equals(other Network) bool {
