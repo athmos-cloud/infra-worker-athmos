@@ -79,15 +79,15 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 	}
 }
 
-func (repository *Repository) Get(ctx context.Context, optn option.Option) interface{} {
-	if !optn.SetType(reflect.TypeOf(dto.GetProjectByIDRequest{}).String()).Validate() {
+func (repository *Repository) Get(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(dto.GetProjectByIDRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByIDRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByIDRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := optn.Value.(dto.GetProjectByIDRequest)
+	request := opt.Value.(dto.GetProjectByIDRequest)
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,

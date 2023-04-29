@@ -1,12 +1,10 @@
 package resource
 
-import "github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 
 type GetResourceRequest struct {
-	Provider     common.ProviderType `json:"provider"`
-	ResourceType common.ResourceType `json:"type"`
-	ProjectID    string              `json:"project_id"`
-	ResourceID   string              `json:"name"`
+	ProjectID  string        `json:"project_id"`
+	ResourceID identifier.ID `json:"resource_id"`
 }
 
 type GetResourceResponse struct {

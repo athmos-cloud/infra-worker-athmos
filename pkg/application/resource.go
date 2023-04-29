@@ -37,13 +37,46 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dtoR
 }
 
 func (service *ResourceService) GetResource(ctx context.Context, payload dtoResource.GetResourceRequest) dtoResource.CreateResourceResponse {
-	panic("")
+	resp := service.ResourceRepository.Get(ctx, option.Option{
+		Value: dtoProject.GetProjectByIDRequest{
+			ProjectID: payload.ProjectID,
+		},
+	})
+	project := resp.(dtoProject.GetProjectByIDResponse).Payload
+	resource := service.ResourceRepository.Get(ctx, option.Option{
+		Value: resourceRepository.GetRequest{
+			Project:    project,
+			ResourceID: payload.ResourceID,
+		},
+	})
+	// Return domain
+	return dtoResource.CreateResourceResponse{Resource: resource.(resourceRepository.GetResourceResponse).Resource}
 }
 
 func (service *ResourceService) UpdateResource(ctx context.Context, payload dtoResource.UpdateResourceRequest) {
-	panic("")
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: dtoProject.GetProjectByIDRequest{
+			ProjectID: payload.ProjectID,
+		},
+	})
+	service.ResourceRepository.Update(ctx, option.Option{
+		Value: resourceRepository.UpdateRequest{
+			Project:    project.(dtoProject.GetProjectByIDResponse).Payload,
+			ResourceID: payload.ResourceID,
+		},
+	})
 }
 
 func (service *ResourceService) DeleteResource(ctx context.Context, payload dtoResource.DeleteResourceRequest) {
-	panic("")
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: dtoProject.GetProjectByIDRequest{
+			ProjectID: payload.ProjectID,
+		},
+	})
+	service.ResourceRepository.Delete(ctx, option.Option{
+		Value: resourceRepository.DeleteRequest{
+			Project:    project.(dtoProject.GetProjectByIDResponse).Payload,
+			ResourceID: payload.ResourceID,
+		},
+	})
 }

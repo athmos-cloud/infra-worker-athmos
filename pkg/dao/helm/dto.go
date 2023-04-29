@@ -31,4 +31,5 @@ type UpdateHelmReleaseRequest struct {
 
 type DeleteHelmReleaseRequest struct {
 	ReleaseName string
+	Namespace   string
 }

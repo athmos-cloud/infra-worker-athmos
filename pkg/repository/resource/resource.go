@@ -148,6 +148,21 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 }
 
 func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
-	//TODO implement me
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected DeleteRequest, got %v", reflect.TypeOf(opt.Value).Kind(),
+			),
+		))
+	}
+	request := opt.Value.(DeleteRequest)
+	currentResource := request.Project.Get(request.ResourceID)
+	//Uninstall helm release
+	repository.HelmDAO.Delete(ctx, option.Option{
+		Value: helm.DeleteHelmReleaseRequest{
+			ReleaseName: currentResource.GetStatus().HelmRelease.Name,
+			Namespace:   request.Project.Namespace,
+		},
+	})
+	request.Project.Delete(currentResource)
 }

@@ -32,3 +32,8 @@ type UpdateRequest struct {
 	ResourceID       identifier.ID
 	NewResourceSpecs map[string]interface{}
 }
+
+type DeleteRequest struct {
+	Project    resource.Project
+	ResourceID identifier.ID
+}
