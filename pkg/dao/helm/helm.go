@@ -3,10 +3,8 @@ package helm
 import (
 	"context"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/ghodss/yaml"
 	helmclient "github.com/mittwald/go-helm-client"
@@ -36,21 +34,15 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ReleaseClient == nil {
-		cli, err := client()
-		if !err.IsOk() {
-			logger.Error.Printf("Error creating helm cli: %s", err)
-			panic(err)
-		}
+		cli := client()
 		ReleaseClient = cli
 	}
 }
 
-func client() (*ReleaseDAO, errors.Error) {
+func client() *ReleaseDAO {
 	kubeConfig, errFile := os.ReadFile(config.Current.Kubernetes.ConfigPath)
 	if errFile != nil {
-		msg := fmt.Sprintf("Error reading kube config file: %s", errFile)
-		logger.Error.Print(msg)
-		return nil, errors.InternalError.WithMessage(msg)
+		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error reading kube config file: %s", errFile)))
 	}
 	cli, err := helmclient.NewClientFromKubeConf(
 		&helmclient.KubeConfClientOptions{
@@ -64,8 +56,7 @@ func client() (*ReleaseDAO, errors.Error) {
 			},
 		})
 	if err != nil || cli == nil {
-		logger.Error.Printf("Error creating helm client :  %v", err)
-		return nil, errors.ExternalServiceError.WithMessage(err)
+		panic(errors.ExternalServiceError.WithMessage(err))
 	}
 	err = cli.AddOrUpdateChartRepo(
 		repo.Entry{
@@ -74,30 +65,28 @@ func client() (*ReleaseDAO, errors.Error) {
 			Username: config.Current.Plugins.Crossplane.Registry.Username,
 			Password: config.Current.Plugins.Crossplane.Registry.Password,
 		})
-	logger.Info.Printf("Plugins repo added: %s", config.Current.Plugins.Crossplane.Registry.Address)
 	if err != nil {
-		logger.Error.Printf("Error connecting to artifact dao:  %v", err)
-		return nil, errors.ExternalServiceError.WithMessage(err)
+		panic(errors.ExternalServiceError.WithMessage(err))
 	}
 	helmClient := &ReleaseDAO{
 		HelmClient: cli,
 	}
-	return helmClient, errors.OK
+	return helmClient
 }
 
 // Get retrieves a Helm chart from the Helm dao
 // The argument must be a GetHelmReleaseRequest{chartName, chartVersion}
 // The return value is a map[string]interface{} representing the values of the Helm chart
-func (r *ReleaseDAO) Get(_ context.Context, optn option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) Get(_ context.Context, optn option.Option) interface{} {
 	if optn = optn.SetType(reflect.TypeOf(GetHelmReleaseRequest{}).String()); !optn.Validate() {
-		return nil, errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}")
+		panic(errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}"))
 	}
 	args := optn.Get().(GetHelmReleaseRequest)
 	release, err := r.HelmClient.GetRelease(args.ReleaseName)
 	if err != nil {
-		return nil, errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error getting release : %v", err))
+		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error getting release : %v", err)))
 	}
-	return GetHelmReleaseResponse{release}, errors.OK
+	return GetHelmReleaseResponse{release}
 }
 
 func (r *ReleaseDAO) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
@@ -105,14 +94,14 @@ func (r *ReleaseDAO) Exists(ctx context.Context, o option.Option) (bool, errors.
 	panic("implement me")
 }
 
-func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) interface{} {
 	if request = request.SetType(reflect.TypeOf(CreateHelmReleaseRequest{}).String()); !request.Validate() {
-		return nil, errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}")
+		panic(errors.InvalidArgument.WithMessage("Argument must be a GetHelmReleaseRequest{chartName, chartVersion}"))
 	}
 	args := request.Get().(CreateHelmReleaseRequest)
 	yamlBytes, err1 := yaml.Marshal(args.Values)
 	if err1 != nil {
-		return "", errors.InternalError.WithMessage(err1)
+		panic(errors.InternalError.WithMessage(err1))
 	}
 
 	release, err2 := r.HelmClient.InstallChart(
@@ -129,23 +118,22 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) (interfa
 	)
 
 	if err2 != nil {
-		logger.Error.Printf("Error installing chart :  %v", err2)
-		return nil, errors.ExternalServiceError.WithMessage(
+		panic(errors.ExternalServiceError.WithMessage(
 			fmt.Sprintf("Error installing chart :  %v", err2),
-		)
+		))
 	}
 
-	return resource.CreateResourceResponse{HelmRelease: release}, errors.Created
+	return CreateHelmReleaseResponse{Release: release}
 }
 
-func (r *ReleaseDAO) Update(ctx context.Context, request option.Option) errors.Error {
+func (r *ReleaseDAO) Update(_ context.Context, request option.Option) {
 	if request = request.SetType(reflect.TypeOf(CreateHelmReleaseRequest{}).String()); !request.Validate() {
-		return errors.InvalidArgument.WithMessage("Argument must be a UpdateHelmReleaseRequest{ReleaseName, Chart, Namespace, Values}")
+		panic(errors.InvalidArgument.WithMessage("Argument must be a UpdateHelmReleaseRequest{ReleaseName, Chart, Namespace, Values}"))
 	}
 	args := request.Get().(CreateHelmReleaseRequest)
 	yamlBytes, err1 := yaml.Marshal(args.Values)
 	if err1 != nil {
-		return errors.InternalError.WithMessage(err1)
+		panic(errors.InternalError.WithMessage(err1))
 	}
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName: args.ReleaseName,
@@ -156,28 +144,26 @@ func (r *ReleaseDAO) Update(ctx context.Context, request option.Option) errors.E
 		ValuesYaml:  string(yamlBytes),
 	}
 	if _, err := r.HelmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		return errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error upgrading helm release : %v", err))
+		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error upgrading helm release : %v", err)))
 	}
-	return errors.Accepted
 }
 
-func (r *ReleaseDAO) Delete(ctx context.Context, request option.Option) errors.Error {
+func (r *ReleaseDAO) Delete(_ context.Context, request option.Option) {
 	if request = request.SetType(reflect.TypeOf(DeleteHelmReleaseRequest{}).String()); !request.Validate() {
-		return errors.InvalidArgument.WithMessage("Argument must be a DeleteHelmReleaseRequest{ReleaseName}")
+		panic(errors.InvalidArgument.WithMessage("Argument must be a DeleteHelmReleaseRequest{ReleaseName}"))
 	}
 	args := request.Get().(DeleteHelmReleaseRequest)
 	if err := r.HelmClient.UninstallReleaseByName(args.ReleaseName); err != nil {
-		return errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error uninstalling helm chart: %v", err))
+		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error uninstalling helm chart: %v", err)))
 	}
-	return errors.OK
 }
 
-func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) (interface{}, errors.Error) {
+func (r *ReleaseDAO) GetAll(_ context.Context, _ option.Option) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *ReleaseDAO) Close(_ context.Context) errors.Error {
+func (r *ReleaseDAO) Close(_ context.Context) {
 	//TODO implement me
 	panic("implement me")
 }

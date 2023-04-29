@@ -1,9 +1,9 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"reflect"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func TestVPC_FromMap(t *testing.T) {
 		err errors.Error
 		vpc VPC
 	}
-	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"})
+	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, common.Azure)
 	expectedVPC := vpc
 	expectedVPC.Provider = "test"
 
@@ -39,7 +39,6 @@ func TestVPC_FromMap(t *testing.T) {
 				},
 			},
 			want: want{
-				err: errors.OK,
 				vpc: expectedVPC,
 			},
 		},
@@ -47,9 +46,15 @@ func TestVPC_FromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			curVpc := tt.fields.VPC
-			if got := curVpc.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			curVpc.FromMap(tt.args.data)
 			if !curVpc.Equals(tt.want.vpc) {
 				t.Errorf("FromMap() = %v, want %v", curVpc, tt.want.vpc)
 			}
@@ -71,10 +76,10 @@ func TestVPC_Insert(t *testing.T) {
 	}
 	providerID := "test"
 	testProject := NewProject("test", "owner_test")
-	provider := NewProvider(identifier.Provider{ID: providerID})
+	provider := NewProvider(identifier.Provider{ID: providerID}, common.AWS)
 	testProject.Resources[providerID] = provider
-	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID})
-	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID})
+	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, common.AWS)
+	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, common.Azure)
 	vpc3 := vpc1
 	vpc3.Metadata.Tags = map[string]string{"test": "test"}
 	vpc4 := vpc1
@@ -96,7 +101,6 @@ func TestVPC_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err: errors.OK,
 				vpc: vpc1,
 			},
 		},
@@ -110,7 +114,6 @@ func TestVPC_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err: errors.OK,
 				vpc: vpc3,
 			},
 		},
@@ -146,9 +149,15 @@ func TestVPC_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vpc := tt.fields.vpc
-			if got := vpc.Insert(tt.args.project, tt.args.update...); got.Code != tt.want.err.Code {
-				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			vpc.Insert(tt.args.project, tt.args.update...)
 			id := tt.fields.vpc.Identifier
 			vpcGot := testProject.Resources[id.ProviderID].VPCs[id.ID]
 			if !vpcGot.Equals(tt.want.vpc) {

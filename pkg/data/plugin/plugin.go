@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"gopkg.in/yaml.v3"
@@ -46,29 +45,31 @@ type Type struct {
 	Fields map[string]Input `yaml:"fields"`
 }
 
-func Get(provider common.ProviderType, resourceType common.ResourceType) (Plugin, errors.Error) {
+func Get(reference ResourceReference) Plugin {
 	//read plugin
+	provider := reference.ProviderType
+	resourceType := reference.ResourceType
 	mainPath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, MainPluginFile)
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {
-		return Plugin{}, errors.IOError.WithMessage(err.Error())
+		panic(errors.IOError.WithMessage(err.Error()))
 	}
 	plugin := Plugin{}
 	if err = yaml.Unmarshal(pluginBytes, &plugin); err != nil {
-		return Plugin{}, errors.ConversionError.WithMessage(err.Error())
+		panic(errors.ConversionError.WithMessage(err.Error()))
 	}
 	typePath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, TypePluginFile)
 	if _, errExists := os.Stat(typePath); os.IsNotExist(errExists) {
-		return plugin, errors.OK
+		panic(errors.IOError.WithMessage(errExists.Error()))
 	}
 	typesBytes, err := os.ReadFile(typePath)
 	if err != nil {
-		return Plugin{}, errors.IOError.WithMessage(err.Error())
+		panic(errors.IOError.WithMessage(err.Error()))
 	}
 	if err = yaml.Unmarshal(typesBytes, &plugin.Types); err != nil {
-		return Plugin{}, errors.ConversionError.WithMessage(err.Error())
+		panic(errors.ConversionError.WithMessage(err.Error()))
 	}
-	return plugin, errors.OK
+	return plugin
 }
 
 func validateMetadataPlugin(entry map[string]interface{}) (map[string]interface{}, errors.Error) {

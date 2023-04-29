@@ -1,9 +1,9 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"reflect"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func TestSubnetwork_FromMap(t *testing.T) {
 		err        errors.Error
 		subnetwork Subnetwork
 	}
-	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"})
+	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"}, common.GCP)
 	expectedSubnet := subnet
 	expectedSubnet.Region = "eu-west-1"
 	expectedSubnet.IPCIDRRange = "10.0.0.0/8"
@@ -41,7 +41,6 @@ func TestSubnetwork_FromMap(t *testing.T) {
 				},
 			},
 			want: want{
-				err:        errors.OK,
 				subnetwork: expectedSubnet,
 			},
 		},
@@ -49,9 +48,15 @@ func TestSubnetwork_FromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			curVpc := tt.fields.Subnetwork
-			if got := curVpc.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("FromMap() = %v, want %v", got, tt.want)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			curVpc.FromMap(tt.args.data)
 			if !curVpc.Equals(tt.want.subnetwork) {
 				t.Errorf("FromMap() = %v, want %v", curVpc, tt.want.subnetwork)
 			}
@@ -75,18 +80,18 @@ func TestSubnetwork_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
 	subnetwork3 := subnetwork1
 	subnetwork3.Metadata.Tags = map[string]string{"test": "test"}
 	subnetwork4 := subnetwork3
 	subnetwork4.Metadata.Tags = map[string]string{"hello": "world"}
-	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
 	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -108,7 +113,6 @@ func TestSubnetwork_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err:        errors.OK,
 				subnetwork: subnetwork2,
 			},
 		},
@@ -122,7 +126,6 @@ func TestSubnetwork_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err:        errors.OK,
 				subnetwork: subnetwork3,
 			},
 		},
@@ -158,9 +161,15 @@ func TestSubnetwork_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			subnet := tt.fields.subnetwork
-			if got := subnet.Insert(tt.args.project, tt.args.update...); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			subnet.Insert(tt.args.project, tt.args.update...)
 			id := tt.fields.subnetwork.Identifier
 			subnetworkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
 			if !subnetworkGot.Equals(tt.want.subnetwork) {
@@ -185,13 +194,13 @@ func TestSubnetwork_Remove(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
 	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -231,9 +240,15 @@ func TestSubnetwork_Remove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			subnet := tt.fields.Subnetwork
-			if got := subnet.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			subnet.Remove(tt.args.project)
 		})
 	}
 }

@@ -22,7 +22,7 @@ func TestProvider_FromMap(t *testing.T) {
 		err      errors.Error
 		provider Provider
 	}
-	provider := NewProvider(identifier.Provider{ID: "test"})
+	provider := NewProvider(identifier.Provider{ID: "test"}, common.GCP)
 	expectedProvider1 := provider
 	expectedProvider1.Auth = auth.Auth{
 		AuthType: auth.AuthTypeSecret,
@@ -61,7 +61,6 @@ func TestProvider_FromMap(t *testing.T) {
 				},
 			},
 			want: want{
-				err:      errors.OK,
 				provider: expectedProvider1,
 			},
 		}, {
@@ -86,10 +85,15 @@ func TestProvider_FromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			curProvider := tt.fields.Provider
-			got := curProvider.FromMap(tt.args.m)
-			if got.Code != tt.want.err.Code {
-				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			curProvider.FromMap(tt.args.m)
 			if !curProvider.Equals(tt.want.provider) {
 				t.Errorf("FromMap() = %v, want %v", curProvider, tt.want.provider)
 			}
@@ -133,7 +137,6 @@ func TestProvider_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err: errors.OK,
 				provider: Provider{
 					Identifier: identifier.Provider{
 						ID: "test",
@@ -154,7 +157,6 @@ func TestProvider_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err: errors.OK,
 				provider: Provider{
 					Type: common.AWS,
 					Identifier: identifier.Provider{
@@ -206,16 +208,21 @@ func TestProvider_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
+				Metadata:   tt.fields.Metadata,
+				Identifier: tt.fields.Identifier,
+				Type:       tt.fields.Type,
+				Auth:       tt.fields.Auth,
+				VPCs:       tt.fields.VPCs,
 			}
-			if got := provider.Insert(tt.args.project, tt.args.update...); got.Code != tt.want.err.Code {
-				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			provider.Insert(tt.args.project, tt.args.update...)
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
 			if !reflect.DeepEqual(testProject.Resources[tt.fields.Identifier.ID], tt.want.provider) {
 				t.Errorf("Insert() = %v, want %v", testProject.Resources[tt.fields.Identifier.ID], tt.want.provider)
 			}
@@ -283,16 +290,21 @@ func TestProvider_Remove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := &Provider{
-				Metadata:            tt.fields.Metadata,
-				Identifier:          tt.fields.Identifier,
-				KubernetesResources: tt.fields.KubernetesResources,
-				Type:                tt.fields.Type,
-				Auth:                tt.fields.Auth,
-				VPCs:                tt.fields.VPCs,
+				Metadata:   tt.fields.Metadata,
+				Identifier: tt.fields.Identifier,
+				Type:       tt.fields.Type,
+				Auth:       tt.fields.Auth,
+				VPCs:       tt.fields.VPCs,
 			}
-			if got := provider.Remove(tt.args.project); got.Code != tt.want.err.Code {
-				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			provider.Remove(tt.args.project)
 		})
 	}
 }

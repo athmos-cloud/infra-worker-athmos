@@ -3,9 +3,9 @@ package resource
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 type DeleteResourceRequest struct {
-	ProjectID    string `json:"project_id"`
+	ProjectID    string `json:"projectID"`
 	ResourceType string `json:"type"`
-	ResourceID   string `json:"resource_id"`
+	ResourceID   string `json:"resourceID"`
 }
 
 type DeleteResourceResponse struct {

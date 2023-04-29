@@ -1,10 +1,9 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"reflect"
 	"testing"
 )
 
@@ -19,7 +18,7 @@ func TestFirewall_FromMap(t *testing.T) {
 		err      errors.Error
 		firewall Firewall
 	}
-	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"})
+	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, common.Azure)
 	expectedFirewall := firewall
 	expectedFirewall.Allow = RuleList{
 		{
@@ -78,7 +77,6 @@ func TestFirewall_FromMap(t *testing.T) {
 				},
 			},
 			want: want{
-				err:      errors.OK,
 				firewall: expectedFirewall,
 			},
 		},
@@ -86,10 +84,15 @@ func TestFirewall_FromMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			curFirewall := tt.fields.Firewall
-			if got := curFirewall.FromMap(tt.args.data); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				logger.Info.Println(got)
-				t.Errorf("FromMap() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			curFirewall.FromMap(tt.args.data)
 			if !curFirewall.Equals(tt.want.firewall) {
 				t.Errorf("FromMap() = %v, want %v", curFirewall, tt.want.firewall)
 			}
@@ -113,18 +116,18 @@ func TestFirewall_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
 	firewall3 := firewall1
 	firewall3.Metadata.Tags = map[string]string{"test": "test"}
 	firewall4 := firewall3
 	firewall4.Metadata.Tags = map[string]string{"hello": "world"}
-	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
 	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -146,7 +149,6 @@ func TestFirewall_Insert(t *testing.T) {
 				[]bool{},
 			},
 			want: want{
-				err:      errors.OK,
 				firewall: firewall2,
 			},
 		},
@@ -160,7 +162,6 @@ func TestFirewall_Insert(t *testing.T) {
 				[]bool{true},
 			},
 			want: want{
-				err:      errors.OK,
 				firewall: firewall3,
 			},
 		},
@@ -196,9 +197,15 @@ func TestFirewall_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			firewall := tt.fields.firewall
-			if got := firewall.Insert(tt.args.project, tt.args.update...); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Insert() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			firewall.Insert(tt.args.project, tt.args.update...)
 			id := tt.fields.firewall.Identifier
 			firewallGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
 			if !firewallGot.Equals(tt.want.firewall) {
@@ -223,13 +230,13 @@ func TestFirewall_Remove(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID})
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID})
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID})
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID})
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
 	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -269,9 +276,15 @@ func TestFirewall_Remove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			firewall := tt.fields.Firewall
-			if got := firewall.Remove(tt.args.project); !reflect.DeepEqual(got.Code, tt.want.err.Code) {
-				t.Errorf("Remove() = %v, want %v", got.Code, tt.want.err.Code)
-			}
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			firewall.Remove(tt.args.project)
 		})
 	}
 }

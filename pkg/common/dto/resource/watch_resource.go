@@ -6,7 +6,7 @@ import (
 
 type WatchResourceRequest struct {
 	ResourceType common.ResourceType `json:"type"`
-	ProjectID    string              `json:"project_id"`
+	ProjectID    string              `json:"projectID"`
 	ResourceID   string              `json:"name"`
 }
 

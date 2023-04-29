@@ -3,33 +3,32 @@ package resource
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
 
 type Subnetwork struct {
-	Metadata            metadata.Metadata       `bson:"metadata"`
-	Identifier          identifier.Subnetwork   `bson:"hierarchyLocation"`
-	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	VPC                 string                  `bson:"vpc" plugin:"vpc"`
-	Network             string                  `bson:"network" plugin:"network"`
-	Region              string                  `bson:"region" plugin:"region"`
-	IPCIDRRange         string                  `bson:"ipCidrRange" plugin:"ipCidrRange"`
-	VMs                 VMCollection            `bson:"vmList"`
+	Metadata    metadata.Metadata     `bson:"metadata"`
+	Identifier  identifier.Subnetwork `bson:"hierarchyLocation"`
+	Status      status.ResourceStatus `bson:"status"`
+	VPC         string                `bson:"subnet" plugin:"subnet"`
+	Network     string                `bson:"network" plugin:"network"`
+	Region      string                `bson:"region" plugin:"region"`
+	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
+	VMs         VMCollection          `bson:"vmList"`
 }
 
-func NewSubnetwork(id identifier.Subnetwork) Subnetwork {
+func NewSubnetwork(id identifier.Subnetwork, providerType common.ProviderType) Subnetwork {
 	return Subnetwork{
-		Metadata:            metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
-		Identifier:          id,
-		KubernetesResources: kubernetes.ResourceList{},
-		VMs:                 make(VMCollection),
+		Metadata:   metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
+		Identifier: id,
+		Status:     status.New(id.ID, common.Subnetwork, providerType),
+		VMs:        make(VMCollection),
 	}
 }
 
@@ -47,39 +46,52 @@ func (collection *SubnetworkCollection) Equals(other SubnetworkCollection) bool 
 	return true
 }
 
-func (subnet *Subnetwork) New(id identifier.ID) (IResource, errors.Error) {
+func (subnet *Subnetwork) New(id identifier.ID, provider common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Subnetwork{}) {
-		return nil, errors.InvalidArgument.WithMessage("id type is not SubnetworkID")
+		panic(errors.InvalidArgument.WithMessage("id type is not SubnetworkID"))
 	}
-	res := NewSubnetwork(id.(identifier.Subnetwork))
-	return &res, errors.OK
+	res := NewSubnetwork(id.(identifier.Subnetwork), provider)
+	return &res
 }
 
 func (subnet *Subnetwork) GetMetadata() metadata.Metadata {
 	return subnet.Metadata
 }
 
-func (subnet *Subnetwork) WithMetadata(request metadata.CreateMetadataRequest) {
+func (subnet *Subnetwork) SetMetadata(request metadata.CreateMetadataRequest) {
 	subnet.Metadata = metadata.New(request)
 }
 
-func (subnet *Subnetwork) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
+func (subnet *Subnetwork) SetStatus(resourceStatus status.ResourceStatus) {
+	subnet.Status = resourceStatus
+}
+
+func (subnet *Subnetwork) GetStatus() status.ResourceStatus {
+	return subnet.Status
+}
+
+func (subnet *Subnetwork) GetPluginReference() resourcePlugin.Reference {
+	if !subnet.Status.PluginReference.ChartReference.Empty() {
+		return subnet.Status.PluginReference
+	}
+	switch subnet.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
-		return dto.GetPluginReferenceResponse{
+		subnet.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
-		}, errors.Error{}
+		}
+		return subnet.Status.PluginReference
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", subnet.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (subnet *Subnetwork) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, subnet)
-
+func (subnet *Subnetwork) FromMap(data map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(data, subnet); !err.IsOk() {
+		panic(err)
+	}
 }
 
-func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
+func (subnet *Subnetwork) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -87,28 +99,27 @@ func (subnet *Subnetwork) Insert(project Project, update ...bool) errors.Error {
 	id := subnet.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID)))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("subnet %s already exists in network %s", id.ID, id.NetworkID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("subnet %s already exists in network %s", id.ID, id.NetworkID)))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID] = *subnet
-	return errors.OK
 }
 
-func (subnet *Subnetwork) Remove(project Project) errors.Error {
+func (subnet *Subnetwork) Remove(project Project) {
 	id := subnet.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID)))
 	}
 	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks, id.ID)
-	return errors.NoContent
 }
 
 func (subnet *Subnetwork) Equals(other Subnetwork) bool {
 	return subnet.Metadata.Equals(other.Metadata) &&
 		subnet.Identifier.Equals(other.Identifier) &&
+		subnet.Status.Equals(other.Status) &&
 		subnet.VPC == other.VPC &&
 		subnet.Network == other.Network &&
 		subnet.Region == other.Region &&

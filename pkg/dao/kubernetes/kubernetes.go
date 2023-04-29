@@ -58,33 +58,33 @@ func init() {
 	}
 }
 
-func (r *DAO) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (r *DAO) Get(ctx context.Context, option option.Option) interface{} {
 	if option = option.SetType(reflect.TypeOf(GetResourceRequest{}).String()); !option.Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetResourceRequest{resourceId, namespace, name}",
-		)
+		))
 	}
 	request := option.Get().(GetResourceRequest)
 
 	resource, err := r.DynamicClient.Resource(request.ResourceID).
 		Namespace(request.Namespace).Get(ctx, request.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.NotFound.WithMessage(err.Error())
+		panic(errors.NotFound.WithMessage(err.Error()))
 	}
 
-	return resource, errors.OK
+	return resource
 }
 
-func (r *DAO) Exists(ctx context.Context, o option.Option) (bool, errors.Error) {
+func (r *DAO) Exists(ctx context.Context, o option.Option) bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *DAO) GetAll(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (r *DAO) GetAll(ctx context.Context, option option.Option) interface{} {
 	if option = option.SetType(reflect.TypeOf(GetListResourceRequest{}).String()); !option.Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetListResourceRequest{resourceId, namespace, labels}",
-		)
+		))
 	}
 	request := option.Get().(GetListResourceRequest)
 	var options metav1.ListOptions
@@ -95,17 +95,17 @@ func (r *DAO) GetAll(ctx context.Context, option option.Option) (interface{}, er
 	}
 	list, err := r.DynamicClient.Resource(request.ResourceID).Namespace(request.Namespace).List(ctx, options)
 	if err != nil {
-		return nil, errors.NotFound.WithMessage(err.Error())
+		panic(errors.NotFound.WithMessage(err.Error()))
 	}
-	return list.Items, errors.OK
+	return list.Items
 }
 
-// Create namspace from a given name string
-func (r *DAO) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+// Create namespace from a given name string
+func (r *DAO) Create(ctx context.Context, optn option.Option) interface{} {
 	if optn = optn.SetType(reflect.TypeOf(CreateNamespaceRequest{}).String()); !optn.Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.CreateNamespaceRequest{name}",
-		)
+		))
 	}
 	request := optn.Get().(CreateNamespaceRequest)
 	ns := &corev1.Namespace{
@@ -115,9 +115,9 @@ func (r *DAO) Create(ctx context.Context, optn option.Option) (interface{}, erro
 	}
 	namespace, err := r.ClientSet.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	if err != nil {
-		return nil, errors.ExternalServiceError.WithMessage(err.Error())
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
-	return namespace, errors.OK
+	return namespace
 }
 
 func (r *DAO) Update(ctx context.Context, option option.Option) errors.Error {

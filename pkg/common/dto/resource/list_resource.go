@@ -7,5 +7,5 @@ import (
 type GetListResourceRequest struct {
 	Provider     common.ProviderType `json:"provider"`
 	ResourceType common.ResourceType `json:"type"`
-	ProjectID    string              `json:"project_id"`
+	ProjectID    string              `json:"projectID"`
 }

@@ -6,6 +6,14 @@ type Resource struct {
 	Outputs    OutputList
 }
 
+func NewResourceList(identifiers []Identifier) ResourceList {
+	resources := make(ResourceList, len(identifiers))
+	for i, identifier := range identifiers {
+		resources[i] = Resource{Identifier: identifier}
+	}
+	return resources
+}
+
 func (resource *Resource) Equals(other Resource) bool {
 	return resource.Identifier.Equals(other.Identifier) &&
 		resource.Events.Equals(other.Events) &&

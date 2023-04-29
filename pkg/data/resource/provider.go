@@ -3,11 +3,10 @@ package resource
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	auth "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
 
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
@@ -16,20 +15,20 @@ import (
 )
 
 type Provider struct {
-	Metadata            metadata.Metadata       `bson:"metadata"`
-	Identifier          identifier.Provider     `bson:"identifier"`
-	VPC                 string                  `bson:"vpc" plugin:"vpc"`
-	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
-	Type                common.ProviderType     `bson:"type" plugin:"type"`
-	Auth                auth.Auth               `bson:"auth" plugin:"auth"`
-	VPCs                VPCCollection           `bson:"vpcs"`
+	Metadata   metadata.Metadata     `bson:"metadata"`
+	Identifier identifier.Provider   `bson:"identifier"`
+	Status     status.ResourceStatus `bson:"status"`
+	VPC        string                `bson:"vpc" plugin:"vpc"`
+	Type       common.ProviderType   `bson:"type" plugin:"type"`
+	Auth       auth.Auth             `bson:"auth" plugin:"auth"`
+	VPCs       VPCCollection         `bson:"vpcs"`
 }
 
 func (provider *Provider) Equals(other Provider) bool {
 	return provider.Metadata.Equals(other.Metadata) &&
 		provider.Identifier.Equals(other.Identifier) &&
+		provider.Status.Equals(other.Status) &&
 		provider.VPC == other.VPC &&
-		provider.KubernetesResources.Equals(other.KubernetesResources) &&
 		provider.Type == other.Type &&
 		provider.Auth.Equals(other.Auth) &&
 		provider.VPCs.Equals(other.VPCs)
@@ -37,47 +36,63 @@ func (provider *Provider) Equals(other Provider) bool {
 
 type ProviderCollection map[string]Provider
 
-func NewProvider(id identifier.Provider) Provider {
+func NewProvider(id identifier.Provider, providerType common.ProviderType) Provider {
 	return Provider{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name: id.ID,
 		}),
 		Identifier: id,
+		Status:     status.New(id.ID, common.Provider, providerType),
 		VPCs:       make(VPCCollection),
 	}
 }
 
-func (provider *Provider) New(id identifier.ID) (IResource, errors.Error) {
+func (provider *Provider) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Provider{}) {
-		return nil, errors.InvalidArgument.WithMessage("invalid id type")
+		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
-	res := NewProvider(id.(identifier.Provider))
-	return &res, errors.OK
+	res := NewProvider(id.(identifier.Provider), providerType)
+	return &res
 }
 
 func (provider *Provider) GetMetadata() metadata.Metadata {
 	return provider.Metadata
 }
 
-func (provider *Provider) WithMetadata(request metadata.CreateMetadataRequest) {
+func (provider *Provider) SetStatus(resourceStatus status.ResourceStatus) {
+	provider.Status = resourceStatus
+}
+
+func (provider *Provider) GetStatus() status.ResourceStatus {
+	return provider.Status
+}
+
+func (provider *Provider) SetMetadata(request metadata.CreateMetadataRequest) {
 	provider.Metadata = metadata.New(request)
 }
-func (provider *Provider) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
-	case common.GCP:
-		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.Provider.Version,
-		}, errors.Error{}
+
+func (provider *Provider) GetPluginReference() resourcePlugin.Reference {
+	if !provider.Status.PluginReference.ChartReference.Empty() {
+		return provider.Status.PluginReference
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
+	switch provider.Status.PluginReference.ResourceReference.ProviderType {
+	case common.GCP:
+		provider.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+		}
+		return provider.Status.PluginReference
+	}
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", provider.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (provider *Provider) FromMap(m map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(m, provider)
+func (provider *Provider) FromMap(m map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(m, provider); !err.IsOk() {
+		panic(err)
+	}
 }
 
-func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
+func (provider *Provider) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -85,20 +100,18 @@ func (provider *Provider) Insert(project Project, update ...bool) errors.Error {
 	id := provider.Identifier
 	_, ok := project.Resources[provider.Identifier.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID)))
 	} else if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", id.ID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", id.ID)))
 	}
 	project.Resources[provider.Identifier.ID] = *provider
-	return errors.OK
 }
 
-func (provider *Provider) Remove(project Project) errors.Error {
+func (provider *Provider) Remove(project Project) {
 	id := provider.Identifier
 	_, ok := project.Resources[provider.Identifier.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", id.ID)))
 	}
 	delete(project.Resources, provider.Identifier.ID)
-	return errors.NoContent
 }

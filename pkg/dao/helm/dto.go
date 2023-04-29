@@ -22,12 +22,14 @@ type CreateHelmReleaseResponse struct {
 	Release *release.Release
 }
 type UpdateHelmReleaseRequest struct {
-	ReleaseName string
-	ChartName   string
-	Namespace   string
-	Values      map[string]interface{}
+	ReleaseName  string
+	ChartName    string
+	ChartVersion string
+	Namespace    string
+	Values       map[string]interface{}
 }
 
 type DeleteHelmReleaseRequest struct {
 	ReleaseName string
+	Namespace   string
 }

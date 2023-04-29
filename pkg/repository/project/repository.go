@@ -40,99 +40,92 @@ func init() {
 	}
 }
 
-func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(dto.CreateProjectRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+func (repository *Repository) Create(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(dto.CreateProjectRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.CreateProjectRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.CreateProjectRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	request := optn.Value.(dto.CreateProjectRequest)
-	if err := repository.validateCreateUpdate(ctx, request.ProjectName, request.OwnerID); !err.IsOk() {
-		return nil, err
+	request := opt.Value.(dto.CreateProjectRequest)
+	exists := repository.MongoDAO.Exists(ctx, option.Option{
+		Value: mongo.ExistsRequest{
+			CollectionName: config.Current.Mongo.ProjectCollection,
+			Filter:         bson.M{NameDocumentKey: request.ProjectName, OwnerIDDocumentKey: request.OwnerID},
+		},
+	})
+	if exists {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Project %s owned by %s already exists", request.ProjectName, request.OwnerID)))
 	}
 
 	newProject := resource.NewProject(request.ProjectName, request.OwnerID)
-	_, err := repository.kubernetesDAO.Create(ctx, option.Option{
+	_ = repository.kubernetesDAO.Create(ctx, option.Option{
 		Value: kubernetes.CreateNamespaceRequest{
 			Name: newProject.Namespace,
 		},
 	})
-	if !err.IsOk() {
-		return nil, err
-	}
-	// Persist
 
 	mongoRequest := mongo.CreateRequest{
 		Payload:        newProject,
 		CollectionName: config.Current.Mongo.ProjectCollection,
 	}
-	resp, err := mongo.Client.Create(ctx, option.Option{
+	resp := mongo.Client.Create(ctx, option.Option{
 		Value: mongoRequest,
 	})
-	if !err.IsOk() {
-		return dto.CreateProjectResponse{}, err
-	}
+
 	return dto.CreateProjectResponse{
 		ProjectID: resp.(mongo.CreateResponse).Id,
-	}, errors.OK
+	}
 }
 
-func (repository *Repository) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(dto.GetProjectByIDRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+func (repository *Repository) Get(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(dto.GetProjectByIDRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByIDRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByIDRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	request := optn.Value.(dto.GetProjectByIDRequest)
+	request := opt.Value.(dto.GetProjectByIDRequest)
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
 	}
-	resp, err := mongo.Client.Get(ctx, option.Option{
+	resp := mongo.Client.Get(ctx, option.Option{
 		Value: mongoGetRequest,
 	})
-	if !err.IsOk() {
-		return dto.GetProjectByIDResponse{}, err
-	}
-	project, err := fromBsonRaw(resp.(mongo.GetResponse).Payload)
-	if !err.IsOk() {
-		return dto.GetProjectByIDResponse{}, err
-	}
+
+	project := fromBsonRaw(resp.(mongo.GetResponse).Payload)
+
 	return dto.GetProjectByIDResponse{
 		Payload: project,
-	}, errors.OK
+	}
 }
 
-func (repository *Repository) Watch(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (repository *Repository) Watch(_ context.Context, _ option.Option) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (repository *Repository) List(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+func (repository *Repository) List(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	request := optn.Value.(dto.GetProjectByOwnerIDRequest)
+	request := opt.Value.(dto.GetProjectByOwnerIDRequest)
 	mongoGetRequest := mongo.GetAllRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Filter: bson.M{
 			"owner_id": request.OwnerID,
 		},
 	}
-	resp, err := mongo.Client.GetAll(ctx, option.Option{
+	resp := mongo.Client.GetAll(ctx, option.Option{
 		Value: mongoGetRequest,
 	})
-	if !err.IsOk() {
-		return dto.GetProjectByOwnerIDResponse{}, err
-	}
 
 	// From mongo raw to Project entity
 	var projects []resource.Project
@@ -151,67 +144,54 @@ func (repository *Repository) List(ctx context.Context, optn option.Option) (int
 
 	return dto.GetProjectByOwnerIDResponse{
 		Payload: projects,
-	}, errors.OK
+	}
 }
 
-func (repository *Repository) Update(ctx context.Context, optn option.Option) errors.Error {
-	if !optn.SetType(reflect.TypeOf(dto.UpdateProjectRequest{}).String()).Validate() {
-		return errors.InvalidArgument.WithMessage(
+func (repository *Repository) Update(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(dto.UpdateProjectRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.UpdateProjectRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.UpdateProjectRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	request := optn.Value.(dto.UpdateProjectRequest)
+	request := opt.Value.(dto.UpdateProjectRequest)
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
 	}
-	resp, err := mongo.Client.Get(ctx, option.Option{
+	resp := mongo.Client.Get(ctx, option.Option{
 		Value: mongoGetRequest,
 	})
 
-	if !err.IsOk() {
-		return err
-	}
 	projectRaw := resp.(mongo.GetResponse).Payload
-	projectResp, err := fromBsonRaw(projectRaw)
-	if !err.IsOk() {
-		return err
-	}
-
-	// Check if (name, owner) does not exist
-	if errValidate := repository.validateCreateUpdate(ctx, request.ProjectName, projectResp.OwnerID); !errValidate.IsOk() {
-		return errValidate
-	}
-
+	projectResp := fromBsonRaw(projectRaw)
 	projectResp.Name = request.ProjectName
-	if err = mongo.Client.Update(ctx, option.Option{
+
+	mongo.Client.Update(ctx, option.Option{
 		Value: mongo.UpdateRequest{
 			CollectionName: config.Current.Mongo.ProjectCollection,
 			Id:             request.ProjectID,
 			Payload:        projectResp,
 		},
-	}); !err.IsOk() {
-		return err
-	}
-	return errors.OK
+	})
+	return nil
 }
 
-func (repository *Repository) Delete(ctx context.Context, optn option.Option) errors.Error {
-	if !optn.SetType(reflect.TypeOf(dto.DeleteRequest{}).String()).Validate() {
-		return errors.InvalidArgument.WithMessage(
+func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
+	if !opt.SetType(reflect.TypeOf(dto.DeleteRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.DeleteRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.DeleteRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	request := optn.Value.(dto.DeleteRequest)
+	request := opt.Value.(dto.DeleteRequest)
 	mongoDeleteRequest := mongo.DeleteRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
 	}
-	return mongo.Client.Delete(ctx, option.Option{
+	mongo.Client.Delete(ctx, option.Option{
 		Value: mongoDeleteRequest,
 	})
 }

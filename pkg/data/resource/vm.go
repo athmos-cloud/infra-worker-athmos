@@ -3,33 +3,37 @@ package resource
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
 
 type VM struct {
-	Metadata    metadata.Metadata `bson:"metadata"`
-	Identifier  identifier.VM     `bson:"identifier"`
-	VPC         string            `bson:"vpc" plugin:"vpc"`
-	Network     string            `bson:"network" plugin:"network"`
-	Subnetwork  string            `bson:"subnetwork" plugin:"subnetwork"`
-	Zone        string            `bson:"zone" plugin:"zone"`
-	MachineType string            `bson:"machineType" plugin:"machineType"`
-	Auths       VMAuthList        `bson:"auths" plugin:"auths"`
-	Disks       DiskList          `bson:"disks" plugin:"disks"`
-	OS          OS                `bson:"os" plugin:"os"`
+	Metadata    metadata.Metadata     `bson:"metadata"`
+	Identifier  identifier.VM         `bson:"identifier"`
+	Status      status.ResourceStatus `bson:"status"`
+	VPC         string                `bson:"vpc" plugin:"vpc"`
+	Network     string                `bson:"network" plugin:"network"`
+	Subnetwork  string                `bson:"vmwork" plugin:"vmwork"`
+	Zone        string                `bson:"zone" plugin:"zone"`
+	MachineType string                `bson:"machineType" plugin:"machineType"`
+	Auths       VMAuthList            `bson:"auths" plugin:"auths"`
+	Disks       DiskList              `bson:"disks" plugin:"disks"`
+	OS          OS                    `bson:"os" plugin:"os"`
 }
 
-func NewVM(id identifier.VM) VM {
+func NewVM(id identifier.VM, providerType common.ProviderType) VM {
 	return VM{
 		Metadata:   metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
 		Identifier: id,
+		Status:     status.New(id.ID, common.VM, providerType),
+		Auths:      make(VMAuthList, 0),
+		Disks:      make(DiskList, 0),
 	}
 }
 
@@ -104,17 +108,18 @@ func (os *OS) Equals(other OS) bool {
 	return os.Type == other.Type && os.Version == other.Version
 }
 
-func (vm *VM) New(id identifier.ID) (IResource, errors.Error) {
+func (vm *VM) New(id identifier.ID, providerType common.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VM{}) {
-		return nil, errors.InvalidArgument.WithMessage("identifier is not of type VM")
+		panic(errors.InvalidArgument.WithMessage("identifier is not of type VM"))
 	}
-	res := NewVM(id.(identifier.VM))
-	return &res, errors.OK
+	res := NewVM(id.(identifier.VM), providerType)
+	return &res
 }
 
 func (vm *VM) Equals(other VM) bool {
 	return vm.Metadata.Equals(other.Metadata) &&
 		vm.Identifier.Equals(other.Identifier) &&
+		vm.Status.Equals(other.Status) &&
 		vm.VPC == other.VPC &&
 		vm.Network == other.Network &&
 		vm.Subnetwork == other.Subnetwork &&
@@ -129,26 +134,40 @@ func (vm *VM) GetMetadata() metadata.Metadata {
 	return vm.Metadata
 }
 
-func (vm *VM) WithMetadata(request metadata.CreateMetadataRequest) {
+func (vm *VM) SetMetadata(request metadata.CreateMetadataRequest) {
 	vm.Metadata = metadata.New(request)
 }
 
-func (vm *VM) GetPluginReference(request dto.GetPluginReferenceRequest) (dto.GetPluginReferenceResponse, errors.Error) {
-	switch request.ProviderType {
-	case common.GCP:
-		return dto.GetPluginReferenceResponse{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.VM.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.VM.Version,
-		}, errors.Error{}
+func (vm *VM) SetStatus(resourceStatus status.ResourceStatus) {
+	vm.Status = resourceStatus
+}
+
+func (vm *VM) GetStatus() status.ResourceStatus {
+	return vm.Status
+}
+
+func (vm *VM) GetPluginReference() resourcePlugin.Reference {
+	if !vm.Status.PluginReference.ChartReference.Empty() {
+		return vm.Status.PluginReference
 	}
-	return dto.GetPluginReferenceResponse{}, errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", request.ProviderType))
+	switch vm.Status.PluginReference.ResourceReference.ProviderType {
+	case common.GCP:
+		vm.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+		}
+		return vm.Status.PluginReference
+	}
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("provider type %s not supported", vm.Status.PluginReference.ResourceReference.ProviderType)))
 }
 
-func (vm *VM) FromMap(data map[string]interface{}) errors.Error {
-	return resourcePlugin.InjectMapIntoStruct(data, vm)
+func (vm *VM) FromMap(data map[string]interface{}) {
+	if err := resourcePlugin.InjectMapIntoStruct(data, vm); err.IsOk() {
+		panic(err)
+	}
 }
 
-func (vm *VM) Insert(project Project, update ...bool) errors.Error {
+func (vm *VM) Insert(project Project, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
@@ -156,21 +175,19 @@ func (vm *VM) Insert(project Project, update ...bool) errors.Error {
 	id := vm.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 	if !ok && shouldUpdate {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", id.ID, id.SubnetID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID)))
 	}
 	if ok && !shouldUpdate {
-		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", id.ID, id.SubnetID))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in vm %s", id.ID, id.SubnetID)))
 	}
 	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID] = *vm
-	return errors.OK
 }
 
-func (vm *VM) Remove(project Project) errors.Error {
+func (vm *VM) Remove(project Project) {
 	id := vm.Identifier
 	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
 	if !ok {
-		return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", id.ID, id.SubnetID))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in vm %s", id.ID, id.SubnetID)))
 	}
 	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs, id.ID)
-	return errors.NoContent
 }

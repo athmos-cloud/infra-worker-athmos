@@ -8,7 +8,7 @@ import (
 type Provider struct {
 	Name         string              `json:"name"`
 	Monitored    bool                `json:"monitored"`
-	ProviderType common.ProviderType `json:"provider_type"`
+	ProviderType common.ProviderType `json:"providerType"`
 	VPCs         VPCCollection       `json:"vpcs"`
 }
 

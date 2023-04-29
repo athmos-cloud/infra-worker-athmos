@@ -5,7 +5,7 @@ import "github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 type Subnetwork struct {
 	Name        string       `json:"name"`
 	Monitored   bool         `json:"monitored"`
-	IPCIDRRange string       `json:"ip_cidr_range"`
+	IPCIDRRange string       `json:"IPCIDRRange²"`
 	Region      string       `json:"region"`
 	VMs         VMCollection `json:"vms"`
 }

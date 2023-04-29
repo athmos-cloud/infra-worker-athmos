@@ -11,8 +11,8 @@ func (provider *Provider) Equals(other Provider) bool {
 }
 
 type VPC struct {
-	ID         string
-	ProviderID string
+	ID         string `bson:"id" json:"id"`
+	ProviderID string `bson:"providerId" json:"providerID"`
 }
 
 func (vpc *VPC) Equals(other VPC) bool {
@@ -21,9 +21,9 @@ func (vpc *VPC) Equals(other VPC) bool {
 }
 
 type Network struct {
-	ID         string
-	ProviderID string
-	VPCID      string
+	ID         string `bson:"id" json:"id"`
+	ProviderID string `bson:"providerId" json:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID"`
 }
 
 func (network *Network) Equals(other Network) bool {
@@ -33,10 +33,10 @@ func (network *Network) Equals(other Network) bool {
 }
 
 type Subnetwork struct {
-	ID         string
-	ProviderID string
-	VPCID      string
-	NetworkID  string
+	ID         string `bson:"id" json:"id"`
+	ProviderID string `bson:"providerId" json:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID"`
+	NetworkID  string `bson:"networkId" json:"networkID"`
 }
 
 func (subnetwork *Subnetwork) Equals(other Subnetwork) bool {
@@ -47,10 +47,10 @@ func (subnetwork *Subnetwork) Equals(other Subnetwork) bool {
 }
 
 type Firewall struct {
-	ID         string `bson:"id"`
-	ProviderID string `bson:"providerId"`
-	VPCID      string `bson:"vpcId"`
-	NetworkID  string `bson:"networkId"`
+	ID         string `bson:"id" json:"id"`
+	ProviderID string `bson:"providerId" json:"providerID"`
+	VPCID      string `bson:"vpcId" json:"VPCID"`
+	NetworkID  string `bson:"networkId" json:"networkID"`
 }
 
 func (firewall *Firewall) Equals(other Firewall) bool {
@@ -61,11 +61,11 @@ func (firewall *Firewall) Equals(other Firewall) bool {
 }
 
 type VM struct {
-	ID         string
-	ProviderID string
-	VPCID      string
-	NetworkID  string
-	SubnetID   string
+	ID         string `bson:"id" json:"id"`
+	ProviderID string `bson:"providerId" json:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID"`
+	NetworkID  string `bson:"networkId" json:"networkID"`
+	SubnetID   string `bson:"subnetId" json:"subnetID"`
 }
 
 func (id *VM) Equals(other VM) bool {

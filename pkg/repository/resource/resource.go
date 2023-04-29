@@ -3,10 +3,9 @@ package resource
 import (
 	"context"
 	"fmt"
-	dtoResource "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/helm"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	kubernetesData "github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -35,88 +34,135 @@ type Repository struct {
 	HelmDAO       *helm.ReleaseDAO
 }
 
-func (repository *Repository) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
-	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+func (repository *Repository) Create(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected CreateRequest, got %v",
-				reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
+				reflect.TypeOf(CreateRequest{}).Kind(), opt.Value,
 			),
-		)
+		))
 	}
-	logger.Info.Printf("Creating resource %v", optn.Value)
-	request := optn.Value.(CreateRequest)
-	curPlugin, err := plugin.Get(request.ProviderType, request.ResourceType)
-	if !err.IsOk() {
-		return dtoResource.CreateResourceResponse{}, err
-	}
-	completedPayload, err := curPlugin.ValidateAndCompletePluginEntry(request.ResourceSpecs)
-	if !err.IsOk() {
-		return dtoResource.CreateResourceResponse{}, err
-	}
-	resource := resource.Factory(request.ResourceType)
+	request := opt.Value.(CreateRequest)
+	logger.Info.Printf("Creating resource %s to cloud provider %s", request.ResourceType, request.ProviderType)
+
+	curResource := resource.Factory(request.ResourceType)
 	// Execute curPlugin
-	pluginReference, err := resource.GetPluginReference(dtoResource.GetPluginReferenceRequest{
-		ProviderType: request.ProviderType,
-	})
+	curResource = curResource.New(request.Identifier, request.ProviderType)
+	pluginReference := curResource.GetPluginReference()
+
+	completedPayload, err := pluginReference.Plugin.ValidateAndCompletePluginEntry(request.ResourceSpecs)
 	if !err.IsOk() {
-		return dtoResource.CreateResourceResponse{}, err
+		panic(err)
 	}
-	// Validator
-	resource.FromMap(request.ResourceSpecs)
-	resource.WithMetadata(metadata.CreateMetadataRequest{
+	curResource.FromMap(request.ResourceSpecs)
+	curResource.SetMetadata(metadata.CreateMetadataRequest{
 		Name:             completedPayload["name"].(string),
-		ProjectNamespace: request.ProjectNamespace,
+		ProjectNamespace: request.Project.Namespace,
 		NotMonitored:     !(completedPayload["monitored"].(bool)),
 		Tags:             completedPayload["tags"].(map[string]string),
 	})
-	logger.Info.Printf("Creating resource %s", pluginReference.ChartName)
+	updatedStatus := curResource.GetStatus()
 
-	resp, err := repository.HelmDAO.Create(ctx, option.Option{
+	resp := repository.HelmDAO.Create(ctx, option.Option{
 		Value: helm.CreateHelmReleaseRequest{
-			ReleaseName:  resource.GetMetadata().Name,
-			ChartName:    pluginReference.ChartName,
-			ChartVersion: pluginReference.ChartVersion,
+			ReleaseName:  updatedStatus.HelmRelease.Name,
+			ChartName:    pluginReference.ChartReference.ChartName,
+			ChartVersion: pluginReference.ChartReference.ChartVersion,
 			Values:       completedPayload,
-			Namespace:    request.ProjectNamespace,
+			Namespace:    request.Project.Namespace,
 		},
 	})
-	if !err.IsOk() {
-		logger.Info.Printf("Error creating resource %s", resource.GetMetadata().Name)
-		return dtoResource.CreateResourceResponse{}, err
-	}
+
+	releaseResp := resp.(helm.CreateHelmReleaseResponse).Release
 	// Parse manifest
+	resID := kubernetesData.GetResourcesIdentifiersFromManifests(releaseResp.Manifest)
+	if !err.IsOk() {
+		panic(err)
+	}
+	updatedStatus.KubernetesResources = kubernetesData.NewResourceList(resID)
+	curResource.SetStatus(updatedStatus)
+	curResource.FromMap(releaseResp.Config)
+	// Insert curResource into project
+	request.Project.Insert(curResource)
 
-	// Insert resource into project
-
-	// Persist resource
-
-	return dtoResource.CreateResourceResponse{
-		ResourceID:  resource.GetMetadata().Name,
-		HelmRelease: resp.(helm.CreateHelmReleaseResponse).Release,
-	}, errors.OK
+	return CreateResponse{
+		Resource: curResource,
+	}
 }
 
-func (repository *Repository) Get(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (repository *Repository) Get(_ context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected GetRequest, got %v", reflect.TypeOf(opt.Value).Kind(),
+			),
+		))
+	}
+	request := opt.Value.(GetRequest)
+	res := request.Project.Get(request.ResourceID)
+
+	return GetResourceResponse{
+		Resource: res,
+	}
+}
+
+func (repository *Repository) Watch(ctx context.Context, opt option.Option) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (repository *Repository) Watch(ctx context.Context, option option.Option) (interface{}, errors.Error) {
+func (repository *Repository) List(ctx context.Context, opt option.Option) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (repository *Repository) List(ctx context.Context, option option.Option) (interface{}, errors.Error) {
-	//TODO implement me
-	panic("implement me")
+func (repository *Repository) Update(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected UpdateRequest, got %v", reflect.TypeOf(opt.Value).Kind(),
+			),
+		))
+	}
+	request := opt.Value.(UpdateRequest)
+	res := request.Project.Get(request.ResourceID)
+	pluginReference := res.GetPluginReference()
+
+	completedPayload, err := pluginReference.Plugin.ValidateAndCompletePluginEntry(request.NewResourceSpecs)
+	if !err.IsOk() {
+		panic(err)
+	}
+	updatedStatus := res.GetStatus()
+
+	repository.HelmDAO.Update(ctx, option.Option{
+		Value: helm.UpdateHelmReleaseRequest{
+			ReleaseName:  updatedStatus.HelmRelease.Name,
+			ChartName:    pluginReference.ChartReference.ChartName,
+			ChartVersion: pluginReference.ChartReference.ChartVersion,
+			Values:       completedPayload,
+			Namespace:    request.Project.Namespace,
+		},
+	})
+	return nil
 }
 
-func (repository *Repository) Update(ctx context.Context, option option.Option) errors.Error {
-	panic("implement me")
-}
-
-func (repository *Repository) Delete(ctx context.Context, option option.Option) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
+	if !opt.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
+		panic(errors.InvalidArgument.WithMessage(
+			fmt.Sprintf(
+				"Invalid argument type, expected DeleteRequest, got %v", reflect.TypeOf(opt.Value).Kind(),
+			),
+		))
+	}
+	request := opt.Value.(DeleteRequest)
+	currentResource := request.Project.Get(request.ResourceID)
+	//Uninstall helm release
+	repository.HelmDAO.Delete(ctx, option.Option{
+		Value: helm.DeleteHelmReleaseRequest{
+			ReleaseName: currentResource.GetStatus().HelmRelease.Name,
+			Namespace:   request.Project.Namespace,
+		},
+	})
+	request.Project.Delete(currentResource)
 }

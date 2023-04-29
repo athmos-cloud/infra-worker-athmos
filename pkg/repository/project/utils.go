@@ -6,10 +6,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func fromBsonRaw(raw bson.Raw) (resource.Project, errors.Error) {
+func fromBsonRaw(raw bson.Raw) resource.Project {
 	var resProject resource.Project
 	if err := bson.Unmarshal(raw, &resProject); err != nil {
-		return resource.Project{}, errors.InternalError.WithMessage(err.Error())
+		panic(errors.InternalError.WithMessage(err.Error()))
 	}
-	return resProject, errors.OK
+	return resProject
 }

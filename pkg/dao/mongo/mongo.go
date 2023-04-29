@@ -29,9 +29,9 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
-		config := config.Current.Mongo
+		conf := config.Current.Mongo
 		client, err := mongo.NewClient(options.Client().ApplyURI(
-			"mongodb://" + config.Username + ":" + config.Password + "@" + config.Address + ":" + strconv.Itoa(config.Port)),
+			"mongodb://" + conf.Username + ":" + conf.Password + "@" + conf.Address + ":" + strconv.Itoa(conf.Port)),
 		)
 		if err != nil {
 			logger.Error.Printf("Error creating mongo client: %s", err)
@@ -42,7 +42,7 @@ func init() {
 			logger.Error.Printf("Error connecting to mongo: %s", err)
 			panic(err)
 		}
-		matchDB := client.Database(config.Database)
+		matchDB := client.Database(conf.Database)
 		Client = &DAO{
 			Client:   client,
 			Database: matchDB,
@@ -51,77 +51,76 @@ func init() {
 }
 
 // Create args - context.Context - Payload interface{}
-func (m *DAO) Create(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) Create(ctx context.Context, optn option.Option) interface{} {
 	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(CreateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	result, err := collection.InsertOne(ctx, payload.Payload)
 	if err != nil {
-		return nil, errors.ExternalServiceError.WithMessage(err)
+		panic(errors.ExternalServiceError.WithMessage(err))
 	}
 	objectID := result.InsertedID.(primitive.ObjectID)
 
-	return CreateResponse{Id: objectID.Hex()}, errors.OK
+	return CreateResponse{Id: objectID.Hex()}
 }
 
-func (m *DAO) Get(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) Get(ctx context.Context, optn option.Option) interface{} {
 	// Collection string - Payload interface{} - Filter interface{}
 	if !optn.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(GetRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	id, err := primitive.ObjectIDFromHex(payload.Id)
 	if err != nil {
-		return nil, errors.InvalidArgument.WithMessage(err.Error())
+		panic(errors.InvalidArgument.WithMessage(err.Error()))
 	}
 	filter := bson.M{"_id": id}
 	res, err := collection.FindOne(ctx, filter).DecodeBytes()
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			logger.Info.Printf("No documents found for id %s", payload.Id)
-			return nil, errors.NotFound
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("No documents found for id %s", payload.Id)))
 		} else {
-			return nil, errors.ExternalServiceError.WithMessage(err.Error())
+			panic(errors.ExternalServiceError.WithMessage(err.Error()))
 		}
 	}
-	return GetResponse{Payload: res}, errors.OK
+	return GetResponse{Payload: res}
 }
 
-func (m *DAO) Exists(ctx context.Context, optn option.Option) (bool, errors.Error) {
+func (m *DAO) Exists(ctx context.Context, optn option.Option) bool {
 	if !optn.SetType(reflect.TypeOf(ExistsRequest{}).String()).Validate() {
-		return false, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(ExistsRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(ExistsRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	count, err := collection.CountDocuments(ctx, payload.Filter)
 	if err != nil {
-		return false, errors.ExternalServiceError.WithMessage(err.Error())
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
-	return count > 0, errors.OK
+	return count > 0
 }
 
-func (m *DAO) GetAll(ctx context.Context, optn option.Option) (interface{}, errors.Error) {
+func (m *DAO) GetAll(ctx context.Context, optn option.Option) interface{} {
 	if !optn.SetType(reflect.TypeOf(GetAllRequest{}).String()).Validate() {
-		return nil, errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(GetAllRequest)
 	collection := m.Database.Collection(payload.CollectionName)
@@ -129,7 +128,7 @@ func (m *DAO) GetAll(ctx context.Context, optn option.Option) (interface{}, erro
 	filter := payload.Filter
 	curs, err := collection.Find(ctx, filter)
 	if err != nil {
-		return nil, errors.NotFound.WithMessage(err)
+		panic(errors.NotFound.WithMessage(err))
 	}
 	defer func(curs *mongo.Cursor, ctx context.Context) {
 		errCurs := curs.Close(ctx)
@@ -142,54 +141,51 @@ func (m *DAO) GetAll(ctx context.Context, optn option.Option) (interface{}, erro
 		var elem interface{}
 		errCur := curs.Decode(&elem)
 		if errCur != nil {
-			return nil, errors.ExternalServiceError.WithMessage(errCur)
+			panic(errors.ExternalServiceError.WithMessage(errCur))
 		}
 		res = append(res, elem)
 	}
-	return GetAllResponse{Payload: res}, errors.OK
+	return GetAllResponse{Payload: res}
 }
 
-func (m *DAO) Update(ctx context.Context, optn option.Option) errors.Error {
+func (m *DAO) Update(ctx context.Context, optn option.Option) {
 	if !optn.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
-		return errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(UpdateRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(UpdateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	if _, err := collection.UpdateByID(ctx, payload.Id, payload.Payload); err != nil {
-		return errors.ExternalServiceError.WithMessage(err)
+		panic(errors.ExternalServiceError.WithMessage(err))
 	}
-	return errors.OK
 }
 
-func (m *DAO) Delete(ctx context.Context, optn option.Option) errors.Error {
+func (m *DAO) Delete(ctx context.Context, optn option.Option) {
 	if !optn.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
-		return errors.InvalidArgument.WithMessage(
+		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected %s, got %v", reflect.TypeOf(DeleteRequest{}).Kind(), optn.Value,
 			),
-		)
+		))
 	}
 	payload := optn.Value.(DeleteRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	id, err := primitive.ObjectIDFromHex(payload.Id)
 	if err != nil {
-		return errors.InvalidArgument.WithMessage(err.Error())
+		panic(errors.InvalidArgument.WithMessage(err.Error()))
 	}
 	res := collection.FindOneAndDelete(ctx, bson.M{"_id": id})
 	if res.Err() != nil {
-		return errors.NotFound.WithMessage(res.Err().Error())
+		panic(errors.NotFound.WithMessage(res.Err().Error()))
 	}
-	return errors.NoContent
 }
 
-func (m *DAO) Close(ctx context.Context) errors.Error {
+func (m *DAO) Close(ctx context.Context) {
 	err := m.Client.Disconnect(ctx)
 	if err != nil {
-		return errors.ExternalServiceError.WithMessage(err)
+		panic(errors.ExternalServiceError.WithMessage(err))
 	}
-	return errors.OK
 }
