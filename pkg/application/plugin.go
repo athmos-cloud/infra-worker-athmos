@@ -9,9 +9,13 @@ import (
 type PluginService struct{}
 
 func (service *PluginService) GetPlugin(request dto.GetPluginRequest) (dto.GetPluginResponse, errors.Error) {
-	plugin, err := plugin2.Get(request.ProviderType, request.ResourceType)
-	if !err.IsOk() {
-		return dto.GetPluginResponse{}, err
-	}
-	return dto.GetPluginResponse{Plugin: plugin}, errors.OK
+	err := errors.OK
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(errors.Error)
+		}
+	}()
+	plugin := plugin2.Get(plugin2.ResourceReference{ResourceType: request.ResourceType, ProviderType: request.ProviderType})
+
+	return dto.GetPluginResponse{Plugin: plugin}, err
 }

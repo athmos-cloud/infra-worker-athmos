@@ -23,6 +23,10 @@ type CreateRequest struct {
 	ResourceSpecs map[string]interface{}
 }
 
+type CreateResponse struct {
+	Resource resource.IResource
+}
+
 type UpdateRequest struct {
 	Project          resource.Project
 	ResourceID       identifier.ID

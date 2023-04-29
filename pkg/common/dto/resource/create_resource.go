@@ -14,5 +14,4 @@ type CreateResourceRequest struct {
 
 type CreateResourceResponse struct {
 	Resource resource.IResource
-	Project  resource.Project
 }

@@ -25,12 +25,8 @@ func (chart *HelmChartReference) Empty() bool {
 }
 func NewReference(resourceType common.ResourceType, providerType common.ProviderType) Reference {
 	resourceReference := ResourceReference{ResourceType: resourceType, ProviderType: providerType}
-	curPlugin, err := Get(resourceReference)
-	if !err.IsOk() {
-		panic(err)
-	}
 	return Reference{
 		ResourceReference: resourceReference,
-		Plugin:            curPlugin,
+		Plugin:            Get(resourceReference),
 	}
 }

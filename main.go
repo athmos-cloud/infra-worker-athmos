@@ -3,16 +3,10 @@ package main
 import (
 	"context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/http"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/queue"
 	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
 	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
-)
-
-var (
-	DefaultWorkdir   string = "/tmp/infra-worker"
-	PluginRepository        = mongo.Client
 )
 
 func main() {

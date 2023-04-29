@@ -25,29 +25,26 @@ func (identifier Identifier) Equals(other Identifier) bool {
 		identifier.Namespace == other.Namespace
 }
 
-func GetResourcesIdentifiersFromManifests(manifests string) ([]Identifier, errors.Error) {
+func GetResourcesIdentifiersFromManifests(manifests string) []Identifier {
 	var identifierList []Identifier
 	manifestList := strings.Split(manifests, manifestSeparatorString)
 	for _, val := range manifestList {
-		identifier, err := getResourceIdentifierFromManifest(val)
-		if !err.IsOk() {
-			return identifierList, err
-		}
+		identifier := getResourceIdentifierFromManifest(val)
 		identifierList = append(identifierList, identifier)
 	}
-	return identifierList, errors.OK
+	return identifierList
 }
 
-func getResourceIdentifierFromManifest(manifest string) (Identifier, errors.Error) {
+func getResourceIdentifierFromManifest(manifest string) Identifier {
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, gvk, err := decode([]byte(manifest), nil, nil)
 	if err != nil {
-		return Identifier{}, errors.InvalidArgument.WithMessage(err.Error())
+		panic(errors.InvalidArgument.WithMessage(err.Error()))
 	}
 	groupVersionResource := schema.GroupVersionResource{
 		Group:    gvk.Group,
 		Version:  gvk.Version,
-		Resource: gvk.Kind, // strings.ToLower(gvk.Kind) + "s" ??
+		Resource: gvk.Kind,
 	}
 
 	unstructuredObj, ok := obj.(*unstructured.Unstructured)
@@ -61,6 +58,6 @@ func getResourceIdentifierFromManifest(manifest string) (Identifier, errors.Erro
 		ResourceID: groupVersionResource,
 		Name:       name,
 		Namespace:  namespace,
-	}, errors.OK
+	}
 
 }
