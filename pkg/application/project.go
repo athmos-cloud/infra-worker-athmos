@@ -4,7 +4,6 @@ import (
 	"context"
 
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
 )
@@ -13,12 +12,12 @@ type ProjectService struct {
 	ProjectRepository *projectRepository.Repository
 }
 
-func (ps *ProjectService) CreateProject(ctx context.Context, request dto.CreateProjectRequest) (dto.CreateProjectResponse, errors.Error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, request dto.CreateProjectRequest) dto.CreateProjectResponse {
 	resp := ps.ProjectRepository.Create(ctx, option.Option{
 		Value: request,
 	})
 
-	return resp.(dto.CreateProjectResponse), errors.OK
+	return resp.(dto.CreateProjectResponse)
 }
 
 func (ps *ProjectService) UpdateProjectName(ctx context.Context, request dto.UpdateProjectRequest) {

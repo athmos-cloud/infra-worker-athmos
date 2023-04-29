@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
 )
 
 func (server *Server) WithResourceController() *Server {
 	server.Router.GET("/:projectId/:provider/:resourceType/:resourceId", func(c *gin.Context) {
-		resp, err := server.ResourceService.GetResource(c, dto.GetResourceRequest{
+		err := errors.OK
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		resp := server.ResourceService.GetResource(c, dto.GetResourceRequest{
 			ProjectID:    c.Param("projectId"),
 			Provider:     common.ProviderType(c.Param("provider")),
 			ResourceType: common.ResourceType(c.Param("resourceType")),

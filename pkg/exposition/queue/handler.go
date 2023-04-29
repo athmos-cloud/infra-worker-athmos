@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/streadway/amqp"
 )
@@ -23,6 +24,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 	switch message.Verb {
 	case CREATE:
 		var payload dto.CreateResourceRequest
+		svcErr := errors.OK
 
 		jsonData, errMarshal := json.Marshal(message.Payload)
 		if errMarshal != nil {
@@ -32,14 +34,19 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		if errUnmarshall != nil {
 			return
 		}
-		resp, svcErr := queue.ResourceService.CreateResource(ctx, payload)
+		defer func() {
+			if r := recover(); r != nil {
+				svcErr = r.(errors.Error)
+			}
+		}()
+		resp := queue.ResourceService.CreateResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
 		logger.Info.Printf("Message response : %s", resp)
 	case UPDATE:
 		var payload dto.UpdateResourceRequest
-
+		svcErr := errors.NoContent
 		jsonData, errMarshal := json.Marshal(message.Payload)
 		if errMarshal != nil {
 			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
@@ -48,12 +55,18 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		if errUnmarshall != nil {
 			return
 		}
-		svcErr := queue.ResourceService.UpdateResource(ctx, payload)
+		defer func() {
+			if r := recover(); r != nil {
+				svcErr = r.(errors.Error)
+			}
+		}()
+		queue.ResourceService.UpdateResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
 	case DELETE:
 		var payload dto.DeleteResourceRequest
+		svcErr := errors.NoContent
 
 		jsonData, errMarshal := json.Marshal(message.Payload)
 		if errMarshal != nil {
@@ -63,7 +76,12 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		if errUnmarshall != nil {
 			return
 		}
-		svcErr := queue.ResourceService.DeleteResource(ctx, payload)
+		defer func() {
+			if r := recover(); r != nil {
+				svcErr = r.(errors.Error)
+			}
+		}()
+		queue.ResourceService.DeleteResource(ctx, payload)
 		if !svcErr.IsOk() {
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}

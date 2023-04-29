@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,13 @@ import (
 
 func (server *Server) WithProjectRouter() *Server {
 	server.Router.GET("/projects/:id", func(c *gin.Context) {
-		resp, err := server.ProjectService.GetProjectByID(c, dtoProject.GetProjectByIDRequest{
+		err := errors.OK
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		resp := server.ProjectService.GetProjectByID(c, dtoProject.GetProjectByIDRequest{
 			ProjectID: c.Param("id"),
 		})
 		if !err.IsOk() {
@@ -19,13 +26,18 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-
 		c.JSON(err.Code, gin.H{
 			"payload": resp.Payload,
 		})
 	})
 	server.Router.GET("/projects/owner/:id", func(c *gin.Context) {
-		resp, err := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
+		err := errors.OK
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		resp := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
 			OwnerID: c.Param("id"),
 		})
 		if !err.IsOk() {
@@ -47,6 +59,7 @@ func (server *Server) WithProjectRouter() *Server {
 	})
 	server.Router.POST("/projects", func(c *gin.Context) {
 		var request dtoProject.CreateProjectRequest
+		err := errors.Created
 		errRequestBody := c.BindJSON(&request)
 		if errRequestBody != nil {
 			c.JSON(400, gin.H{
@@ -54,7 +67,12 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		resp, err := server.ProjectService.CreateProject(c, request)
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		resp := server.ProjectService.CreateProject(c, request)
 		if !err.IsOk() {
 			c.JSON(err.Code, gin.H{
 				"message": err.ToString(),
@@ -66,6 +84,7 @@ func (server *Server) WithProjectRouter() *Server {
 		})
 	})
 	server.Router.PUT("/projects/:id", func(c *gin.Context) {
+		err := errors.NoContent
 		type Request struct {
 			Name string `json:"name"`
 		}
@@ -77,7 +96,12 @@ func (server *Server) WithProjectRouter() *Server {
 			})
 			return
 		}
-		err := server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
 			ProjectID:   c.Param("id"),
 			ProjectName: request.Name,
 		})
@@ -92,7 +116,13 @@ func (server *Server) WithProjectRouter() *Server {
 		})
 	})
 	server.Router.DELETE("/projects/:id", func(c *gin.Context) {
-		err := server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
+		err := errors.NoContent
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+			}
+		}()
+		server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
 			ProjectID: c.Param("id"),
 		})
 		if !err.IsOk() {
