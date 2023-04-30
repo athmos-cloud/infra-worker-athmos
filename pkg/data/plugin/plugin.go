@@ -52,7 +52,7 @@ func Get(reference ResourceReference) Plugin {
 	mainPath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, MainPluginFile)
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {
-		panic(errors.IOError.WithMessage(err.Error()))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
 	}
 	plugin := Plugin{}
 	if err = yaml.Unmarshal(pluginBytes, &plugin); err != nil {
@@ -60,7 +60,7 @@ func Get(reference ResourceReference) Plugin {
 	}
 	typePath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, TypePluginFile)
 	if _, errExists := os.Stat(typePath); os.IsNotExist(errExists) {
-		panic(errors.IOError.WithMessage(errExists.Error()))
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
 	}
 	typesBytes, err := os.ReadFile(typePath)
 	if err != nil {

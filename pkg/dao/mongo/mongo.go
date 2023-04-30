@@ -51,15 +51,15 @@ func init() {
 }
 
 // Create args - context.Context - Payload interface{}
-func (m *DAO) Create(ctx context.Context, optn option.Option) interface{} {
-	if !optn.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
+func (m *DAO) Create(ctx context.Context, opt option.Option) interface{} {
+	if !opt.SetType(reflect.TypeOf(CreateRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	payload := optn.Value.(CreateRequest)
+	payload := opt.Value.(CreateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	result, err := collection.InsertOne(ctx, payload.Payload)
 	if err != nil {
@@ -70,16 +70,16 @@ func (m *DAO) Create(ctx context.Context, optn option.Option) interface{} {
 	return CreateResponse{Id: objectID.Hex()}
 }
 
-func (m *DAO) Get(ctx context.Context, optn option.Option) interface{} {
+func (m *DAO) Get(ctx context.Context, opt option.Option) interface{} {
 	// Collection string - Payload interface{} - Filter interface{}
-	if !optn.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(GetRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	payload := optn.Value.(GetRequest)
+	payload := opt.Value.(GetRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	id, err := primitive.ObjectIDFromHex(payload.Id)
 	if err != nil {
@@ -97,15 +97,15 @@ func (m *DAO) Get(ctx context.Context, optn option.Option) interface{} {
 	return GetResponse{Payload: res}
 }
 
-func (m *DAO) Exists(ctx context.Context, optn option.Option) bool {
-	if !optn.SetType(reflect.TypeOf(ExistsRequest{}).String()).Validate() {
+func (m *DAO) Exists(ctx context.Context, opt option.Option) bool {
+	if !opt.SetType(reflect.TypeOf(ExistsRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(ExistsRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(ExistsRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	payload := optn.Value.(ExistsRequest)
+	payload := opt.Value.(ExistsRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	count, err := collection.CountDocuments(ctx, payload.Filter)
 	if err != nil {
@@ -148,30 +148,31 @@ func (m *DAO) GetAll(ctx context.Context, optn option.Option) interface{} {
 	return GetAllResponse{Payload: res}
 }
 
-func (m *DAO) Update(ctx context.Context, optn option.Option) {
-	if !optn.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
+func (m *DAO) Update(ctx context.Context, opt option.Option) {
+	if !opt.SetType(reflect.TypeOf(UpdateRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(UpdateRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(UpdateRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	payload := optn.Value.(UpdateRequest)
+	payload := opt.Value.(UpdateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-	if _, err := collection.UpdateByID(ctx, payload.Id, payload.Payload); err != nil {
-		panic(errors.ExternalServiceError.WithMessage(err))
+	updateDocument := bson.M{"$set": payload.Payload}
+	if _, err := collection.UpdateByID(ctx, payload.Id, updateDocument); err != nil {
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 }
 
-func (m *DAO) Delete(ctx context.Context, optn option.Option) {
-	if !optn.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
+func (m *DAO) Delete(ctx context.Context, opt option.Option) {
+	if !opt.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(DeleteRequest{}).Kind(), optn.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(DeleteRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	payload := optn.Value.(DeleteRequest)
+	payload := opt.Value.(DeleteRequest)
 	collection := m.Database.Collection(payload.CollectionName)
 	id, err := primitive.ObjectIDFromHex(payload.Id)
 	if err != nil {

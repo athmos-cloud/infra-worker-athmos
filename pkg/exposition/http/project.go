@@ -60,7 +60,6 @@ func (server *Server) WithProjectRouter() *Server {
 			c.JSON(400, gin.H{
 				"message": fmt.Sprintf("Wrong request body: %s", errRequestBody),
 			})
-			return
 		}
 		defer func() {
 			if r := recover(); r != nil {
