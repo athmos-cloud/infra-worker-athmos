@@ -3,9 +3,8 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-
 	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,17 +14,15 @@ func (server *Server) WithProjectRouter() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		resp := server.ProjectService.GetProjectByID(c, dtoProject.GetProjectByIDRequest{
 			ProjectID: c.Param("id"),
 		})
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		c.JSON(err.Code, gin.H{
 			"payload": resp.Payload,
 		})
@@ -35,17 +32,15 @@ func (server *Server) WithProjectRouter() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		resp := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
 			OwnerID: c.Param("id"),
 		})
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		jsonBytes, errMarshal := json.Marshal(resp.Payload)
 		if errMarshal != nil {
 			c.JSON(500, gin.H{
@@ -70,17 +65,15 @@ func (server *Server) WithProjectRouter() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		resp := server.ProjectService.CreateProject(c, request)
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		c.JSON(err.Code, gin.H{
-			"project_id": resp.ProjectID,
+			"projectID": resp.ProjectID,
 		})
 	})
 	server.Router.PUT("/projects/:id", func(c *gin.Context) {
@@ -99,18 +92,16 @@ func (server *Server) WithProjectRouter() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
 			ProjectID:   c.Param("id"),
 			ProjectName: request.Name,
 		})
-		if err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		c.JSON(err.Code, gin.H{
 			"message": fmt.Sprintf("Project %s updated", c.Param("id")),
 		})
@@ -120,17 +111,14 @@ func (server *Server) WithProjectRouter() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
 			ProjectID: c.Param("id"),
 		})
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
 		c.JSON(err.Code, gin.H{
 			"message": fmt.Sprintf("Project %s deleted", c.Param("id")),
 		})

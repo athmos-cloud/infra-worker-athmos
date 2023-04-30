@@ -13,18 +13,16 @@ func (server *Server) WithPluginController() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		resp := server.PluginService.GetPlugin(dto.GetPluginRequest{
 			ProviderType: common.ProviderType(c.Param("providerType")),
 			ResourceType: common.ResourceType(c.Param("resourceType")),
 		})
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		c.JSON(err.Code, gin.H{
 			"payload": resp.Plugin,
 		})

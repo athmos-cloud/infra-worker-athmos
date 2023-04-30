@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
@@ -15,20 +14,16 @@ func (server *Server) WithResourceController() *Server {
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
 			}
 		}()
 		resp := server.ResourceService.GetResource(c, dto.GetResourceRequest{
-			ProjectID:    c.Param("projectId"),
-			Provider:     common.ProviderType(c.Param("provider")),
-			ResourceType: common.ResourceType(c.Param("resourceType")),
-			ResourceID:   c.Param("resourceId"),
+			ProjectID:  c.Param("projectId"),
+			ResourceID: c.Param("resourceId"),
 		})
-		if !err.IsOk() {
-			c.JSON(err.Code, gin.H{
-				"message": err.ToString(),
-			})
-			return
-		}
+
 		jsonBytes, errMarshal := json.Marshal(resp)
 		if errMarshal != nil {
 			c.JSON(500, gin.H{

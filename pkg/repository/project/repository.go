@@ -55,6 +55,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			Filter:         bson.M{NameDocumentKey: request.ProjectName, OwnerIDDocumentKey: request.OwnerID},
 		},
 	})
+	logger.Info.Printf("Project %s owned by %s already exists: %v", request.ProjectName, request.OwnerID, exists)
 	if exists {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Project %s owned by %s already exists", request.ProjectName, request.OwnerID)))
 	}
