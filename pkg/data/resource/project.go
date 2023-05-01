@@ -2,6 +2,7 @@ package resource
 
 import (
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -10,19 +11,21 @@ import (
 )
 
 type Project struct {
-	ID        string             `bson:"_id,omitempty"`
-	Name      string             `bson:"name"`
-	Namespace string             `bson:"namespace"`
-	OwnerID   string             `bson:"owner_id"`
-	Resources ProviderCollection `bson:"providers"`
+	ID              string             `bson:"_id,omitempty"`
+	Name            string             `bson:"name"`
+	Namespace       string             `bson:"namespace"`
+	OwnerID         string             `bson:"owner_id"`
+	Resources       ProviderCollection `bson:"providers"`
+	Authentications auth.AuthList      `bson:"authentications"`
 }
 
 func NewProject(name string, ownerID string) Project {
 	return Project{
-		Name:      name,
-		Namespace: kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
-		OwnerID:   ownerID,
-		Resources: make(ProviderCollection, 10000),
+		Name:            name,
+		Namespace:       kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
+		OwnerID:         ownerID,
+		Resources:       make(ProviderCollection),
+		Authentications: make(auth.AuthList),
 	}
 }
 

@@ -3,6 +3,7 @@ module github.com/athmos-cloud/infra-worker-athmos
 go 1.19
 
 require (
+	github.com/fatih/structs v1.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/google/uuid v1.3.0

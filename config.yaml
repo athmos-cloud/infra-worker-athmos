@@ -3,7 +3,7 @@ test:
   credentials:
     gcp: "/etc/credentials/gcp.json"
 http:
-  port: 8080
+  port: 8081
 kubernetes:
   configPath: "/root/.kube/config"
   helm:

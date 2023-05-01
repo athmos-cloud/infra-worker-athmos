@@ -58,7 +58,7 @@ func init() {
 	}
 }
 
-func (r *DAO) Get(ctx context.Context, option option.Option) interface{} {
+func (dao *DAO) Get(ctx context.Context, option option.Option) interface{} {
 	if option = option.SetType(reflect.TypeOf(GetResourceRequest{}).String()); !option.Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetResourceRequest{resourceId, namespace, name}",
@@ -66,7 +66,7 @@ func (r *DAO) Get(ctx context.Context, option option.Option) interface{} {
 	}
 	request := option.Get().(GetResourceRequest)
 
-	resource, err := r.DynamicClient.Resource(request.ResourceID).
+	resource, err := dao.DynamicClient.Resource(request.ResourceID).
 		Namespace(request.Namespace).Get(ctx, request.Name, metav1.GetOptions{})
 	if err != nil {
 		panic(errors.NotFound.WithMessage(err.Error()))
@@ -75,12 +75,12 @@ func (r *DAO) Get(ctx context.Context, option option.Option) interface{} {
 	return resource
 }
 
-func (r *DAO) Exists(ctx context.Context, o option.Option) bool {
+func (dao *DAO) Exists(ctx context.Context, o option.Option) bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *DAO) GetAll(ctx context.Context, option option.Option) interface{} {
+func (dao *DAO) GetAll(ctx context.Context, option option.Option) interface{} {
 	if option = option.SetType(reflect.TypeOf(GetListResourceRequest{}).String()); !option.Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.GetListResourceRequest{resourceId, namespace, labels}",
@@ -93,7 +93,7 @@ func (r *DAO) GetAll(ctx context.Context, option option.Option) interface{} {
 			LabelSelector: labelsToString(request.Labels),
 		}
 	}
-	list, err := r.DynamicClient.Resource(request.ResourceID).Namespace(request.Namespace).List(ctx, options)
+	list, err := dao.DynamicClient.Resource(request.ResourceID).Namespace(request.Namespace).List(ctx, options)
 	if err != nil {
 		panic(errors.NotFound.WithMessage(err.Error()))
 	}
@@ -101,36 +101,60 @@ func (r *DAO) GetAll(ctx context.Context, option option.Option) interface{} {
 }
 
 // Create namespace from a given name string
-func (r *DAO) Create(ctx context.Context, optn option.Option) interface{} {
-	if optn = optn.SetType(reflect.TypeOf(CreateNamespaceRequest{}).String()); !optn.Validate() {
+func (dao *DAO) Create(ctx context.Context, opt option.Option) interface{} {
+	if opt = opt.SetType(reflect.TypeOf(CreateNamespaceRequest{}).String()); opt.Validate() {
+		return dao.createNamespace(ctx, opt.Get().(CreateNamespaceRequest).Name)
+	} else if opt = opt.SetType(reflect.TypeOf(CreateSecretRequest{}).String()); opt.Validate() {
+		return dao.createSecret(ctx, opt.Get().(CreateSecretRequest))
+	} else {
 		panic(errors.InvalidArgument.WithMessage(
 			"Argument must be a kubernetes.CreateNamespaceRequest{name}",
 		))
 	}
-	request := optn.Get().(CreateNamespaceRequest)
+
+}
+
+func (dao *DAO) createNamespace(ctx context.Context, namespace string) interface{} {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: request.Name,
+			Name: namespace,
 		},
 	}
-	namespace, err := r.ClientSet.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	createdNamespace, err := dao.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if err != nil {
 		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
-	return namespace
+	return createdNamespace
+
 }
 
-func (r *DAO) Update(ctx context.Context, option option.Option) errors.Error {
+func (dao *DAO) createSecret(ctx context.Context, request CreateSecretRequest) interface{} {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: request.Name,
+		},
+		Data: map[string][]byte{
+			request.Key: request.Data,
+		},
+	}
+	createdSecret, err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return createdSecret
+}
+
+func (dao *DAO) Update(ctx context.Context, option option.Option) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *DAO) Delete(ctx context.Context, option option.Option) errors.Error {
+func (dao *DAO) Delete(ctx context.Context, option option.Option) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *DAO) Close(context context.Context) errors.Error {
+func (dao *DAO) Close(context context.Context) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }

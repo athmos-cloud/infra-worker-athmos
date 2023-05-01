@@ -55,7 +55,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 	if !err.IsOk() {
 		panic(err)
 	}
-	curResource.FromMap(request.ResourceSpecs)
+	curResource.FromMap(completedPayload)
 	logger.Info.Printf("Completed payload: %v", completedPayload)
 	curResource.SetMetadata(metadata.CreateMetadataRequest{
 		Name:             completedPayload["name"].(string),
@@ -74,6 +74,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			Namespace:    request.Project.Namespace,
 		},
 	})
+
 	releaseResp := resp.(helm.CreateHelmReleaseResponse).Release
 	// Parse manifest
 	resID := kubernetesData.GetResourcesIdentifiersFromManifests(releaseResp.Manifest)
