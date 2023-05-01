@@ -11,7 +11,7 @@ type VM struct {
 	Zone        string   `json:"zone"`
 	MachineType string   `json:"machineType"`
 	Auths       []VMAuth `json:"auths"`
-	Disks       []Disk   `json:"disks"`
+	Disk        Disk     `json:"disk"`
 	OS          OS       `json:"os"`
 }
 
@@ -25,25 +25,21 @@ func FromVMDataMapper(vm resource.VM) VM {
 			SSHPublicKey: auth.SSHPublicKey,
 		}
 	}
-	disks := make([]Disk, len(vm.Disk))
-	for i, disk := range vm.Disk {
-		disks[i] = Disk{
-			Type:       disk.Type,
-			Mode:       DiskModeFromString(string(disk.Mode)),
-			SizeGib:    disk.SizeGib,
-			AutoDelete: disk.AutoDelete,
-		}
-	}
 	return VM{
 		Name:        vm.Identifier.ID,
-		Monitored:   vm.Metadata.Monitored,
+		Monitored:   vm.Metadata.Managed,
 		VPC:         vm.VPC,
 		Network:     vm.Network,
 		Subnetwork:  vm.Subnetwork,
 		Zone:        vm.Zone,
 		MachineType: vm.MachineType,
 		Auths:       auths,
-		Disks:       disks,
+		Disk: Disk{
+			Type:       vm.Disk.Type,
+			Mode:       DiskModeFromString(string(vm.Disk.Mode)),
+			SizeGib:    vm.Disk.SizeGib,
+			AutoDelete: vm.Disk.AutoDelete,
+		},
 	}
 }
 

@@ -11,7 +11,7 @@ type VPC struct {
 func FromVPCDataMapper(vpc resource.VPC) VPC {
 	return VPC{
 		Name:      vpc.Identifier.ID,
-		Monitored: vpc.Metadata.Monitored,
+		Monitored: vpc.Metadata.Managed,
 		Networks:  FromNetworkCollectionDataMapper(vpc.Networks),
 	}
 }

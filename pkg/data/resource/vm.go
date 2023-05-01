@@ -15,7 +15,7 @@ import (
 
 type VM struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.VM         `bson:"identifier"`
+	Identifier  identifier.VM         `bson:"identifier" plugin:"identifier"`
 	Status      status.ResourceStatus `bson:"status"`
 	VPC         string                `bson:"vpc" plugin:"vpc"`
 	Provider    string                `bson:"provider" plugin:"providerName"`
@@ -25,7 +25,7 @@ type VM struct {
 	Zone        string                `bson:"zone" plugin:"zone"`
 	MachineType string                `bson:"machineType" plugin:"machineType"`
 	Auths       VMAuthList            `bson:"auths" plugin:"auth"`
-	Disk        Disk                  `bson:"disks" plugin:"disk"`
+	Disk        Disk                  `bson:"disk" plugin:"disk"`
 	OS          OS                    `bson:"os" plugin:"os"`
 }
 

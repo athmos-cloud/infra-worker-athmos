@@ -62,7 +62,7 @@ func NewID(payload IdPayload) ID {
 }
 
 type Provider struct {
-	ID string `bson:"id"`
+	ID string `bson:"id" plugin:"name"`
 }
 
 func (provider Provider) Equals(other ID) bool {
@@ -88,9 +88,9 @@ func (id VPC) Equals(other ID) bool {
 }
 
 type Network struct {
-	ID         string `bson:"id" json:"id"`
-	ProviderID string `bson:"providerId" json:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID"`
+	ID         string `bson:"id" json:"id" plugin:"networkID"`
+	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
 }
 
 func (id Network) Equals(other ID) bool {
@@ -104,16 +104,16 @@ func (id Network) Equals(other ID) bool {
 }
 
 type Subnetwork struct {
-	ID         string `bson:"id" json:"id"`
-	ProviderID string `bson:"providerId" json:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID"`
+	ID         string `bson:"id" json:"subnetID" plugin:"subnetID"`
+	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
 }
 
 func (id Subnetwork) Equals(other ID) bool {
 	otherSubneworkID, ok := other.(Subnetwork)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Subentework VMID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Subnetwork ID", other)))
 	}
 	return id.ID == otherSubneworkID.ID &&
 		id.ProviderID == otherSubneworkID.ProviderID &&
@@ -122,16 +122,16 @@ func (id Subnetwork) Equals(other ID) bool {
 }
 
 type Firewall struct {
-	ID         string `bson:"id" json:"id"`
-	ProviderID string `bson:"providerId" json:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID"`
+	ID         string `bson:"id" json:"id" plugin:"firewallID"`
+	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
 }
 
 func (id Firewall) Equals(other ID) bool {
 	otherFirewallID, ok := other.(Firewall)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Firewall VMID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Firewall ID", other)))
 	}
 	return id.ID == otherFirewallID.ID &&
 		id.ProviderID == otherFirewallID.ProviderID &&
@@ -140,17 +140,17 @@ func (id Firewall) Equals(other ID) bool {
 }
 
 type VM struct {
-	ID         string `bson:"id" json:"vmID"`
-	ProviderID string `bson:"providerId" json:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID"`
-	SubnetID   string `bson:"subnetId" json:"subnetID"`
+	ID         string `bson:"id" json:"vmID" plugin:"vmID"`
+	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
+	SubnetID   string `bson:"subnetId" json:"subnetID" plugin:"subnetID"`
 }
 
 func (id VM) Equals(other ID) bool {
 	otherVMID, ok := other.(VM)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a VM VMID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a VM ID", other)))
 	}
 	return id.ID == otherVMID.ID &&
 		id.ProviderID == otherVMID.ProviderID &&

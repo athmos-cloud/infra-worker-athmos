@@ -15,7 +15,7 @@ type Provider struct {
 func FromProviderDataMapper(provider resource.Provider) Provider {
 	return Provider{
 		Name:         provider.Identifier.ID,
-		Monitored:    provider.Metadata.Monitored,
+		Monitored:    provider.Metadata.Managed,
 		ProviderType: provider.Type,
 		VPCs:         FromVPCCollectionDataMapper(provider.VPCs),
 	}

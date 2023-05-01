@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -34,6 +35,7 @@ type Condition struct {
 
 type Input struct {
 	Name        string      `yaml:"name"`
+	DisplayName string      `yaml:"displayName,omitempty"`
 	Description string      `yaml:"description,omitempty"`
 	Type        string      `yaml:"type" default:"string"`
 	Default     interface{} `yaml:"default,omitempty"`
@@ -52,6 +54,8 @@ func Get(reference ResourceReference) Plugin {
 	mainPath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, MainPluginFile)
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {
+		logger.Info.Printf("File %s does not exist, skipping metadata parsing", mainPath)
+
 		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
 	}
 	plugin := Plugin{}
@@ -59,16 +63,19 @@ func Get(reference ResourceReference) Plugin {
 		panic(errors.ConversionError.WithMessage(err.Error()))
 	}
 	typePath := fmt.Sprintf("%s/%s/%s/%s", config.Current.Plugins.Location, provider, resourceType, TypePluginFile)
-	if _, errExists := os.Stat(typePath); os.IsNotExist(errExists) {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
+
+	if _, errExists := os.Stat(typePath); errExists == nil {
+		typesBytes, errRead := os.ReadFile(typePath)
+		if errRead != nil {
+			panic(errors.IOError.WithMessage(errRead.Error()))
+		}
+		if err = yaml.Unmarshal(typesBytes, &plugin.Types); err != nil {
+			panic(errors.ConversionError.WithMessage(err.Error()))
+		}
+	} else if errExists != nil && !os.IsNotExist(errExists) {
+		panic(errors.IOError.WithMessage(errExists.Error()))
 	}
-	typesBytes, err := os.ReadFile(typePath)
-	if err != nil {
-		panic(errors.IOError.WithMessage(err.Error()))
-	}
-	if err = yaml.Unmarshal(typesBytes, &plugin.Types); err != nil {
-		panic(errors.ConversionError.WithMessage(err.Error()))
-	}
+
 	return plugin
 }
 

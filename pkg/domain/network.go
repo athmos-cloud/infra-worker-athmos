@@ -11,7 +11,7 @@ type Network struct {
 
 func FromNetworkDataMapper(network resource.Network) Network {
 	return Network{
-		Monitored:   network.Metadata.Monitored,
+		Monitored:   network.Metadata.Managed,
 		Name:        network.Identifier.ID,
 		Subnetworks: FromSubnetworkCollectionDataMapper(network.Subnetworks),
 		Firewalls:   FromFirewallCollectionDataMapper(network.Firewalls),

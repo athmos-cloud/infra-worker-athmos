@@ -86,7 +86,9 @@ func (network *Network) GetPluginReference() resourcePlugin.Reference {
 }
 
 func (network *Network) FromMap(data map[string]interface{}) {
-	panic(resourcePlugin.InjectMapIntoStruct(data, network))
+	if err := resourcePlugin.InjectMapIntoStruct(data, network); !err.IsOk() {
+		panic(err)
+	}
 }
 
 func (network *Network) Insert(project Project, update ...bool) {

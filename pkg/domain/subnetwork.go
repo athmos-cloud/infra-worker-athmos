@@ -13,7 +13,7 @@ type Subnetwork struct {
 func FromSubnetworkDataMapper(subnet resource.Subnetwork) Subnetwork {
 	return Subnetwork{
 		Name:        subnet.Identifier.ID,
-		Monitored:   subnet.Metadata.Monitored,
+		Monitored:   subnet.Metadata.Managed,
 		IPCIDRRange: subnet.IPCIDRRange,
 		Region:      subnet.Region,
 		VMs:         FromVMCollectionDataMapper(subnet.VMs),

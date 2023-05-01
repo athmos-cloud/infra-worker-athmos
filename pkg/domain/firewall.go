@@ -12,7 +12,7 @@ type Firewall struct {
 func FromFirewallDataMapper(firewall resource.Firewall) Firewall {
 	return Firewall{
 		Name:      firewall.Identifier.ID,
-		Monitored: firewall.Metadata.Monitored,
+		Monitored: firewall.Metadata.Managed,
 		Allow:     FromRuleListDataMapper(firewall.Allow),
 		Deny:      FromRuleListDataMapper(firewall.Deny),
 	}

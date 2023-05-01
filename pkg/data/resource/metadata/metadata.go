@@ -7,7 +7,7 @@ import (
 
 type Metadata struct {
 	Name             string            `bson:"name"`
-	Monitored        bool              `bson:"monitored,default=true"`
+	Managed          bool              `bson:"managed,default=true" plugin:"managed"`
 	Tags             map[string]string `bson:"tags,omitempty"`
 	ReleaseReference ReleaseReference  `bson:"releaseReference"`
 }
@@ -21,7 +21,7 @@ type CreateMetadataRequest struct {
 
 func (metadata *Metadata) Equals(other Metadata) bool {
 	return metadata.Name == other.Name &&
-		metadata.Monitored == other.Monitored &&
+		metadata.Managed == other.Managed &&
 		utils.MapEquals(metadata.Tags, other.Tags) &&
 		metadata.ReleaseReference.Name == other.ReleaseReference.Name &&
 		metadata.ReleaseReference.Namespace == other.ReleaseReference.Namespace &&
@@ -30,9 +30,9 @@ func (metadata *Metadata) Equals(other Metadata) bool {
 
 func New(request CreateMetadataRequest) Metadata {
 	return Metadata{
-		Name:      request.Name,
-		Monitored: !request.NotMonitored,
-		Tags:      request.Tags,
+		Name:    request.Name,
+		Managed: !request.NotMonitored,
+		Tags:    request.Tags,
 		ReleaseReference: ReleaseReference{
 			Name:      fmt.Sprintf("%s-%s", request.Name, utils.GenerateUUID()),
 			Namespace: request.ProjectNamespace,
