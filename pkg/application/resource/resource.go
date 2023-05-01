@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
@@ -46,7 +47,7 @@ func (service *Service) CreateResource(ctx context.Context, payload CreateResour
 		},
 	})
 
-	return CreateResourceResponse{Resource: createdResource}
+	return CreateResourceResponse{Resource: domain.FromDataMapper(createdResource)}
 }
 
 func (service *Service) GetResource(ctx context.Context, payload GetResourceRequest) CreateResourceResponse {
@@ -63,7 +64,8 @@ func (service *Service) GetResource(ctx context.Context, payload GetResourceRequ
 		},
 	})
 	// Return domain
-	return CreateResourceResponse{Resource: resource.(resourceRepository.GetResourceResponse).Resource}
+	dataResource := resource.(resourceRepository.GetResourceResponse).Resource
+	return CreateResourceResponse{Resource: domain.FromDataMapper(dataResource)}
 }
 
 func (service *Service) UpdateResource(ctx context.Context, payload UpdateResourceRequest) {

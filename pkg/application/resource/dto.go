@@ -1,8 +1,8 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
@@ -16,7 +16,7 @@ type CreateResourceRequest struct {
 }
 
 type CreateResourceResponse struct {
-	Resource resource.IResource
+	Resource domain.IResource
 }
 
 type GetResourceRequest struct {
