@@ -2,11 +2,11 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
@@ -22,11 +22,11 @@ type Network struct {
 	Firewalls   FirewallCollection    `bson:"firewalls"`
 }
 
-func NewNetwork(id identifier.Network, providerType common.ProviderType) Network {
+func NewNetwork(id identifier.Network, providerType types.ProviderType) Network {
 	return Network{
 		Metadata:    metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
 		Identifier:  id,
-		Status:      status.New(id.ID, common.Network, providerType),
+		Status:      status.New(id.ID, types.Network, providerType),
 		Subnetworks: make(SubnetworkCollection),
 		Firewalls:   make(FirewallCollection),
 	}
@@ -46,7 +46,7 @@ func (netCollection *NetworkCollection) Equals(other NetworkCollection) bool {
 	return true
 }
 
-func (network *Network) New(id identifier.ID, providerType common.ProviderType) IResource {
+func (network *Network) New(id identifier.ID, providerType types.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Network{}) {
 		panic(errors.InvalidArgument.WithMessage("id type is not NetworkID"))
 	}
@@ -75,7 +75,7 @@ func (network *Network) GetPluginReference() resourcePlugin.Reference {
 		return network.Status.PluginReference
 	}
 	switch network.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case types.GCP:
 		network.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Network.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Network.Version,

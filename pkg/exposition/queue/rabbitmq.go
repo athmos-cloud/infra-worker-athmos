@@ -2,7 +2,7 @@ package queue
 
 import (
 	"context"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/streadway/amqp"
@@ -13,7 +13,7 @@ import (
 type RabbitMQ struct {
 	Connection      *amqp.Connection
 	Channel         *amqp.Channel
-	ResourceService *application.ResourceService
+	ResourceService *resource.Service
 	MessageHandler  func(queue string, msg amqp.Delivery, err error)
 }
 
@@ -56,7 +56,7 @@ func Close() {
 	}
 }
 
-func (queue *RabbitMQ) SetServices(resourceService *application.ResourceService) {
+func (queue *RabbitMQ) SetServices(resourceService *resource.Service) {
 	queue.ResourceService = resourceService
 }
 

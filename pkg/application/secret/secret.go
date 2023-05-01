@@ -3,7 +3,7 @@ package secret
 import (
 	"context"
 	"fmt"
-	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
+	project2 "github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	kubernetesDAO "github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -23,11 +23,11 @@ type Service struct {
 func (service *Service) CreateSecret(ctx context.Context, request CreateSecretRequest) {
 	// Get the project
 	project := service.ProjectRepository.Get(ctx, option.Option{
-		Value: dtoProject.GetProjectByIDRequest{
+		Value: project2.GetProjectByIDRequest{
 			ProjectID: request.ProjectID,
 		},
 	})
-	currentProject := project.(dtoProject.GetProjectByIDResponse).Payload
+	currentProject := project.(project2.GetProjectByIDResponse).Payload
 	logger.Info.Printf("Project ID : %s", request.ProjectID)
 
 	if _, ok := currentProject.Authentications[request.Name]; ok {
@@ -57,7 +57,7 @@ func (service *Service) CreateSecret(ctx context.Context, request CreateSecretRe
 
 	// Persist the project into the database
 	service.ProjectRepository.Update(ctx, option.Option{
-		Value: dtoProject.UpdateProjectRequest{
+		Value: projectRepo.UpdateProjectRequest{
 			ProjectID:      request.ProjectID,
 			UpdatedProject: currentProject,
 		},

@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
@@ -41,14 +40,14 @@ func init() {
 }
 
 func (repository *Repository) Create(ctx context.Context, opt option.Option) interface{} {
-	if !opt.SetType(reflect.TypeOf(dto.CreateProjectRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(CreateProjectRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.CreateProjectRequest{}).Kind(), opt.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(CreateProjectRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := opt.Value.(dto.CreateProjectRequest)
+	request := opt.Value.(CreateProjectRequest)
 	exists := repository.MongoDAO.Exists(ctx, option.Option{
 		Value: mongo.ExistsRequest{
 			CollectionName: config.Current.Mongo.ProjectCollection,
@@ -75,20 +74,20 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		Value: mongoRequest,
 	})
 
-	return dto.CreateProjectResponse{
+	return CreateProjectResponse{
 		ProjectID: resp.(mongo.CreateResponse).Id,
 	}
 }
 
 func (repository *Repository) Get(ctx context.Context, opt option.Option) interface{} {
-	if !opt.SetType(reflect.TypeOf(dto.GetProjectByIDRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(GetProjectByIDRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByIDRequest{}).Kind(), opt.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetProjectByIDRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := opt.Value.(dto.GetProjectByIDRequest)
+	request := opt.Value.(GetProjectByIDRequest)
 	mongoGetRequest := mongo.GetRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,
@@ -99,7 +98,7 @@ func (repository *Repository) Get(ctx context.Context, opt option.Option) interf
 
 	project := fromBsonRaw(resp.(mongo.GetResponse).Payload)
 
-	return dto.GetProjectByIDResponse{
+	return GetProjectByIDResponse{
 		Payload: project,
 	}
 }
@@ -110,14 +109,14 @@ func (repository *Repository) Watch(_ context.Context, _ option.Option) interfac
 }
 
 func (repository *Repository) List(ctx context.Context, opt option.Option) interface{} {
-	if !opt.SetType(reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(GetProjectByOwnerIDRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.GetProjectByOwnerIDRequest{}).Kind(), opt.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(GetProjectByOwnerIDRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := opt.Value.(dto.GetProjectByOwnerIDRequest)
+	request := opt.Value.(GetProjectByOwnerIDRequest)
 	mongoGetRequest := mongo.GetAllRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Filter: bson.M{
@@ -149,14 +148,14 @@ func (repository *Repository) List(ctx context.Context, opt option.Option) inter
 }
 
 func (repository *Repository) Update(ctx context.Context, opt option.Option) interface{} {
-	if !opt.SetType(reflect.TypeOf(dto.UpdateProjectRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(UpdateProjectRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.UpdateProjectRequest{}).Kind(), opt.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(UpdateProjectRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := opt.Value.(dto.UpdateProjectRequest)
+	request := opt.Value.(UpdateProjectRequest)
 	var projectToUpdate resource.Project
 	if request.ProjectName != "" {
 		resp := mongo.Client.Get(ctx, option.Option{
@@ -184,14 +183,14 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 }
 
 func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
-	if !opt.SetType(reflect.TypeOf(dto.DeleteRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
-				"Invalid argument type, expected %s, got %v", reflect.TypeOf(dto.DeleteRequest{}).Kind(), opt.Value,
+				"Invalid argument type, expected %s, got %v", reflect.TypeOf(DeleteRequest{}).Kind(), opt.Value,
 			),
 		))
 	}
-	request := opt.Value.(dto.DeleteRequest)
+	request := opt.Value.(DeleteRequest)
 	mongoDeleteRequest := mongo.DeleteRequest{
 		CollectionName: config.Current.Mongo.ProjectCollection,
 		Id:             request.ProjectID,

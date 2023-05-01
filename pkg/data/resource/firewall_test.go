@@ -1,8 +1,8 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"testing"
 )
@@ -18,7 +18,7 @@ func TestFirewall_FromMap(t *testing.T) {
 		err      errors.Error
 		firewall Firewall
 	}
-	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, common.Azure)
+	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, types.Azure)
 	expectedFirewall := firewall
 	expectedFirewall.Allow = RuleList{
 		{
@@ -116,18 +116,18 @@ func TestFirewall_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
 	firewall3 := firewall1
 	firewall3.Metadata.Tags = map[string]string{"test": "test"}
 	firewall4 := firewall3
 	firewall4.Metadata.Tags = map[string]string{"hello": "world"}
-	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
+	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.Azure)
 	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -230,13 +230,13 @@ func TestFirewall_Remove(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
 	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC

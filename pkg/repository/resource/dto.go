@@ -1,9 +1,9 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 )
 
 type GetRequest struct {
@@ -17,8 +17,8 @@ type GetResourceResponse struct {
 
 type CreateRequest struct {
 	Project       resource.Project
-	ProviderType  common.ProviderType
-	ResourceType  common.ResourceType
+	ProviderType  types.ProviderType
+	ResourceType  types.ResourceType
 	Identifier    identifier.ID
 	ResourceSpecs map[string]interface{}
 }

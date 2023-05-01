@@ -3,7 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -22,7 +22,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 	logger.Info.Printf("Message received : %s", message.Verb)
 	switch message.Verb {
 	case CREATE:
-		var payload dto.CreateResourceRequest
+		var payload resource.CreateResourceRequest
 		svcErr := errors.OK
 
 		jsonData, errMarshal := json.Marshal(message.Payload)
@@ -42,7 +42,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		logger.Info.Printf("Creating resource : %s", payload.Identifier)
 		_ = queue.ResourceService.CreateResource(ctx, payload)
 	case UPDATE:
-		var payload dto.UpdateResourceRequest
+		var payload resource.UpdateResourceRequest
 		svcErr := errors.NoContent
 		jsonData, errMarshal := json.Marshal(message.Payload)
 		if errMarshal != nil {
@@ -62,7 +62,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 		}
 	case DELETE:
-		var payload dto.DeleteResourceRequest
+		var payload resource.DeleteResourceRequest
 		svcErr := errors.NoContent
 
 		jsonData, errMarshal := json.Marshal(message.Payload)

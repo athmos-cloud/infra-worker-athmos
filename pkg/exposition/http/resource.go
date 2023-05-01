@@ -3,7 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"

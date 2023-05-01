@@ -1,8 +1,8 @@
 package http
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/plugin"
+	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/application/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
 )
@@ -19,8 +19,8 @@ func (server *Server) WithPluginController() *Server {
 			}
 		}()
 		resp := server.PluginService.GetPlugin(dto.GetPluginRequest{
-			ProviderType: common.ProviderType(c.Param("providerType")),
-			ResourceType: common.ResourceType(c.Param("resourceType")),
+			ProviderType: types.ProviderType(c.Param("providerType")),
+			ResourceType: types.ResourceType(c.Param("resourceType")),
 		})
 
 		c.JSON(err.Code, gin.H{

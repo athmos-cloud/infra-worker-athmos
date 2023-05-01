@@ -1,10 +1,11 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
+	types2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/types"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func TestVM_FromMap(t *testing.T) {
 		err errors.Error
 		vm  VM
 	}
-	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"}, common.Azure)
+	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"}, types2.Azure)
 	expectedVM1 := vm
 	expectedVM1.VPC = "vpc-test"
 	expectedVM1.Zone = "europe-west1-a"
@@ -132,19 +133,19 @@ func TestVM_Insert(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
+	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
+	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
 	vm3 := vm1
 	vm3.Metadata.Tags = map[string]string{"test": "test"}
 	vm4 := vm3
 	vm4.Metadata.Tags = map[string]string{"hello": "world"}
-	vm5 := NewVM(identifier.VM{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
+	vm5 := NewVM(identifier.VM{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types2.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types2.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types2.Azure)
+	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types2.Azure)
 	testSubnet.VMs[vm1.Identifier.ID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork
@@ -248,14 +249,14 @@ func TestVM_Remove(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, common.Azure)
+	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
+	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.Azure)
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types2.Azure)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types2.Azure)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types2.Azure)
+	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types2.Azure)
 	testSubnet.VMs[vm1.Identifier.ID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork

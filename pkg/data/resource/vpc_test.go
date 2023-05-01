@@ -1,8 +1,8 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"testing"
 )
@@ -18,7 +18,7 @@ func TestVPC_FromMap(t *testing.T) {
 		err errors.Error
 		vpc VPC
 	}
-	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, common.Azure)
+	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, types.Azure)
 	expectedVPC := vpc
 	expectedVPC.Provider = "test"
 
@@ -76,10 +76,10 @@ func TestVPC_Insert(t *testing.T) {
 	}
 	providerID := "test"
 	testProject := NewProject("test", "owner_test")
-	provider := NewProvider(identifier.Provider{ID: providerID}, common.AWS)
+	provider := NewProvider(identifier.Provider{ID: providerID}, types.AWS)
 	testProject.Resources[providerID] = provider
-	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, common.AWS)
-	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, common.Azure)
+	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, types.AWS)
+	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, types.Azure)
 	vpc3 := vpc1
 	vpc3.Metadata.Tags = map[string]string{"test": "test"}
 	vpc4 := vpc1

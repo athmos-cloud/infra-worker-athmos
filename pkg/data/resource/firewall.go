@@ -2,11 +2,11 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
@@ -22,12 +22,12 @@ type Firewall struct {
 	Deny       RuleList              `bson:"deny" plugin:"deny"`
 }
 
-func NewFirewall(id identifier.Firewall, providerType common.ProviderType) Firewall {
+func NewFirewall(id identifier.Firewall, providerType types.ProviderType) Firewall {
 	return Firewall{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name: id.ID,
 		}),
-		Status:     status.New(id.ID, common.Firewall, providerType),
+		Status:     status.New(id.ID, types.Firewall, providerType),
 		Identifier: id,
 	}
 }
@@ -46,7 +46,7 @@ func (collection *FirewallCollection) Equals(other FirewallCollection) bool {
 	return true
 }
 
-func (firewall *Firewall) New(id identifier.ID, providerType common.ProviderType) IResource {
+func (firewall *Firewall) New(id identifier.ID, providerType types.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Firewall{}) {
 		panic(errors.InvalidArgument.WithMessage("id type is not FirewallID"))
 	}
@@ -104,7 +104,7 @@ func (firewall *Firewall) GetPluginReference() resourcePlugin.Reference {
 		return firewall.Status.PluginReference
 	}
 	switch firewall.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case types.GCP:
 		firewall.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Firewall.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Firewall.Version,

@@ -2,10 +2,10 @@ package status
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/helm"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 )
 
@@ -22,7 +22,7 @@ func (status *ResourceStatus) Equals(other ResourceStatus) bool {
 		status.KubernetesResources.Equals(other.KubernetesResources)
 }
 
-func New(name string, resourceType common.ResourceType, providerType common.ProviderType) ResourceStatus {
+func New(name string, resourceType types.ResourceType, providerType types.ProviderType) ResourceStatus {
 	ref := plugin.NewReference(resourceType, providerType)
 	return ResourceStatus{
 		HelmRelease:         helm.NewRelease(fmt.Sprintf("%s-%s", name, utils.RandomString(randomNameUUIDLength))),

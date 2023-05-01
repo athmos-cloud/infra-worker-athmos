@@ -2,12 +2,12 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	commonTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
@@ -29,11 +29,11 @@ type VM struct {
 	OS          OS                    `bson:"os" plugin:"os"`
 }
 
-func NewVM(id identifier.VM, providerType common.ProviderType) VM {
+func NewVM(id identifier.VM, providerType commonTypes.ProviderType) VM {
 	return VM{
 		Metadata:   metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
 		Identifier: id,
-		Status:     status.New(id.ID, common.VM, providerType),
+		Status:     status.New(id.ID, commonTypes.VM, providerType),
 		Auths:      make(VMAuthList, 0),
 		Disk:       Disk{},
 	}
@@ -110,7 +110,7 @@ func (os *OS) Equals(other OS) bool {
 	return os.Type == other.Type && os.Version == other.Version
 }
 
-func (vm *VM) New(id identifier.ID, providerType common.ProviderType) IResource {
+func (vm *VM) New(id identifier.ID, providerType commonTypes.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VM{}) {
 		panic(errors.InvalidArgument.WithMessage("identifier is not of type VM"))
 	}
@@ -153,7 +153,7 @@ func (vm *VM) GetPluginReference() resourcePlugin.Reference {
 		return vm.Status.PluginReference
 	}
 	switch vm.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case commonTypes.GCP:
 		vm.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,

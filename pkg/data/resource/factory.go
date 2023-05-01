@@ -1,23 +1,23 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 )
 
-func Factory(resourceType common.ResourceType) IResource {
+func Factory(resourceType types.ResourceType) IResource {
 	switch resourceType {
-	case common.Provider:
+	case types.Provider:
 		return &Provider{}
-	case common.Network:
+	case types.Network:
 		return &Network{}
-	case common.Firewall:
+	case types.Firewall:
 		return &Firewall{}
-	case common.VPC:
+	case types.VPC:
 		return &VPC{}
-	case common.Subnetwork:
+	case types.Subnetwork:
 		return &Subnetwork{}
-	case common.VM:
+	case types.VM:
 		return &VM{}
 	default:
 		logger.Error.Printf("Resource type %s not supported", resourceType)

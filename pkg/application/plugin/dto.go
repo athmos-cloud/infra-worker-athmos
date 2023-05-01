@@ -1,13 +1,13 @@
 package plugin
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 )
 
 type GetPluginRequest struct {
-	ProviderType common.ProviderType
-	ResourceType common.ResourceType
+	ProviderType types.ProviderType
+	ResourceType types.ResourceType
 }
 
 type GetPluginResponse struct {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/http"
@@ -13,11 +15,11 @@ import (
 
 func main() {
 	ctx := context.Background()
-	projectService := application.ProjectService{
+	projectService := project.Service{
 		ProjectRepository: projectRepository.ProjectRepository,
 	}
-	pluginService := application.PluginService{}
-	resourceService := application.ResourceService{
+	pluginService := plugin.Service{}
+	resourceService := resource.Service{
 		ProjectRepository:  projectRepository.ProjectRepository,
 		ResourceRepository: resourceRepository.ResourceRepository,
 	}

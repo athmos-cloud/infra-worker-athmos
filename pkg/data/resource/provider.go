@@ -2,13 +2,12 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	auth "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
-
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
@@ -19,7 +18,7 @@ type Provider struct {
 	Identifier identifier.Provider   `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
 	VPC        string                `bson:"vpc" plugin:"vpc"`
-	Type       common.ProviderType   `bson:"type" plugin:"type"`
+	Type       types.ProviderType    `bson:"type" plugin:"type"`
 	Auth       auth.Auth             `bson:"auth" plugin:"auth"`
 	VPCs       VPCCollection         `bson:"vpcs"`
 }
@@ -36,18 +35,18 @@ func (provider *Provider) Equals(other Provider) bool {
 
 type ProviderCollection map[string]Provider
 
-func NewProvider(id identifier.Provider, providerType common.ProviderType) Provider {
+func NewProvider(id identifier.Provider, providerType types.ProviderType) Provider {
 	return Provider{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name: id.ID,
 		}),
 		Identifier: id,
-		Status:     status.New(id.ID, common.Provider, providerType),
+		Status:     status.New(id.ID, types.Provider, providerType),
 		VPCs:       make(VPCCollection),
 	}
 }
 
-func (provider *Provider) New(id identifier.ID, providerType common.ProviderType) IResource {
+func (provider *Provider) New(id identifier.ID, providerType types.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Provider{}) {
 		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
@@ -76,7 +75,7 @@ func (provider *Provider) GetPluginReference() resourcePlugin.Reference {
 		return provider.Status.PluginReference
 	}
 	switch provider.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case types.GCP:
 		provider.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Provider.Version,

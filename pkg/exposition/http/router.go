@@ -2,7 +2,9 @@ package http
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/plugin"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/gin-gonic/gin"
@@ -10,16 +12,16 @@ import (
 
 type Server struct {
 	Router          *gin.Engine
-	ProjectService  *application.ProjectService
-	PluginService   *application.PluginService
-	ResourceService *application.ResourceService
+	ProjectService  *project.Service
+	PluginService   *plugin.Service
+	ResourceService *resource.Service
 	SecretService   *secret.Service
 }
 
 func New(
-	projectService *application.ProjectService,
-	pluginService *application.PluginService,
-	resourceService *application.ResourceService,
+	projectService *project.Service,
+	pluginService *plugin.Service,
+	resourceService *resource.Service,
 	secretService *secret.Service,
 ) *Server {
 	return &Server{

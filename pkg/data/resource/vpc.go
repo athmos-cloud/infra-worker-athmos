@@ -2,11 +2,11 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
@@ -34,18 +34,18 @@ func (collection *VPCCollection) Equals(other VPCCollection) bool {
 	return true
 }
 
-func NewVPC(id identifier.VPC, provider common.ProviderType) VPC {
+func NewVPC(id identifier.VPC, provider types.ProviderType) VPC {
 	return VPC{
 		Metadata: metadata.Metadata{
 			Name: id.ID,
 		},
 		Identifier: id,
-		Status:     status.New(id.ID, common.VPC, provider),
+		Status:     status.New(id.ID, types.VPC, provider),
 		Networks:   make(NetworkCollection),
 	}
 }
 
-func (vpc *VPC) New(id identifier.ID, provider common.ProviderType) IResource {
+func (vpc *VPC) New(id identifier.ID, provider types.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VPC{}) {
 		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
@@ -74,7 +74,7 @@ func (vpc *VPC) GetPluginReference() resourcePlugin.Reference {
 		return vpc.Status.PluginReference
 	}
 	switch vpc.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case types.GCP:
 		vpc.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.VPC.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.VPC.Version,

@@ -1,8 +1,8 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"testing"
 )
@@ -18,7 +18,7 @@ func TestSubnetwork_FromMap(t *testing.T) {
 		err        errors.Error
 		subnetwork Subnetwork
 	}
-	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"}, common.GCP)
+	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"}, types.GCP)
 	expectedSubnet := subnet
 	expectedSubnet.Region = "eu-west-1"
 	expectedSubnet.IPCIDRRange = "10.0.0.0/8"
@@ -80,18 +80,18 @@ func TestSubnetwork_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 	subnetwork3 := subnetwork1
 	subnetwork3.Metadata.Tags = map[string]string{"test": "test"}
 	subnetwork4 := subnetwork3
 	subnetwork4.Metadata.Tags = map[string]string{"hello": "world"}
-	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
 	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -194,13 +194,13 @@ func TestSubnetwork_Remove(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, common.GCP)
+	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, common.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, common.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, common.GCP)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
 	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC

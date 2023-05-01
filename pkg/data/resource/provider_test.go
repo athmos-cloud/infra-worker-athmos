@@ -1,11 +1,11 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	auth "github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 	"testing"
@@ -22,7 +22,7 @@ func TestProvider_FromMap(t *testing.T) {
 		err      errors.Error
 		provider Provider
 	}
-	provider := NewProvider(identifier.Provider{ID: "test"}, common.GCP)
+	provider := NewProvider(identifier.Provider{ID: "test"}, types.GCP)
 	expectedProvider1 := provider
 	expectedProvider1.Auth = auth.Auth{
 		AuthType: auth.AuthTypeSecret,
@@ -106,7 +106,7 @@ func TestProvider_Insert(t *testing.T) {
 		Metadata            metadata.Metadata
 		Identifier          identifier.Provider
 		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
+		Type                types.ProviderType
 		Auth                auth.Auth
 		VPCs                VPCCollection
 	}
@@ -147,7 +147,7 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (update)",
 			fields: fields{
-				Type: common.AWS,
+				Type: types.AWS,
 				Identifier: identifier.Provider{
 					ID: "test",
 				},
@@ -158,7 +158,7 @@ func TestProvider_Insert(t *testing.T) {
 			},
 			want: want{
 				provider: Provider{
-					Type: common.AWS,
+					Type: types.AWS,
 					Identifier: identifier.Provider{
 						ID: "test",
 					},
@@ -168,7 +168,7 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (no update)",
 			fields: fields{
-				Type: common.Azure,
+				Type: types.Azure,
 				Identifier: identifier.Provider{
 					ID: "test",
 				},
@@ -180,7 +180,7 @@ func TestProvider_Insert(t *testing.T) {
 			want: want{
 				err: errors.Conflict,
 				provider: Provider{
-					Type: common.AWS,
+					Type: types.AWS,
 					Identifier: identifier.Provider{
 						ID: "test",
 					},
@@ -190,7 +190,7 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update non existing provider",
 			fields: fields{
-				Type: common.GCP,
+				Type: types.GCP,
 				Identifier: identifier.Provider{
 					ID: "test-2",
 				},
@@ -235,7 +235,7 @@ func TestProvider_Remove(t *testing.T) {
 		Metadata            metadata.Metadata
 		Identifier          identifier.Provider
 		KubernetesResources kubernetes.ResourceList
-		Type                common.ProviderType
+		Type                types.ProviderType
 		Auth                auth.Auth
 		VPCs                VPCCollection
 	}

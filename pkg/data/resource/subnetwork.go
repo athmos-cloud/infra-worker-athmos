@@ -2,11 +2,11 @@ package resource
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/common"
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
@@ -19,16 +19,16 @@ type Subnetwork struct {
 	VPC         string                `bson:"vpc" plugin:"vpc"`
 	Network     string                `bson:"network" plugin:"network"`
 	Region      string                `bson:"region" plugin:"region"`
-	Provider    common.ProviderType   `bson:"provider" plugin:"provider"`
+	Provider    types.ProviderType    `bson:"provider" plugin:"provider"`
 	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
 	VMs         VMCollection          `bson:"vmList"`
 }
 
-func NewSubnetwork(id identifier.Subnetwork, providerType common.ProviderType) Subnetwork {
+func NewSubnetwork(id identifier.Subnetwork, providerType types.ProviderType) Subnetwork {
 	return Subnetwork{
 		Metadata:   metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
 		Identifier: id,
-		Status:     status.New(id.ID, common.Subnetwork, providerType),
+		Status:     status.New(id.ID, types.Subnetwork, providerType),
 		VMs:        make(VMCollection),
 	}
 }
@@ -47,7 +47,7 @@ func (collection *SubnetworkCollection) Equals(other SubnetworkCollection) bool 
 	return true
 }
 
-func (subnet *Subnetwork) New(id identifier.ID, provider common.ProviderType) IResource {
+func (subnet *Subnetwork) New(id identifier.ID, provider types.ProviderType) IResource {
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Subnetwork{}) {
 		panic(errors.InvalidArgument.WithMessage("id type is not SubnetworkID"))
 	}
@@ -76,7 +76,7 @@ func (subnet *Subnetwork) GetPluginReference() resourcePlugin.Reference {
 		return subnet.Status.PluginReference
 	}
 	switch subnet.Status.PluginReference.ResourceReference.ProviderType {
-	case common.GCP:
+	case types.GCP:
 		subnet.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
 			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
 			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,

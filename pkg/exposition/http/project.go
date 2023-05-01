@@ -3,7 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +19,7 @@ func (server *Server) WithProjectRouter() *Server {
 				})
 			}
 		}()
-		resp := server.ProjectService.GetProjectByID(c, dtoProject.GetProjectByIDRequest{
+		resp := server.ProjectService.GetProjectByID(c, project.GetProjectByIDRequest{
 			ProjectID: c.Param("id"),
 		})
 
@@ -37,7 +37,7 @@ func (server *Server) WithProjectRouter() *Server {
 				})
 			}
 		}()
-		resp := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
+		resp := server.ProjectService.GetProjectByOwnerID(c, project.GetProjectByOwnerIDRequest{
 			OwnerID: c.Param("id"),
 		})
 
@@ -53,7 +53,7 @@ func (server *Server) WithProjectRouter() *Server {
 		})
 	})
 	server.Router.POST("/projects", func(c *gin.Context) {
-		var request dtoProject.CreateProjectRequest
+		var request project.CreateProjectRequest
 		err := errors.Created
 		errRequestBody := c.BindJSON(&request)
 		if errRequestBody != nil {
@@ -96,7 +96,7 @@ func (server *Server) WithProjectRouter() *Server {
 				})
 			}
 		}()
-		server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
+		server.ProjectService.UpdateProjectName(c, project.UpdateProjectRequest{
 			ProjectID:   c.Param("id"),
 			ProjectName: request.Name,
 		})
@@ -115,7 +115,7 @@ func (server *Server) WithProjectRouter() *Server {
 				})
 			}
 		}()
-		server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
+		server.ProjectService.DeleteProject(c, project.DeleteRequest{
 			ProjectID: c.Param("id"),
 		})
 		c.JSON(err.Code, gin.H{
