@@ -17,8 +17,6 @@ type Provider struct {
 	Metadata   metadata.Metadata     `bson:"metadata"`
 	Identifier identifier.Provider   `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
-	VPC        string                `bson:"vpc" plugin:"vpc"`
-	Type       types.ProviderType    `bson:"type" plugin:"type"`
 	Auth       auth.Auth             `bson:"auth" plugin:"auth"`
 	VPCs       VPCCollection         `bson:"vpcs"`
 }
@@ -27,8 +25,6 @@ func (provider *Provider) Equals(other Provider) bool {
 	return provider.Metadata.Equals(other.Metadata) &&
 		provider.Identifier.Equals(other.Identifier) &&
 		provider.Status.Equals(other.Status) &&
-		provider.VPC == other.VPC &&
-		provider.Type == other.Type &&
 		provider.Auth.Equals(other.Auth) &&
 		provider.VPCs.Equals(other.VPCs)
 }

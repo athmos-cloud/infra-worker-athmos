@@ -2,10 +2,8 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	types2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/types"
 	"testing"
 )
 
@@ -27,7 +25,7 @@ func TestVM_FromMap(t *testing.T) {
 	expectedVM1.MachineType = "f1-micro"
 	expectedVM1.Disk = Disk{
 		Type:       "SSD",
-		Mode:       types.ReadOnly,
+		Mode:       types2.ReadOnly,
 		SizeGib:    10,
 		AutoDelete: true,
 	}

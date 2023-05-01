@@ -16,8 +16,6 @@ type Network struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
 	Identifier  identifier.Network    `bson:"identifier"`
 	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"vpc" plugin:"vpc"`
-	Provider    string                `bson:"provider" plugin:"providerName"`
 	Subnetworks SubnetworkCollection  `bson:"subnetworks"`
 	Firewalls   FirewallCollection    `bson:"firewalls"`
 }

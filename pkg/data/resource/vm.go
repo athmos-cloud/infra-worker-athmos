@@ -5,7 +5,6 @@ import (
 	resourcePlugin "github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/status"
 	commonTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
@@ -17,10 +16,6 @@ type VM struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
 	Identifier  identifier.VM         `bson:"identifier" plugin:"identifier"`
 	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"vpc" plugin:"vpc"`
-	Provider    string                `bson:"provider" plugin:"providerName"`
-	Network     string                `bson:"network" plugin:"network"`
-	Subnetwork  string                `bson:"vmwork" plugin:"subnet"`
 	PublicIP    bool                  `bson:"publicIP" plugin:"publicIP"`
 	Zone        string                `bson:"zone" plugin:"zone"`
 	MachineType string                `bson:"machineType" plugin:"machineType"`
@@ -54,10 +49,10 @@ func (collection *VMCollection) Equals(other VMCollection) bool {
 }
 
 type Disk struct {
-	Type       string         `bson:"type" plugin:"type"`
-	Mode       types.DiskMode `bson:"mode" plugin:"diskMode"`
-	SizeGib    int            `bson:"sizeGib" plugin:"sizeGib"`
-	AutoDelete bool           `bson:"autoDelete" plugin:"autoDelete"`
+	Type       string               `bson:"type" plugin:"type"`
+	Mode       commonTypes.DiskMode `bson:"mode" plugin:"diskMode"`
+	SizeGib    int                  `bson:"sizeGib" plugin:"sizeGib"`
+	AutoDelete bool                 `bson:"autoDelete" plugin:"autoDelete"`
 }
 
 func (disk *Disk) Equals(other Disk) bool {
@@ -122,9 +117,6 @@ func (vm *VM) Equals(other VM) bool {
 	return vm.Metadata.Equals(other.Metadata) &&
 		vm.Identifier.Equals(other.Identifier) &&
 		vm.Status.Equals(other.Status) &&
-		vm.VPC == other.VPC &&
-		vm.Network == other.Network &&
-		vm.Subnetwork == other.Subnetwork &&
 		vm.Zone == other.Zone &&
 		vm.MachineType == other.MachineType &&
 		vm.Auths.Equals(other.Auths) &&

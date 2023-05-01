@@ -16,10 +16,7 @@ type Subnetwork struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
 	Identifier  identifier.Subnetwork `bson:"hierarchyLocation"`
 	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"vpc" plugin:"vpc"`
-	Network     string                `bson:"network" plugin:"network"`
 	Region      string                `bson:"region" plugin:"region"`
-	Provider    types.ProviderType    `bson:"provider" plugin:"provider"`
 	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
 	VMs         VMCollection          `bson:"vmList"`
 }
@@ -121,8 +118,6 @@ func (subnet *Subnetwork) Equals(other Subnetwork) bool {
 	return subnet.Metadata.Equals(other.Metadata) &&
 		subnet.Identifier.Equals(other.Identifier) &&
 		subnet.Status.Equals(other.Status) &&
-		subnet.VPC == other.VPC &&
-		subnet.Network == other.Network &&
 		subnet.Region == other.Region &&
 		subnet.IPCIDRRange == other.IPCIDRRange &&
 		subnet.VMs.Equals(other.VMs)

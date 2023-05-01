@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 	"strings"
@@ -76,8 +76,8 @@ func handleEnumTypes(key string, field reflect.Value, value reflect.Value) error
 		}
 		field.SetString(value.String())
 	} else if key == diskModeKey {
-		if _, err := types.DiskModeType(value.String()); !err.IsOk() {
-			return err
+		if res := types.DiskModeType(value.String()); res == "" {
+			return errors.InvalidArgument.WithMessage(fmt.Sprintf("invalid disk mode: %s", value.String()))
 		}
 		field.SetString(value.String())
 	} else {

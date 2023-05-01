@@ -16,7 +16,6 @@ type VPC struct {
 	Metadata   metadata.Metadata     `bson:"metadata"`
 	Identifier identifier.VPC        `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
-	Provider   string                `bson:"provider" plugin:"providerName"`
 	Networks   NetworkCollection     `bson:"networks"`
 }
 
@@ -118,6 +117,5 @@ func (vpc *VPC) Equals(other VPC) bool {
 	return vpc.Metadata.Equals(other.Metadata) &&
 		vpc.Identifier.Equals(other.Identifier) &&
 		vpc.Status.Equals(other.Status) &&
-		vpc.Provider == other.Provider &&
 		vpc.Networks.Equals(other.Networks)
 }
