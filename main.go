@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/secret"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/http"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/exposition/queue"
 	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
@@ -19,7 +21,11 @@ func main() {
 		ProjectRepository:  projectRepository.ProjectRepository,
 		ResourceRepository: resourceRepository.ResourceRepository,
 	}
-	server := http.New(&projectService, &pluginService, &resourceService)
+	secretService := secret.Service{
+		ProjectRepository: projectRepository.ProjectRepository,
+		KubernetesDAO:     kubernetes.Client,
+	}
+	server := http.New(&projectService, &pluginService, &resourceService, &secretService)
 	queue.Queue.SetServices(&resourceService)
 	go queue.Queue.StartConsumer(ctx)
 	defer queue.Close()

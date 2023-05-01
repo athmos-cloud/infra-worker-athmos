@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	config "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	internalCtx "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	"github.com/fatih/structs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,7 +37,7 @@ func init() {
 			logger.Error.Printf("Error creating mongo client: %s", err)
 			panic(err)
 		}
-		err = client.Connect(internalCtx.Current)
+		err = client.Connect(context.Background())
 		if err != nil {
 			logger.Error.Printf("Error connecting to mongo: %s", err)
 			panic(err)
@@ -158,7 +158,8 @@ func (m *DAO) Update(ctx context.Context, opt option.Option) {
 	}
 	payload := opt.Value.(UpdateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-	if _, err := collection.InsertOne(ctx, payload.Payload); err != nil {
+	bsonMap := parseBsonMap(structs.Map(payload.Payload))
+	if _, err := collection.UpdateByID(ctx, payload.Id, bson.M{"$set": bsonMap}); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 }

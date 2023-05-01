@@ -17,3 +17,10 @@ type GetListResourceRequest struct {
 type CreateNamespaceRequest struct {
 	Name string
 }
+
+type CreateSecretRequest struct {
+	Name      string
+	Namespace string
+	Key       string
+	Data      []byte
+}

@@ -5,6 +5,10 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
 
+const (
+	DefaultSecretKey = "key.json"
+)
+
 type Type string
 
 const (
@@ -24,10 +28,14 @@ func AuthType(str string) (Type, errors.Error) {
 }
 
 type Auth struct {
+	Name        string      `bson:"name"`
+	Description string      `bson:"description"`
 	AuthType    Type        `bson:"authType" plugin:"authType"`
 	SecretAuth  SecretAuth  `bson:"secretAuth" plugin:"secret"`
 	SecretVault SecretVault `bson:"secretVault" plugin:"vault"`
 }
+
+type AuthList map[string]Auth
 
 func (a *Auth) Equals(auth Auth) bool {
 	return a.AuthType == auth.AuthType &&
