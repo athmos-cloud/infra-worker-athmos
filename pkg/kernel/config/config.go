@@ -13,14 +13,15 @@ var lock = &sync.Mutex{}
 const DefaultConfigFileLocation = "config.yaml"
 
 type Config struct {
-	TempDir    string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
-	Test       Test       `yaml:"test" prefix:"TEST_"`
-	Http       Http       `yaml:"http" prefix:"HTTP_"`
-	Queue      Queue      `yaml:"queue" prefix:"QUEUE_"`
-	Kubernetes Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
-	Plugins    Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
-	Mongo      Mongo      `yaml:"mongo" prefix:"MONGO_"`
-	Postgres   Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
+	TempDir        string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
+	RedirectionURI string     `yaml:"redirection_uri" env:"REDIRECTION_URI" env-default:"http://localhost:8080"`
+	Test           Test       `yaml:"test" prefix:"TEST_"`
+	Http           Http       `yaml:"http" prefix:"HTTP_"`
+	Queue          Queue      `yaml:"queue" prefix:"QUEUE_"`
+	Kubernetes     Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
+	Plugins        Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
+	Mongo          Mongo      `yaml:"mongo" prefix:"MONGO_"`
+	Postgres       Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
 }
 
 type Queue struct {
@@ -102,8 +103,8 @@ func init() {
 	defer lock.Unlock()
 	if Current == nil {
 		Current = &Config{}
-		readEnv()
 		readFile()
+		readEnv()
 	}
 }
 

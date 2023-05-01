@@ -37,7 +37,8 @@ func (ps *ProjectService) GetProjectByOwnerID(ctx context.Context, request dto.G
 	resp := ps.ProjectRepository.List(ctx, option.Option{
 		Value: request,
 	})
-	return resp.(dto.GetProjectByOwnerIDResponse)
+	projectList := resp.(projectRepository.GetProjectByOwnerIDResponse).Projects
+	return toGetProjectByOwnerIDResponse(projectList)
 }
 
 func (ps *ProjectService) DeleteProject(ctx context.Context, request dto.DeleteRequest) {

@@ -143,8 +143,8 @@ func (repository *Repository) List(ctx context.Context, opt option.Option) inter
 		projects = append(projects, projectItem)
 	}
 
-	return dto.GetProjectByOwnerIDResponse{
-		Payload: projects,
+	return GetProjectByOwnerIDResponse{
+		Projects: projects,
 	}
 }
 

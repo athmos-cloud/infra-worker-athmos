@@ -17,5 +17,11 @@ type GetProjectByOwnerIDRequest struct {
 }
 
 type GetProjectByOwnerIDResponse struct {
-	Payload []resource.Project `json:"payload"`
+	Payload []GetProjectByOwnerIDItemResponse `json:"payload"`
+}
+
+type GetProjectByOwnerIDItemResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	URI  string `json:"uri"`
 }
