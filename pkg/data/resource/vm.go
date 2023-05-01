@@ -18,12 +18,14 @@ type VM struct {
 	Identifier  identifier.VM         `bson:"identifier"`
 	Status      status.ResourceStatus `bson:"status"`
 	VPC         string                `bson:"vpc" plugin:"vpc"`
+	Provider    string                `bson:"provider" plugin:"providerName"`
 	Network     string                `bson:"network" plugin:"network"`
-	Subnetwork  string                `bson:"vmwork" plugin:"vmwork"`
+	Subnetwork  string                `bson:"vmwork" plugin:"subnet"`
+	PublicIP    bool                  `bson:"publicIP" plugin:"publicIP"`
 	Zone        string                `bson:"zone" plugin:"zone"`
 	MachineType string                `bson:"machineType" plugin:"machineType"`
-	Auths       VMAuthList            `bson:"auths" plugin:"auths"`
-	Disks       DiskList              `bson:"disks" plugin:"disks"`
+	Auths       VMAuthList            `bson:"auths" plugin:"auth"`
+	Disk        Disk                  `bson:"disks" plugin:"disk"`
 	OS          OS                    `bson:"os" plugin:"os"`
 }
 
@@ -33,7 +35,7 @@ func NewVM(id identifier.VM, providerType common.ProviderType) VM {
 		Identifier: id,
 		Status:     status.New(id.ID, common.VM, providerType),
 		Auths:      make(VMAuthList, 0),
-		Disks:      make(DiskList, 0),
+		Disk:       Disk{},
 	}
 }
 
@@ -77,7 +79,7 @@ func (diskList *DiskList) Equals(other DiskList) bool {
 }
 
 type VMAuth struct {
-	Username     string `bson:"username" plugin:"username"`
+	Username     string `bson:"username" plugin:"user"`
 	SSHPublicKey string `bson:"sshPublicKey" plugin:"sshPublicKey"`
 }
 
@@ -126,7 +128,7 @@ func (vm *VM) Equals(other VM) bool {
 		vm.Zone == other.Zone &&
 		vm.MachineType == other.MachineType &&
 		vm.Auths.Equals(other.Auths) &&
-		vm.Disks.Equals(other.Disks) &&
+		vm.Disk.Equals(other.Disk) &&
 		vm.OS.Equals(other.OS)
 }
 

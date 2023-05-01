@@ -24,19 +24,11 @@ func TestVM_FromMap(t *testing.T) {
 	expectedVM1.VPC = "vpc-test"
 	expectedVM1.Zone = "europe-west1-a"
 	expectedVM1.MachineType = "f1-micro"
-	expectedVM1.Disks = []Disk{
-		{
-			Type:       "SSD",
-			Mode:       types.ReadOnly,
-			SizeGib:    10,
-			AutoDelete: true,
-		},
-		{
-			Type:       "SSD",
-			Mode:       types.ReadWrite,
-			SizeGib:    100,
-			AutoDelete: false,
-		},
+	expectedVM1.Disk = Disk{
+		Type:       "SSD",
+		Mode:       types.ReadOnly,
+		SizeGib:    10,
+		AutoDelete: true,
 	}
 	expectedVM1.Auths = []VMAuth{
 		{
@@ -68,11 +60,6 @@ func TestVM_FromMap(t *testing.T) {
 							"diskMode":   "READ_ONLY",
 							"sizeGib":    10,
 							"autoDelete": true,
-						},
-						{
-							"type":     "SSD",
-							"diskMode": "READ_WRITE",
-							"sizeGib":  100,
 						},
 					},
 					"auths": []map[string]interface{}{

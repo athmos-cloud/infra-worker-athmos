@@ -158,8 +158,7 @@ func (m *DAO) Update(ctx context.Context, opt option.Option) {
 	}
 	payload := opt.Value.(UpdateRequest)
 	collection := m.Database.Collection(payload.CollectionName)
-	updateDocument := bson.M{"$set": payload.Payload}
-	if _, err := collection.UpdateByID(ctx, payload.Id, updateDocument); err != nil {
+	if _, err := collection.InsertOne(ctx, payload.Payload); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 }

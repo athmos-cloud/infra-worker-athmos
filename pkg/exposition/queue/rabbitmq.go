@@ -14,7 +14,7 @@ type RabbitMQ struct {
 	Connection      *amqp.Connection
 	Channel         *amqp.Channel
 	ResourceService *application.ResourceService
-	MsgHandler      func(queue string, msg amqp.Delivery, err error)
+	MessageHandler  func(queue string, msg amqp.Delivery, err error)
 }
 
 var Queue *RabbitMQ
@@ -38,6 +38,9 @@ func init() {
 		Queue = &RabbitMQ{
 			Connection: conn,
 			Channel:    ch,
+			MessageHandler: func(queue string, msg amqp.Delivery, err error) {
+				logger.Error.Printf("Error occurred in RMQ consumer", err)
+			},
 		}
 	}
 }

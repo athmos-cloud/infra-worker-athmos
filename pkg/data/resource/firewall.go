@@ -106,8 +106,8 @@ func (firewall *Firewall) GetPluginReference() resourcePlugin.Reference {
 	switch firewall.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
 		firewall.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Firewall.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Firewall.Version,
 		}
 		return firewall.Status.PluginReference
 	}

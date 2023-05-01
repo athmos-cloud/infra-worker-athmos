@@ -16,7 +16,7 @@ type VPC struct {
 	Metadata   metadata.Metadata     `bson:"metadata"`
 	Identifier identifier.VPC        `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
-	Provider   string                `bson:"provider" plugin:"provider"`
+	Provider   string                `bson:"provider" plugin:"providerName"`
 	Networks   NetworkCollection     `bson:"networks"`
 }
 

@@ -1,16 +1,17 @@
 package kubernetes
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/scheme"
-	"log"
 	"strings"
 )
 
 const (
-	manifestSeparatorString = "---"
+	manifestSeparatorString        = "---"
+	groupAPIVersionSeparatorString = "/"
 )
 
 type Identifier struct {
@@ -29,6 +30,9 @@ func GetResourcesIdentifiersFromManifests(manifests string) []Identifier {
 	var identifierList []Identifier
 	manifestList := strings.Split(manifests, manifestSeparatorString)
 	for _, val := range manifestList {
+		if val == "" {
+			continue
+		}
 		identifier := getResourceIdentifierFromManifest(val)
 		identifierList = append(identifierList, identifier)
 	}
@@ -36,28 +40,61 @@ func GetResourcesIdentifiersFromManifests(manifests string) []Identifier {
 }
 
 func getResourceIdentifierFromManifest(manifest string) Identifier {
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, gvk, err := decode([]byte(manifest), nil, nil)
-	if err != nil {
-		panic(errors.InvalidArgument.WithMessage(err.Error()))
+	formatManifestString(&manifest)
+	var out map[string]interface{}
+	if err := yaml.Unmarshal([]byte(manifest), &out); err != nil {
+		panic(errors.InternalError.WithMessage(err.Error()))
 	}
-	groupVersionResource := schema.GroupVersionResource{
-		Group:    gvk.Group,
-		Version:  gvk.Version,
-		Resource: gvk.Kind,
-	}
+	var apiVersion string
+	var group string
+	var kind string
+	var name string
+	var namespace string
 
-	unstructuredObj, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		log.Fatalf("Error casting to unstructured.Unstructured")
+	if val, ok := out["kind"]; ok {
+		kind = val.(string)
 	}
-	name := unstructuredObj.GetName()
-	namespace := unstructuredObj.GetNamespace()
-
+	if val, ok := out["apiVersion"]; ok {
+		groupAPI := strings.Split(val.(string), groupAPIVersionSeparatorString)
+		group = groupAPI[0]
+		apiVersion = groupAPI[1]
+	}
+	if val, ok := out["metadata"].(map[string]interface{})["name"]; ok {
+		name = val.(string)
+	}
+	if val, ok := out["metadata"].(map[string]interface{})["namespace"]; ok {
+		namespace = val.(string)
+	}
+	if group == "" || apiVersion == "" || kind == "" || name == "" {
+		panic(errors.InvalidArgument.WithMessage("Manifest is not valid"))
+	}
 	return Identifier{
-		ResourceID: groupVersionResource,
-		Name:       name,
-		Namespace:  namespace,
+		ResourceID: schema.GroupVersionResource{
+			Group:    group,
+			Version:  apiVersion,
+			Resource: kind,
+		},
+		Name:      name,
+		Namespace: namespace,
+	}
+}
+
+func formatManifestString(manifest *string) {
+	newManifest := strings.ReplaceAll(*manifest, manifestSeparatorString, "")
+	var output strings.Builder
+
+	scanner := bufio.NewScanner(strings.NewReader(newManifest))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "---") || strings.HasPrefix(line, "#") {
+			continue
+		}
+		output.WriteString(line)
+		output.WriteByte('\n')
 	}
 
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error reading input:", err)
+	}
+	*manifest = output.String()
 }

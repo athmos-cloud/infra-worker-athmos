@@ -102,7 +102,7 @@ func (server *Server) WithProjectRouter() *Server {
 		})
 
 		c.JSON(err.Code, gin.H{
-			"message": fmt.Sprintf("Project %s updated", c.Param("id")),
+			"message": fmt.Sprintf("UpdatedProject %s updated", c.Param("id")),
 		})
 	})
 	server.Router.DELETE("/projects/:id", func(c *gin.Context) {
@@ -119,7 +119,7 @@ func (server *Server) WithProjectRouter() *Server {
 			ProjectID: c.Param("id"),
 		})
 		c.JSON(err.Code, gin.H{
-			"message": fmt.Sprintf("Project %s deleted", c.Param("id")),
+			"message": fmt.Sprintf("UpdatedProject %s deleted", c.Param("id")),
 		})
 	})
 	return server

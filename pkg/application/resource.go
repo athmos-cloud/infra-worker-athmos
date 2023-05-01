@@ -2,8 +2,11 @@ package application
 
 import (
 	"context"
+	"fmt"
 	dtoProject "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/project"
 	dtoResource "github.com/athmos-cloud/infra-worker-athmos/pkg/common/dto/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
 	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
@@ -22,16 +25,26 @@ func (service *ResourceService) CreateResource(ctx context.Context, payload dtoR
 		},
 	})
 	currentProject := response.(dtoProject.GetProjectByIDResponse).Payload
-
+	id := identifier.NewID(payload.Identifier)
+	if currentProject.Exists(id) {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
+	}
 	resp := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
 			Project:       currentProject,
+			Identifier:    id,
 			ProviderType:  payload.ProviderType,
 			ResourceType:  payload.ResourceType,
 			ResourceSpecs: payload.ResourceSpecs,
 		},
 	})
 	createdResource := resp.(resourceRepository.CreateResponse).Resource
+	service.ProjectRepository.Update(ctx, option.Option{
+		Value: dtoProject.UpdateProjectRequest{
+			ProjectID:      payload.ProjectID,
+			UpdatedProject: currentProject,
+		},
+	})
 
 	return dtoResource.CreateResourceResponse{Resource: createdResource}
 }
@@ -59,10 +72,21 @@ func (service *ResourceService) UpdateResource(ctx context.Context, payload dtoR
 			ProjectID: payload.ProjectID,
 		},
 	})
+	currentProject := project.(dtoProject.GetProjectByIDResponse).Payload
+	id := identifier.NewID(payload.ResourceID)
+	if currentProject.Exists(id) {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
+	}
 	service.ResourceRepository.Update(ctx, option.Option{
 		Value: resourceRepository.UpdateRequest{
-			Project:    project.(dtoProject.GetProjectByIDResponse).Payload,
-			ResourceID: payload.ResourceID,
+			Project:    currentProject,
+			ResourceID: id,
+		},
+	})
+	service.ProjectRepository.Update(ctx, option.Option{
+		Value: dtoProject.UpdateProjectRequest{
+			ProjectID:      payload.ProjectID,
+			UpdatedProject: currentProject,
 		},
 	})
 }
@@ -73,10 +97,18 @@ func (service *ResourceService) DeleteResource(ctx context.Context, payload dtoR
 			ProjectID: payload.ProjectID,
 		},
 	})
+	currentProject := project.(dtoProject.GetProjectByIDResponse).Payload
+	id := identifier.NewID(payload.ResourceID)
 	service.ResourceRepository.Delete(ctx, option.Option{
 		Value: resourceRepository.DeleteRequest{
 			Project:    project.(dtoProject.GetProjectByIDResponse).Payload,
-			ResourceID: payload.ResourceID,
+			ResourceID: id,
+		},
+	})
+	service.ProjectRepository.Update(ctx, option.Option{
+		Value: dtoProject.UpdateProjectRequest{
+			ProjectID:      payload.ProjectID,
+			UpdatedProject: currentProject,
 		},
 	})
 }

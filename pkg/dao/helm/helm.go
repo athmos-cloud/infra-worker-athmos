@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/ghodss/yaml"
 	helmclient "github.com/mittwald/go-helm-client"
@@ -116,7 +117,7 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) interfac
 		},
 		&helmclient.GenericHelmOptions{},
 	)
-
+	logger.Info.Printf("Release %s installed", args.ReleaseName)
 	if err2 != nil {
 		panic(errors.ExternalServiceError.WithMessage(
 			fmt.Sprintf("Error installing chart :  %v", err2),

@@ -39,7 +39,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
 				"Invalid argument type, expected CreateRequest, got %v",
-				reflect.TypeOf(CreateRequest{}).Kind(), opt.Value,
+				opt.Value,
 			),
 		))
 	}
@@ -56,6 +56,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		panic(err)
 	}
 	curResource.FromMap(request.ResourceSpecs)
+	logger.Info.Printf("Completed payload: %v", completedPayload)
 	curResource.SetMetadata(metadata.CreateMetadataRequest{
 		Name:             completedPayload["name"].(string),
 		ProjectNamespace: request.Project.Namespace,
@@ -73,13 +74,10 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			Namespace:    request.Project.Namespace,
 		},
 	})
-
 	releaseResp := resp.(helm.CreateHelmReleaseResponse).Release
 	// Parse manifest
 	resID := kubernetesData.GetResourcesIdentifiersFromManifests(releaseResp.Manifest)
-	if !err.IsOk() {
-		panic(err)
-	}
+
 	updatedStatus.KubernetesResources = kubernetesData.NewResourceList(resID)
 	curResource.SetStatus(updatedStatus)
 	curResource.FromMap(releaseResp.Config)

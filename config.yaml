@@ -26,7 +26,7 @@ plugins:
         chart: "gcp-provider"
         version: "0.1.0"
       subnet:
-        chart: "gcp-subnetwork"
+        chart: "gcp-subnet"
         version: "0.1.0"
       vm:
         chart: "gcp-vm"

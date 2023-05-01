@@ -2,6 +2,7 @@ package resource
 
 import (
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
@@ -19,7 +20,7 @@ type Project struct {
 func NewProject(name string, ownerID string) Project {
 	return Project{
 		Name:      name,
-		Namespace: fmt.Sprintf("%s-%s", name, utils.RandomString(5)),
+		Namespace: kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
 		OwnerID:   ownerID,
 		Resources: make(ProviderCollection, 10000),
 	}
@@ -35,6 +36,36 @@ func (project *Project) Update(resource IResource) {
 
 func (project *Project) Delete(resource IResource) {
 	resource.Remove(*project)
+}
+
+func (project *Project) Exists(id identifier.ID) bool {
+	switch reflect.TypeOf(id) {
+	case reflect.TypeOf(identifier.Provider{}):
+		providerID := id.(identifier.Provider)
+		_, ok := project.Resources[providerID.ID]
+		return ok
+	case reflect.TypeOf(identifier.VPC{}):
+		vpcID := id.(identifier.VPC)
+		_, ok := project.Resources[vpcID.ProviderID].VPCs[vpcID.ID]
+		return ok
+	case reflect.TypeOf(identifier.Network{}):
+		networkID := id.(identifier.Network)
+		_, ok := project.Resources[networkID.ProviderID].VPCs[networkID.VPCID].Networks[networkID.ID]
+		return ok
+	case reflect.TypeOf(identifier.Subnetwork{}):
+		subnetID := id.(identifier.Subnetwork)
+		_, ok := project.Resources[subnetID.ProviderID].VPCs[subnetID.VPCID].Networks[subnetID.NetworkID].Subnetworks[subnetID.ID]
+		return ok
+	case reflect.TypeOf(identifier.Firewall{}):
+		firewallID := id.(identifier.Firewall)
+		_, ok := project.Resources[firewallID.ProviderID].VPCs[firewallID.VPCID].Networks[firewallID.NetworkID].Firewalls[firewallID.ID]
+		return ok
+	case reflect.TypeOf(identifier.VM{}):
+		vmID := id.(identifier.VM)
+		_, ok := project.Resources[vmID.ProviderID].VPCs[vmID.VPCID].Networks[vmID.NetworkID].Subnetworks[vmID.ID]
+		return ok
+	}
+	panic(errors.InvalidArgument.WithMessage("invalid id type"))
 }
 
 func (project *Project) Get(id identifier.ID) IResource {

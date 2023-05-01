@@ -16,9 +16,10 @@ type Subnetwork struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
 	Identifier  identifier.Subnetwork `bson:"hierarchyLocation"`
 	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"subnet" plugin:"subnet"`
+	VPC         string                `bson:"vpc" plugin:"vpc"`
 	Network     string                `bson:"network" plugin:"network"`
 	Region      string                `bson:"region" plugin:"region"`
+	Provider    common.ProviderType   `bson:"provider" plugin:"provider"`
 	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
 	VMs         VMCollection          `bson:"vmList"`
 }

@@ -14,13 +14,12 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 	if err != nil {
 		logger.Error.Fatalf("Error occurred in RMQ consumer", err)
 	}
-	logger.Info.Printf("Message received : %s", string(msg.Body))
 	message := Message{}
 	err = json.Unmarshal(msg.Body, &message)
 	if err != nil {
 		logger.Error.Printf("Wrong message format: %s", err)
 	}
-
+	logger.Info.Printf("Message received : %s", message.Verb)
 	switch message.Verb {
 	case CREATE:
 		var payload dto.CreateResourceRequest
@@ -32,18 +31,16 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		}
 		errUnmarshall := json.Unmarshal(jsonData, &payload)
 		if errUnmarshall != nil {
-			return
+			logger.Error.Printf("Can't unmarshall payload : %v", errUnmarshall)
 		}
 		defer func() {
 			if r := recover(); r != nil {
 				svcErr = r.(errors.Error)
+				logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
 			}
 		}()
-		resp := queue.ResourceService.CreateResource(ctx, payload)
-		if !svcErr.IsOk() {
-			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
-		}
-		logger.Info.Printf("Message response : %s", resp)
+		logger.Info.Printf("Creating resource : %s", payload.Identifier)
+		_ = queue.ResourceService.CreateResource(ctx, payload)
 	case UPDATE:
 		var payload dto.UpdateResourceRequest
 		svcErr := errors.NoContent
@@ -90,6 +87,6 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 
 func (queue *RabbitMQ) OnError(err error, msg string) {
 	if err != nil {
-		queue.MsgHandler(config.Current.Queue.Queue, amqp.Delivery{}, err)
+		queue.MessageHandler(config.Current.Queue.Queue, amqp.Delivery{}, err)
 	}
 }

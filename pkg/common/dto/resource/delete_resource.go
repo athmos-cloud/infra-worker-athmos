@@ -1,11 +1,13 @@
 package resource
 
-import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+)
 
 type DeleteResourceRequest struct {
-	ProjectID    string `json:"projectID"`
-	ResourceType string `json:"type"`
-	ResourceID   string `json:"resourceID"`
+	ProjectID  string               `json:"projectID"`
+	ResourceID identifier.IdPayload `json:"resourceID"`
 }
 
 type DeleteResourceResponse struct {

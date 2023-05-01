@@ -78,8 +78,8 @@ func (provider *Provider) GetPluginReference() resourcePlugin.Reference {
 	switch provider.Status.PluginReference.ResourceReference.ProviderType {
 	case common.GCP:
 		provider.Status.PluginReference.ChartReference = resourcePlugin.HelmChartReference{
-			ChartName:    config.Current.Plugins.Crossplane.GCP.Subnet.Chart,
-			ChartVersion: config.Current.Plugins.Crossplane.GCP.Subnet.Version,
+			ChartName:    config.Current.Plugins.Crossplane.GCP.Provider.Chart,
+			ChartVersion: config.Current.Plugins.Crossplane.GCP.Provider.Version,
 		}
 		return provider.Status.PluginReference
 	}

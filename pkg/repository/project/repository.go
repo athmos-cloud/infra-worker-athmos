@@ -55,9 +55,9 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			Filter:         bson.M{NameDocumentKey: request.ProjectName, OwnerIDDocumentKey: request.OwnerID},
 		},
 	})
-	logger.Info.Printf("Project %s owned by %s already exists: %v", request.ProjectName, request.OwnerID, exists)
+	logger.Info.Printf("UpdatedProject %s owned by %s already exists: %v", request.ProjectName, request.OwnerID, exists)
 	if exists {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("Project %s owned by %s already exists", request.ProjectName, request.OwnerID)))
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("UpdatedProject %s owned by %s already exists", request.ProjectName, request.OwnerID)))
 	}
 
 	newProject := resource.NewProject(request.ProjectName, request.OwnerID)
@@ -128,7 +128,7 @@ func (repository *Repository) List(ctx context.Context, opt option.Option) inter
 		Value: mongoGetRequest,
 	})
 
-	// From mongo raw to Project entity
+	// From mongo raw to UpdatedProject entity
 	var projects []resource.Project
 	for _, p := range resp.(mongo.GetAllResponse).Payload {
 		primitive := p.(bson.D)
@@ -157,23 +157,27 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 		))
 	}
 	request := opt.Value.(dto.UpdateProjectRequest)
-	mongoGetRequest := mongo.GetRequest{
-		CollectionName: config.Current.Mongo.ProjectCollection,
-		Id:             request.ProjectID,
+	var projectToUpdate resource.Project
+	if request.ProjectName != "" {
+		resp := mongo.Client.Get(ctx, option.Option{
+			Value: mongo.GetRequest{
+				CollectionName: config.Current.Mongo.ProjectCollection,
+				Id:             request.ProjectID,
+			},
+		})
+		projectRaw := resp.(mongo.GetResponse).Payload
+		projectToUpdate = fromBsonRaw(projectRaw)
+		projectToUpdate.Name = request.ProjectName
+	} else if !reflect.DeepEqual(request.UpdatedProject, resource.Project{}) {
+		projectToUpdate = request.UpdatedProject
+	} else {
+		panic(errors.InvalidArgument.WithMessage("A project or a project name must be provided"))
 	}
-	resp := mongo.Client.Get(ctx, option.Option{
-		Value: mongoGetRequest,
-	})
-
-	projectRaw := resp.(mongo.GetResponse).Payload
-	projectResp := fromBsonRaw(projectRaw)
-	projectResp.Name = request.ProjectName
-
 	mongo.Client.Update(ctx, option.Option{
 		Value: mongo.UpdateRequest{
 			CollectionName: config.Current.Mongo.ProjectCollection,
 			Id:             request.ProjectID,
-			Payload:        projectResp,
+			Payload:        projectToUpdate,
 		},
 	})
 	return nil

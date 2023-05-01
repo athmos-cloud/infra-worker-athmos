@@ -25,8 +25,8 @@ func FromVMDataMapper(vm resource.VM) VM {
 			SSHPublicKey: auth.SSHPublicKey,
 		}
 	}
-	disks := make([]Disk, len(vm.Disks))
-	for i, disk := range vm.Disks {
+	disks := make([]Disk, len(vm.Disk))
+	for i, disk := range vm.Disk {
 		disks[i] = Disk{
 			Type:       disk.Type,
 			Mode:       DiskModeFromString(string(disk.Mode)),
