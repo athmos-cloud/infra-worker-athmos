@@ -1,0 +1,55 @@
+prerequisites:
+  - message: "You must enable the Cloud Resource Manager API to use this plugin"
+    action: "gcloud services enable cloudresourcemanager.googleapis.com --project ${project_id}"
+    condition:
+      assert: gcloud services list --enabled --project $project_id | grep cloudresourcemanager.googleapis.com | wc -l
+      equals: 1
+    with_values:
+      - project_id
+  - message: "You must grant the resourcemanager.projectCreator role to the user service account to use this plugin"
+    action: |
+      gcloud organization add-iam-policy-binding $organization_name \
+      --member="user:${user_service_account_email}" --role=roles/resourcemanager.projectCreator"
+    condition:
+      assert: |
+        gcloud projects get-iam-policy $project_id  --flatten="bindings[].members" --format='table(bindings.role)' \
+        --filter="bindings.members:${user_service_account_email}" | \
+        grep roles/resourcemanager.projectCreator | wc -l
+      equals: 1
+    with_values:
+      - project_id
+      - user_service_account_email #user:user-870@plugin-playground.iam.gserviceaccount.com
+      - organization_name
+  - message: "The project $project_id must exist"
+    action: |
+      gcloud projects create $project_id
+    condition:
+      assert: |
+        gcloud projects list | grep $project_id | wc -l
+      equals: 1N
+    with_values:
+      - project_id
+      - user_service_account_email
+      - organization_name
+inputs:
+  - name: identifier
+    type: identifier
+    required: true
+    displayName: "Identifier"
+    description: "The identifier of the project"
+  - name: vpc
+    type: string
+    required: true
+    description: "The name of the VPC to which this network belongs"
+  - name: auth
+    type: auth
+    required: true
+    description: "The type of authentication to use"
+
+outputs:
+  - name: ""
+    object:
+      kind: Project
+      apiVersion: gcp.crossplane.io/v1beta1
+    path: "metadata.name"
+

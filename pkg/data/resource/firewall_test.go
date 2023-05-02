@@ -18,7 +18,7 @@ func TestFirewall_FromMap(t *testing.T) {
 		err      errors.Error
 		firewall Firewall
 	}
-	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, types.Azure)
+	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, types.GCP)
 	expectedFirewall := firewall
 	expectedFirewall.Allow = RuleList{
 		{
@@ -116,18 +116,18 @@ func TestFirewall_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
+	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 	firewall3 := firewall1
 	firewall3.Metadata.Tags = map[string]string{"test": "test"}
 	firewall4 := firewall3
 	firewall4.Metadata.Tags = map[string]string{"hello": "world"}
-	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.Azure)
+	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
+	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
 	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC

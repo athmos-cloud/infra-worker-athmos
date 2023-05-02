@@ -55,7 +55,6 @@ func Get(reference ResourceReference) Plugin {
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {
 		logger.Info.Printf("File %s does not exist, skipping metadata parsing", mainPath)
-
 		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
 	}
 	plugin := Plugin{}

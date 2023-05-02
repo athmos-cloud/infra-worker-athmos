@@ -23,17 +23,17 @@ func TestNetwork_Insert(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.Azure)
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.Azure)
+	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.GCP)
+	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.GCP)
 	network3 := network1
 	network3.Metadata.Tags = map[string]string{"test": "test"}
 	network4 := network3
 	network4.Metadata.Tags = map[string]string{"hello": "world"}
-	network5 := NewNetwork(identifier.Network{ID: "test-5", ProviderID: providerID, VPCID: vpcID}, types.Azure)
+	network5 := NewNetwork(identifier.Network{ID: "test-5", ProviderID: providerID, VPCID: vpcID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
 	testVPC.Networks[network1.Identifier.ID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -134,12 +134,12 @@ func TestNetwork_Remove(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.Azure)
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.Azure)
+	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.GCP)
+	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.GCP)
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.Azure)
+	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
 	testVPC.Networks[network1.Identifier.ID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider

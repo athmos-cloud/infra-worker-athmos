@@ -18,9 +18,8 @@ func TestVPC_FromMap(t *testing.T) {
 		err errors.Error
 		vpc VPC
 	}
-	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, types.Azure)
+	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, types.GCP)
 	expectedVPC := vpc
-	expectedVPC.Provider = "test"
 
 	tests := []struct {
 		name   string
@@ -76,10 +75,10 @@ func TestVPC_Insert(t *testing.T) {
 	}
 	providerID := "test"
 	testProject := NewProject("test", "owner_test")
-	provider := NewProvider(identifier.Provider{ID: providerID}, types.AWS)
+	provider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
 	testProject.Resources[providerID] = provider
-	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, types.AWS)
-	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, types.Azure)
+	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, types.GCP)
+	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, types.GCP)
 	vpc3 := vpc1
 	vpc3.Metadata.Tags = map[string]string{"test": "test"}
 	vpc4 := vpc1

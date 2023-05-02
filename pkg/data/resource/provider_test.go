@@ -32,9 +32,7 @@ func TestProvider_FromMap(t *testing.T) {
 			Namespace:  "default",
 		},
 	}
-	expectedProvider1.VPC = "vpc-test"
 	expectedProvider2 := provider
-	expectedProvider2.VPC = "vpc-test"
 
 	tests := []struct {
 		name   string
@@ -147,7 +145,7 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (update)",
 			fields: fields{
-				Type: types.AWS,
+				Type: types.GCP,
 				Identifier: identifier.Provider{
 					ID: "test",
 				},
@@ -158,7 +156,6 @@ func TestProvider_Insert(t *testing.T) {
 			},
 			want: want{
 				provider: Provider{
-					Type: types.AWS,
 					Identifier: identifier.Provider{
 						ID: "test",
 					},
@@ -168,7 +165,7 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (no update)",
 			fields: fields{
-				Type: types.Azure,
+				Type: types.GCP,
 				Identifier: identifier.Provider{
 					ID: "test",
 				},
@@ -180,7 +177,6 @@ func TestProvider_Insert(t *testing.T) {
 			want: want{
 				err: errors.Conflict,
 				provider: Provider{
-					Type: types.AWS,
 					Identifier: identifier.Provider{
 						ID: "test",
 					},
@@ -210,7 +206,6 @@ func TestProvider_Insert(t *testing.T) {
 			provider := &Provider{
 				Metadata:   tt.fields.Metadata,
 				Identifier: tt.fields.Identifier,
-				Type:       tt.fields.Type,
 				Auth:       tt.fields.Auth,
 				VPCs:       tt.fields.VPCs,
 			}
@@ -292,7 +287,6 @@ func TestProvider_Remove(t *testing.T) {
 			provider := &Provider{
 				Metadata:   tt.fields.Metadata,
 				Identifier: tt.fields.Identifier,
-				Type:       tt.fields.Type,
 				Auth:       tt.fields.Auth,
 				VPCs:       tt.fields.VPCs,
 			}

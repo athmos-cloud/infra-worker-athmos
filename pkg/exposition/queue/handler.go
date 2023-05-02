@@ -12,7 +12,7 @@ import (
 
 func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err error) {
 	if err != nil {
-		logger.Error.Fatalf("Error occurred in RMQ consumer", err)
+		logger.Error.Fatalf("Error occurred in RMQ consumer: %v", err)
 	}
 	message := Message{}
 	err = json.Unmarshal(msg.Body, &message)
@@ -36,7 +36,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		defer func() {
 			if r := recover(); r != nil {
 				svcErr = r.(errors.Error)
-				logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
+				logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
 			}
 		}()
 		logger.Info.Printf("Creating resource : %s", payload.Identifier)
@@ -59,7 +59,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		}()
 		queue.ResourceService.UpdateResource(ctx, payload)
 		if !svcErr.IsOk() {
-			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
+			logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
 		}
 	case DELETE:
 		var payload resource.DeleteResourceRequest
@@ -80,7 +80,7 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		}()
 		queue.ResourceService.DeleteResource(ctx, payload)
 		if !svcErr.IsOk() {
-			logger.Error.Printf("Error occurred in RMQ consumer", svcErr)
+			logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
 		}
 	}
 }

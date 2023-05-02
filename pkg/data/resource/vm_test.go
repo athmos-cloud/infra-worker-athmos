@@ -20,7 +20,6 @@ func TestVM_FromMap(t *testing.T) {
 	}
 	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"}, types2.Azure)
 	expectedVM1 := vm
-	expectedVM1.VPC = "vpc-test"
 	expectedVM1.Zone = "europe-west1-a"
 	expectedVM1.MachineType = "f1-micro"
 	expectedVM1.Disk = Disk{
