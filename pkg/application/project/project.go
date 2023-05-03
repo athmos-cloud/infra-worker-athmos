@@ -12,7 +12,10 @@ type Service struct {
 
 func (ps *Service) CreateProject(ctx context.Context, request CreateProjectRequest) CreateProjectResponse {
 	resp := ps.ProjectRepository.Create(ctx, option.Option{
-		Value: request,
+		Value: projectRepository.CreateProjectRequest{
+			ProjectName: request.ProjectName,
+			OwnerID:     request.OwnerID,
+		},
 	})
 
 	return resp.(CreateProjectResponse)
@@ -20,20 +23,27 @@ func (ps *Service) CreateProject(ctx context.Context, request CreateProjectReque
 
 func (ps *Service) UpdateProjectName(ctx context.Context, request UpdateProjectRequest) {
 	ps.ProjectRepository.Update(ctx, option.Option{
-		Value: request,
+		Value: projectRepository.UpdateProjectRequest{
+			ProjectID:   request.ProjectID,
+			ProjectName: request.ProjectName,
+		},
 	})
 }
 
 func (ps *Service) GetProjectByID(ctx context.Context, request GetProjectByIDRequest) GetProjectByIDResponse {
 	resp := ps.ProjectRepository.Get(ctx, option.Option{
-		Value: request,
+		Value: projectRepository.GetProjectByIDRequest{
+			ProjectID: request.ProjectID,
+		},
 	})
 	return resp.(GetProjectByIDResponse)
 }
 
 func (ps *Service) GetProjectByOwnerID(ctx context.Context, request GetProjectByOwnerIDRequest) GetProjectByOwnerIDResponse {
 	resp := ps.ProjectRepository.List(ctx, option.Option{
-		Value: request,
+		Value: projectRepository.GetProjectByOwnerIDRequest{
+			OwnerID: request.OwnerID,
+		},
 	})
 	projectList := resp.(projectRepository.GetProjectByOwnerIDResponse).Projects
 	return toGetProjectByOwnerIDResponse(projectList)

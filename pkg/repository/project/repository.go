@@ -32,6 +32,7 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ProjectRepository == nil {
+		logger.Info.Printf("Init project repository...")
 		ProjectRepository = &Repository{
 			MongoDAO:      mongo.Client,
 			kubernetesDAO: kubernetes.Client,

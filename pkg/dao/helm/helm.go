@@ -35,6 +35,7 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ReleaseClient == nil {
+		logger.Info.Printf("Init helm client...")
 		cli := client()
 		ReleaseClient = cli
 	}
@@ -67,6 +68,8 @@ func client() *ReleaseDAO {
 			Password: config.Current.Plugins.Crossplane.Registry.Password,
 		})
 	if err != nil {
+		logger.Info.Printf("Error adding plugins repo: %v", err)
+		logger.Info.Println(config.Current.Plugins.Crossplane.Registry.Address, config.Current.Plugins.Crossplane.Registry.Username)
 		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 	helmClient := &ReleaseDAO{

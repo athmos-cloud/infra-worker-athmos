@@ -1,4 +1,4 @@
-tmp_dir: "/tmp/worker"
+tmpDir: "/tmp/worker"
 test:
   credentials:
     gcp: "/etc/credentials/gcp.json"

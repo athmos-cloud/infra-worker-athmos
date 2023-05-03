@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,9 +64,10 @@ func (server *Server) WithProjectRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
+				logger.Info.Printf("Error: %v", err)
+				//err = r.(errors.Error)
 				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
+					"message": fmt.Sprintf("Error: %v", r),
 				})
 			}
 		}()

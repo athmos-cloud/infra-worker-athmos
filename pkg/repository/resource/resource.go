@@ -22,6 +22,7 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ResourceRepository == nil {
+		logger.Info.Printf("Init resource repository...")
 		ResourceRepository = &Repository{
 			KubernetesDAO: kubernetes.Client,
 			HelmDAO:       helm.ReleaseClient,

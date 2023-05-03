@@ -29,6 +29,7 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
+		logger.Info.Printf("Init mongo client")
 		conf := config.Current.Mongo
 		client, err := mongo.NewClient(options.Client().ApplyURI(
 			"mongodb://" + conf.Username + ":" + conf.Password + "@" + conf.Address + ":" + strconv.Itoa(conf.Port)),

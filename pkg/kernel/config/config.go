@@ -13,7 +13,7 @@ var lock = &sync.Mutex{}
 const DefaultConfigFileLocation = "config.mapstructure"
 
 type Config struct {
-	TempDir        string     `mapstructure:"tmp_dir" env:"TMP_DIR"`
+	TempDir        string     `mapstructure:"tmpDir" env:"TMP_DIR"`
 	RedirectionURI string     `mapstructure:"redirection_uri" env:"REDIRECTION_URI"`
 	Test           Test       `mapstructure:"test" `
 	Http           Http       `mapstructure:"http" `
@@ -56,7 +56,7 @@ type Plugins struct {
 }
 
 type CrossplanePlugins struct {
-	Registry ArtifactRegistry `mapstructure:"artifact-registry" `
+	Registry ArtifactRegistry `mapstructure:"registry"`
 	GCP      ProviderPlugins  `mapstructure:"gcp"`
 }
 
@@ -86,7 +86,7 @@ type Mongo struct {
 	Username          string `mapstructure:"username"`
 	Password          string `mapstructure:"password"`
 	Database          string `mapstructure:"database"`
-	ProjectCollection string `mapstructure:"project_collection"`
+	ProjectCollection string `mapstructure:"projectCollection"`
 }
 
 type Postgres struct {
@@ -132,21 +132,3 @@ func bindEnvs() {
 		panic(err)
 	}
 }
-
-//func readFile() {
-//	configFile := os.Getenv("CONFIG_FILE_LOCATION")
-//	if configFile == "" {
-//		configFile = DefaultConfigFileLocation
-//	}
-//	err := gonfig.GetConf(configFile, Current)
-//	if err != nil {
-//		panic(err)
-//	}
-//}
-//
-//func readEnv() {
-//	err := cleanenv.ReadEnv(Current)
-//	if err != nil {
-//		return
-//	}
-//}
