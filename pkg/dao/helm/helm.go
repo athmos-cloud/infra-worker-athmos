@@ -43,7 +43,7 @@ func init() {
 func client() *ReleaseDAO {
 	kubeConfig, errFile := os.ReadFile(config.Current.Kubernetes.ConfigPath)
 	if errFile != nil {
-		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error reading kube config file: %s", errFile)))
+		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error reading kube config file: %v", errFile)))
 	}
 	cli, err := helmclient.NewClientFromKubeConf(
 		&helmclient.KubeConfClientOptions{
@@ -67,7 +67,7 @@ func client() *ReleaseDAO {
 			Password: config.Current.Plugins.Crossplane.Registry.Password,
 		})
 	if err != nil {
-		panic(errors.ExternalServiceError.WithMessage(err))
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 	helmClient := &ReleaseDAO{
 		HelmClient: cli,
