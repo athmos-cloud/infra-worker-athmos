@@ -10,6 +10,8 @@ import (
 func (server *Server) WithSecretRouter() *Server {
 	server.Router.GET("/secrets/:projectId/:name", func(c *gin.Context) {
 		err := errors.OK
+		projectID := c.Param("projectId")
+		name := c.Param("name")
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
@@ -18,7 +20,10 @@ func (server *Server) WithSecretRouter() *Server {
 				})
 			}
 		}()
-		resp := server.SecretService.GetSecret(c, secret.GetSecretRequest{})
+		resp := server.SecretService.GetSecret(c, secret.GetSecretRequest{
+			Name:      name,
+			ProjectID: projectID,
+		})
 
 		c.JSON(err.Code, gin.H{
 			"payload": resp,

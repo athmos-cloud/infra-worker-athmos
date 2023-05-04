@@ -66,7 +66,21 @@ func (service *Service) CreateSecret(ctx context.Context, request CreateSecretRe
 }
 
 func (service *Service) GetSecret(ctx context.Context, request GetSecretRequest) GetSecretResponse {
-	return GetSecretResponse{}
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: project2.GetProjectByIDRequest{
+			ProjectID: request.ProjectID,
+		},
+	})
+	currentProject := project.(project2.GetProjectByIDResponse).Payload
+	currentSecret, exists := currentProject.Authentications[request.Name]
+
+	if !exists {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("Secret %s not found", request.Name)))
+	}
+	return GetSecretResponse{
+		Name:        currentSecret.Name,
+		Description: currentSecret.Description,
+	}
 }
 
 func (service *Service) ListSecret(ctx context.Context, request ListSecretRequest) ListSecretResponse {

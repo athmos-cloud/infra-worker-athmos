@@ -11,9 +11,13 @@ type CreateSecretResponse struct {
 }
 
 type GetSecretRequest struct {
+	ProjectID string `json:"projectID"`
+	Name      string `json:"name"`
 }
 
 type GetSecretResponse struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type ListSecretRequest struct {
