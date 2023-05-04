@@ -84,7 +84,21 @@ func (service *Service) GetSecret(ctx context.Context, request GetSecretRequest)
 }
 
 func (service *Service) ListSecret(ctx context.Context, request ListSecretRequest) ListSecretResponse {
-	return ListSecretResponse{}
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: project2.GetProjectByIDRequest{
+			ProjectID: request.ProjectID,
+		},
+	})
+	currentProject := project.(project2.GetProjectByIDResponse).Payload
+
+	var secrets ListSecretResponse
+	for _, s := range currentProject.Authentications {
+		secrets = append(secrets, GetSecretResponse{
+			Name:        s.Name,
+			Description: s.Description,
+		})
+	}
+	return secrets
 }
 
 func (service *Service) UpdateSecret(ctx context.Context, request UpdateSecretRequest) {

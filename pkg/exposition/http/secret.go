@@ -31,6 +31,7 @@ func (server *Server) WithSecretRouter() *Server {
 	})
 	server.Router.GET("/secrets/:projectId", func(c *gin.Context) {
 		err := errors.OK
+		projectID := c.Param("projectId")
 		defer func() {
 			if r := recover(); r != nil {
 				err = r.(errors.Error)
@@ -39,20 +40,11 @@ func (server *Server) WithSecretRouter() *Server {
 				})
 			}
 		}()
-		//resp := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
-		//	OwnerID: c.Param("id"),
-		//})
-		//
-		//jsonBytes, errMarshal := json.Marshal(resp.Payload)
-		//if errMarshal != nil {
-		//	c.JSON(500, gin.H{
-		//		"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
-		//	})
-		//	return
-		//}
-		//c.JSON(err.Code, gin.H{
-		//	"payload": string(jsonBytes[:]),
-		//})
+
+		resp := server.SecretService.ListSecret(c, secret.ListSecretRequest{ProjectID: projectID})
+		c.JSON(err.Code, gin.H{
+			"payload": resp,
+		})
 	})
 	server.Router.POST("/secrets", func(c *gin.Context) {
 		var request secret.CreateSecretRequest

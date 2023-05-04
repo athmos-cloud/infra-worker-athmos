@@ -21,10 +21,10 @@ type GetSecretResponse struct {
 }
 
 type ListSecretRequest struct {
+	ProjectID string `json:"projectID"`
 }
 
-type ListSecretResponse struct {
-}
+type ListSecretResponse = []GetSecretResponse
 
 type UpdateSecretRequest struct {
 }
