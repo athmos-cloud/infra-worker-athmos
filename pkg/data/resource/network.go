@@ -16,8 +16,8 @@ type Network struct {
 	Metadata    metadata.Metadata     `bson:"metadata"`
 	Identifier  identifier.Network    `bson:"identifier"`
 	Status      status.ResourceStatus `bson:"status"`
-	Subnetworks SubnetworkCollection  `bson:"subnetworks"`
-	Firewalls   FirewallCollection    `bson:"firewalls"`
+	Subnetworks SubnetworkCollection  `bson:"subnetworks,omitempty"`
+	Firewalls   FirewallCollection    `bson:"firewalls,omitempty"`
 }
 
 func NewNetwork(id identifier.Network, providerType types.ProviderType) Network {

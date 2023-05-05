@@ -18,7 +18,11 @@ func (ps *Service) CreateProject(ctx context.Context, request CreateProjectReque
 		},
 	})
 
-	return resp.(CreateProjectResponse)
+	projectRespo := resp.(projectRepository.CreateProjectResponse)
+
+	return CreateProjectResponse{
+		ProjectID: projectRespo.ProjectID,
+	}
 }
 
 func (ps *Service) UpdateProjectName(ctx context.Context, request UpdateProjectRequest) {
@@ -36,7 +40,10 @@ func (ps *Service) GetProjectByID(ctx context.Context, request GetProjectByIDReq
 			ProjectID: request.ProjectID,
 		},
 	})
-	return resp.(GetProjectByIDResponse)
+	projectResp := resp.(GetProjectByIDResponse)
+	return GetProjectByIDResponse{
+		Payload: projectResp.Payload,
+	}
 }
 
 func (ps *Service) GetProjectByOwnerID(ctx context.Context, request GetProjectByOwnerIDRequest) GetProjectByOwnerIDResponse {

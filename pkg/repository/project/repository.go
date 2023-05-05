@@ -173,6 +173,14 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 	} else {
 		panic(errors.InvalidArgument.WithMessage("A project or a project name must be provided"))
 	}
+	//bsonDoc, err := bson.Marshal(projectToUpdate)
+	//if err != nil {
+	//	panic(errors.InternalError.WithMessage(err.Error()))
+	//}
+	//var bsonDocMap map[string]interface{}
+	//if errUnmarshal := bson.Unmarshal(bsonDoc, &bsonDocMap); errUnmarshal != nil {
+	//	panic(errors.InternalError.WithMessage(errUnmarshal.Error()))
+	//}
 	mongo.Client.Update(ctx, option.Option{
 		Value: mongo.UpdateRequest{
 			CollectionName: config.Current.Mongo.ProjectCollection,

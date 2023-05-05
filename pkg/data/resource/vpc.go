@@ -16,7 +16,7 @@ type VPC struct {
 	Metadata   metadata.Metadata     `bson:"metadata"`
 	Identifier identifier.VPC        `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
-	Networks   NetworkCollection     `bson:"networks"`
+	Networks   NetworkCollection     `bson:"networks,omitempty"`
 }
 
 type VPCCollection map[string]VPC

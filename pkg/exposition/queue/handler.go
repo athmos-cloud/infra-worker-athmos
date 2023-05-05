@@ -35,11 +35,11 @@ func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err
 		}
 		defer func() {
 			if r := recover(); r != nil {
+				logger.Info.Printf("Error occurred in RMQ consumer: %v", r)
 				svcErr = r.(errors.Error)
 				logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
 			}
 		}()
-		logger.Info.Printf("Creating resource : %s", payload.Identifier)
 		_ = queue.ResourceService.CreateResource(ctx, payload)
 	case UPDATE:
 		var payload resource.UpdateResourceRequest

@@ -1,9 +1,9 @@
 package kubernetes
 
 type Resource struct {
-	Identifier Identifier
-	Events     EventList
-	Outputs    OutputList
+	Identifier Identifier `bson:"identifier"`
+	Events     EventList  `bson:"events,omitempty"`
+	Outputs    OutputList `bson:"outputs,omitempty"`
 }
 
 func NewResourceList(identifiers []Identifier) ResourceList {

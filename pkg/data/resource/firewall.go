@@ -17,9 +17,8 @@ type Firewall struct {
 	Metadata   metadata.Metadata     `bson:"metadata"`
 	Identifier identifier.Firewall   `bson:"identifier"`
 	Status     status.ResourceStatus `bson:"status"`
-	Network    string                `bson:"network" plugin:"network"`
-	Allow      RuleList              `bson:"allow" plugin:"allow"`
-	Deny       RuleList              `bson:"deny" plugin:"deny"`
+	Allow      RuleList              `bson:"allow" plugin:"allow,omitempty"`
+	Deny       RuleList              `bson:"deny" plugin:"deny,omitempty"`
 }
 
 func NewFirewall(id identifier.Firewall, providerType types.ProviderType) Firewall {
@@ -149,7 +148,6 @@ func (firewall *Firewall) Equals(other Firewall) bool {
 	return firewall.Metadata.Equals(other.Metadata) &&
 		firewall.Identifier.Equals(other.Identifier) &&
 		firewall.Status.Equals(other.Status) &&
-		firewall.Network == other.Network &&
 		firewall.Allow.Equals(other.Allow) &&
 		firewall.Deny.Equals(other.Deny)
 }

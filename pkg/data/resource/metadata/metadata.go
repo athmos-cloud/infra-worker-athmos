@@ -44,5 +44,5 @@ func New(request CreateMetadataRequest) Metadata {
 type ReleaseReference struct {
 	Name      string   `bson:"name"`
 	Namespace string   `bson:"namespace"`
-	Versions  []string `bson:"versions"`
+	Versions  []string `bson:"versions,omitempty"`
 }

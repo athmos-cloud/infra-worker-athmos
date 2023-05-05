@@ -3,7 +3,6 @@ package resource
 import (
 	"context"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -11,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
 	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
 	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
+	"reflect"
 )
 
 type Service struct {
@@ -21,15 +21,19 @@ type Service struct {
 func (service *Service) CreateResource(ctx context.Context, payload CreateResourceRequest) CreateResourceResponse {
 	// Get resource
 	response := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
-	currentProject := response.(project.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.Identifier)
+	currentProject := response.(projectRepository.GetProjectByIDResponse).Payload
+	if _, ok := payload.ResourceSpecs[identifier.IdentifierKey]; !ok || reflect.TypeOf(payload.ResourceSpecs[identifier.IdentifierKey]).Kind() != reflect.TypeOf(map[string]interface{}{}).Kind() {
+		panic(errors.InvalidArgument.WithMessage("Missing identifier in resource specs"))
+	}
+	id := identifier.BuildFromMap(payload.ResourceSpecs[identifier.IdentifierKey].(map[string]interface{}))
 	if currentProject.Exists(id) {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
 	}
+
 	resp := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
 			Project:       currentProject,
@@ -52,11 +56,11 @@ func (service *Service) CreateResource(ctx context.Context, payload CreateResour
 
 func (service *Service) GetResource(ctx context.Context, payload GetResourceRequest) CreateResourceResponse {
 	resp := service.ResourceRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
-	projectResponse := resp.(project.GetProjectByIDResponse).Payload
+	projectResponse := resp.(projectRepository.GetProjectByIDResponse).Payload
 	resource := service.ResourceRepository.Get(ctx, option.Option{
 		Value: resourceRepository.GetRequest{
 			Project:    projectResponse,
@@ -70,12 +74,12 @@ func (service *Service) GetResource(ctx context.Context, payload GetResourceRequ
 
 func (service *Service) UpdateResource(ctx context.Context, payload UpdateResourceRequest) {
 	projectResponse := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
 	currentProject := projectResponse.(projectRepository.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.ResourceID)
+	id := identifier.Build(payload.ResourceID)
 	if currentProject.Exists(id) {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
 	}
@@ -95,15 +99,15 @@ func (service *Service) UpdateResource(ctx context.Context, payload UpdateResour
 
 func (service *Service) DeleteResource(ctx context.Context, payload DeleteResourceRequest) {
 	project := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
 	currentProject := project.(projectRepository.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.ResourceID)
+	id := identifier.Build(payload.ResourceID)
 	service.ResourceRepository.Delete(ctx, option.Option{
 		Value: resourceRepository.DeleteRequest{
-			Project:    project.(projectRepository.GetProjectByIDResponse).Payload,
+			Project:    currentProject,
 			ResourceID: id,
 		},
 	})

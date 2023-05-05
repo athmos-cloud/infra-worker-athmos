@@ -3,7 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	dto "github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/gin-gonic/gin"
@@ -20,9 +20,9 @@ func (server *Server) WithResourceController() *Server {
 				})
 			}
 		}()
-		resp := server.ResourceService.GetResource(c, dto.GetResourceRequest{
+		resp := server.ResourceService.GetResource(c, resource.GetResourceRequest{
 			ProjectID: c.Param("projectId"),
-			ResourceID: identifier.NewID(identifier.IdPayload{
+			ResourceID: identifier.Build(identifier.IdPayload{
 				ProviderID: c.Param("providerID"),
 				VPCID:      c.Query("vpcID"),
 				NetworkID:  c.Query("networkID"),

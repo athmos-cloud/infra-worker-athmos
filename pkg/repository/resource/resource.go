@@ -57,7 +57,6 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		panic(err)
 	}
 	curResource.FromMap(completedPayload)
-	logger.Info.Printf("Completed payload: %v", completedPayload)
 	curResource.SetMetadata(metadata.CreateMetadataRequest{
 		Name:             completedPayload["name"].(string),
 		ProjectNamespace: request.Project.Namespace,

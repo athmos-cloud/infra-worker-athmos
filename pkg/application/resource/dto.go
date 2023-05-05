@@ -9,7 +9,6 @@ import (
 
 type CreateResourceRequest struct {
 	ProjectID     string                 `json:"projectID"`
-	Identifier    identifier.IdPayload   `json:"identifier"`
 	ProviderType  types.ProviderType     `json:"providerType"`
 	ResourceType  types.ResourceType     `json:"resourceType"`
 	ResourceSpecs map[string]interface{} `json:"resourceSpecs"`

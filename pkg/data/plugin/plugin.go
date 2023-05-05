@@ -78,24 +78,19 @@ func Get(reference ResourceReference) Plugin {
 	return plugin
 }
 
-func validateMetadataPlugin(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
-	if entry["name"] == nil {
-		return entry, errors.InvalidArgument.WithMessage("Expected name to be set")
-	}
+func defaultMetadataPlugin(entryMap *map[string]interface{}) {
+	entry := *entryMap
 	if entry["monitored"] == nil || reflect.TypeOf(entry["monitored"]).Kind() != reflect.Bool {
 		entry["monitored"] = true
 	}
 	if entry["tags"] == nil || reflect.TypeOf(entry["tags"]).Kind() != reflect.Map {
 		entry["tags"] = map[string]string{}
 	}
-	return entry, errors.OK
+	entryMap = &entry
 }
 
 func (p *Plugin) ValidateAndCompletePluginEntry(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
-	entry, err := validateMetadataPlugin(entry)
-	if !err.IsOk() {
-		return entry, err
-	}
+	defaultMetadataPlugin(&entry)
 	for _, input := range p.Inputs {
 		if entry[input.Name] == nil && input.Required && input.Default == nil {
 			return entry, errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))

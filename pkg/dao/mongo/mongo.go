@@ -3,11 +3,10 @@ package mongo
 import (
 	"context"
 	"fmt"
-	config "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/fatih/structs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -157,11 +156,15 @@ func (m *DAO) Update(ctx context.Context, opt option.Option) {
 			),
 		))
 	}
-	payload := opt.Value.(UpdateRequest)
-	collection := m.Database.Collection(payload.CollectionName)
-	bsonMap := parseBsonMap(structs.Map(payload.Payload))
-	if _, err := collection.UpdateByID(ctx, payload.Id, bson.M{"$set": bsonMap}); err != nil {
-		panic(errors.ExternalServiceError.WithMessage(err.Error()))
+	request := opt.Value.(UpdateRequest)
+	id, err := primitive.ObjectIDFromHex(request.Id)
+	if err != nil {
+		panic(errors.InvalidArgument.WithMessage(err.Error()))
+	}
+	collection := m.Database.Collection(request.CollectionName)
+	_, errUpdate := collection.UpdateOne(ctx, bson.M{"_id": id}, parseMongoEntry(request.Payload))
+	if errUpdate != nil {
+		panic(errors.ExternalServiceError.WithMessage(errUpdate.Error()))
 	}
 }
 

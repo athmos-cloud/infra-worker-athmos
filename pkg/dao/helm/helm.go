@@ -120,7 +120,6 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) interfac
 		},
 		&helmclient.GenericHelmOptions{},
 	)
-	logger.Info.Printf("Release %s installed", args.ReleaseName)
 	if err2 != nil {
 		panic(errors.ExternalServiceError.WithMessage(
 			fmt.Sprintf("Error installing chart :  %v", err2),

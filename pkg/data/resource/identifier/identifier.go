@@ -1,8 +1,13 @@
 package identifier
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+)
+
+const (
+	IdentifierKey = "identifier"
 )
 
 type ID interface {
@@ -18,7 +23,19 @@ type IdPayload struct {
 	FirewallID string `json:"firewallID"`
 }
 
-func NewID(payload IdPayload) ID {
+func BuildFromMap(payload map[string]interface{}) ID {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error while marshalling payload: %s", err.Error())))
+	}
+	var idPayload IdPayload
+	if errUnmarshal := json.Unmarshal(body, &idPayload); errUnmarshal != nil {
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a valid ID payload", payload)))
+	}
+	return Build(idPayload)
+}
+
+func Build(payload IdPayload) ID {
 	if payload.VMID != "" && payload.ProviderID != "" && payload.VPCID != "" && payload.NetworkID != "" && payload.SubnetID != "" {
 		return VM{
 			ID:         payload.VMID,

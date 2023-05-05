@@ -29,10 +29,10 @@ func AuthType(str string) (Type, errors.Error) {
 
 type Auth struct {
 	Name        string      `bson:"name"`
-	Description string      `bson:"description"`
+	Description string      `bson:"description,omitempty"`
 	AuthType    Type        `bson:"authType" plugin:"authType"`
-	SecretAuth  SecretAuth  `bson:"secretAuth" plugin:"secret"`
-	SecretVault SecretVault `bson:"secretVault" plugin:"vault"`
+	SecretAuth  SecretAuth  `bson:"secretAuth,omitempty" plugin:"secret"`
+	SecretVault SecretVault `bson:"secretVault,omitempty" plugin:"vault"`
 }
 
 type AuthList map[string]Auth

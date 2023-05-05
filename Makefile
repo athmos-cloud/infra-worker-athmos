@@ -36,3 +36,6 @@ _build-docker:
 	@docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
 .PHONY: _build-docker
 
+restart:
+	@docker-compose restart infra-worker
+.PHONY: restart

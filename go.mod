@@ -8,6 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/google/uuid v1.3.0
 	github.com/mittwald/go-helm-client v0.11.5
+	github.com/qiniu/qmgo v1.1.5
 	github.com/spf13/viper v1.8.1
 	github.com/streadway/amqp v1.0.0
 	go.mongodb.org/mongo-driver v1.11.1

@@ -16,7 +16,7 @@ type Project struct {
 	Namespace       string             `bson:"namespace"`
 	OwnerID         string             `bson:"owner_id"`
 	Resources       ProviderCollection `bson:"providers"`
-	Authentications auth.AuthList      `bson:"authentications"`
+	Authentications auth.AuthList      `bson:"authentications,omitempty"`
 }
 
 func NewProject(name string, ownerID string) Project {

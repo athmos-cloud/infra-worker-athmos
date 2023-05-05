@@ -18,7 +18,7 @@ type Subnetwork struct {
 	Status      status.ResourceStatus `bson:"status"`
 	Region      string                `bson:"region" plugin:"region"`
 	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
-	VMs         VMCollection          `bson:"vmList"`
+	VMs         VMCollection          `bson:"vmList,omitempty"`
 }
 
 func NewSubnetwork(id identifier.Subnetwork, providerType types.ProviderType) Subnetwork {
