@@ -100,21 +100,21 @@ func (server *Server) WithSecretRouter() *Server {
 		//})
 	})
 	server.Router.DELETE("/secrets/:projectId/:name", func(c *gin.Context) {
-		//err := errors.NoContent
-		//defer func() {
-		//	if r := recover(); r != nil {
-		//		err = r.(errors.Error)
-		//		c.JSON(err.Code, gin.H{
-		//			"message": err.ToString(),
-		//		})
-		//	}
-		//}()
-		//server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
-		//	ProjectID: c.Param("id"),
-		//})
-		//c.JSON(err.Code, gin.H{
-		//	"message": fmt.Sprintf("UpdatedProject %s deleted", c.Param("id")),
-		//})
+		err := errors.NoContent
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
+			}
+		}()
+
+		server.SecretService.DeleteSecret(c, secret.DeleteSecretRequest{
+			ProjectID: c.Param("projectId"),
+			Name:      c.Param("name"),
+		})
+		c.Status(err.Code)
 	})
 	return server
 }

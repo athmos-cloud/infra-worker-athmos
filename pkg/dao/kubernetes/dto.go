@@ -24,3 +24,8 @@ type CreateSecretRequest struct {
 	Key       string
 	Data      []byte
 }
+
+type DeleteSecretRequest struct {
+	Name      string
+	Namespace string
+}

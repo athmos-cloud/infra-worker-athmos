@@ -30,4 +30,6 @@ type UpdateSecretRequest struct {
 }
 
 type DeleteSecretRequest struct {
+	ProjectID string `json:"projectID"`
+	Name      string `json:"name"`
 }

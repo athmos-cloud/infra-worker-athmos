@@ -105,5 +105,28 @@ func (service *Service) UpdateSecret(ctx context.Context, request UpdateSecretRe
 }
 
 func (service *Service) DeleteSecret(ctx context.Context, request DeleteSecretRequest) {
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: project2.GetProjectByIDRequest{
+			ProjectID: request.ProjectID,
+		},
+	})
+	currentProject := project.(project2.GetProjectByIDResponse).Payload
 
+	if _, ok := currentProject.Authentications[request.Name]; !ok {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Invalid secret %s", request.Name)))
+	}
+
+	delete(currentProject.Authentications, request.Name)
+
+	service.KubernetesDAO.DeleteSecret(ctx, kubernetesDAO.DeleteSecretRequest{
+		Namespace: currentProject.Namespace,
+		Name:      request.Name,
+	})
+
+	service.ProjectRepository.Update(ctx, option.Option{
+		Value: projectRepo.UpdateProjectRequest{
+			ProjectID:      request.ProjectID,
+			UpdatedProject: currentProject,
+		},
+	})
 }

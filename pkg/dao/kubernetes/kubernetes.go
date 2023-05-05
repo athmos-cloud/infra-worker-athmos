@@ -144,6 +144,13 @@ func (dao *DAO) createSecret(ctx context.Context, request CreateSecretRequest) i
 	return createdSecret
 }
 
+func (dao *DAO) DeleteSecret(ctx context.Context, request DeleteSecretRequest) {
+	err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Delete(ctx, request.Name, metav1.DeleteOptions{})
+	if err != nil {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not remove secret %s", request.Name)))
+	}
+}
+
 func (dao *DAO) Update(ctx context.Context, option option.Option) errors.Error {
 	//TODO implement me
 	panic("implement me")
