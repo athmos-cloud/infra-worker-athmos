@@ -2,10 +2,8 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
-	types2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/types"
 	"testing"
 )
 
@@ -20,16 +18,27 @@ func TestVM_FromMap(t *testing.T) {
 		err errors.Error
 		vm  VM
 	}
-	vm := NewVM(identifier.VM{ID: "test", SubnetID: "test", NetworkID: "test", VPCID: "test", ProviderID: "test"}, types2.Azure)
+	vmID := identifier.Build(identifier.IdPayload{
+		ProviderID: "test",
+		NetworkID:  "test",
+		SubnetID:   "test",
+	})
+	vm := NewVM(NewResourcePayload{
+		Name:             "test",
+		ParentIdentifier: vmID,
+		Provider:         types.GCP,
+	})
+	vm.Identifier.VMID = "test"
 	expectedVM1 := vm
-	expectedVM1.VPC = "vpc-test"
 	expectedVM1.Zone = "europe-west1-a"
 	expectedVM1.MachineType = "f1-micro"
-	expectedVM1.Disk = Disk{
-		Type:       "SSD",
-		Mode:       types.ReadOnly,
-		SizeGib:    10,
-		AutoDelete: true,
+	expectedVM1.Disks = []Disk{
+		{
+			Type:       "SSD",
+			Mode:       types.ReadOnly,
+			SizeGib:    10,
+			AutoDelete: true,
+		},
 	}
 	expectedVM1.Auths = []VMAuth{
 		{
@@ -55,7 +64,7 @@ func TestVM_FromMap(t *testing.T) {
 					"vpc":         "vpc-test",
 					"zone":        "europe-west1-a",
 					"machineType": "f1-micro",
-					"disks": []map[string]interface{}{
+					"disk": []map[string]interface{}{
 						{
 							"type":       "SSD",
 							"diskMode":   "READ_ONLY",
@@ -81,13 +90,11 @@ func TestVM_FromMap(t *testing.T) {
 			},
 			args: args{
 				data: map[string]interface{}{
-					"disks": []map[string]interface{}{
-						{
-							"type":       "SSD",
-							"diskMode":   "wakanda",
-							"sizeGib":    10,
-							"autoDelete": true,
-						},
+					"disk": map[string]interface{}{
+						"type":       "SSD",
+						"diskMode":   "wakanda",
+						"sizeGib":    10,
+						"autoDelete": true,
 					},
 				},
 			},
@@ -101,7 +108,8 @@ func TestVM_FromMap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			curVM := tt.fields.VM
 			defer func() {
-				if r := recover(); r != nil {
+				r := recover()
+				if r != nil {
 					err := r.(errors.Error)
 					if err.Code != tt.want.err.Code {
 						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
@@ -110,7 +118,7 @@ func TestVM_FromMap(t *testing.T) {
 			}()
 			curVM.FromMap(tt.args.data)
 			if !curVM.Equals(tt.want.vm) {
-				t.Errorf("FromMap() = %v, want %v", curVM, tt.want.vm)
+				t.Errorf("FromMap() = %v, want %v", curVM.Auths, tt.want.vm.Auths)
 			}
 		})
 	}
@@ -122,7 +130,7 @@ func TestVM_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err errors.Error
@@ -133,20 +141,71 @@ func TestVM_Insert(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
+	vm1 := NewVM(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			NetworkID:  networkID,
+			SubnetID:   subnetID,
+		}),
+		Provider: types.GCP,
+	})
+	vm1.Identifier.VMID = "test-1"
+	vm2 := NewVM(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			NetworkID:  networkID,
+			SubnetID:   subnetID,
+		}),
+		Provider: types.GCP,
+	})
+	vm2.Identifier.VMID = "test-2"
 	vm3 := vm1
 	vm3.Metadata.Tags = map[string]string{"test": "test"}
 	vm4 := vm3
 	vm4.Metadata.Tags = map[string]string{"hello": "world"}
-	vm5 := NewVM(identifier.VM{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
+	vm5 := NewVM(NewResourcePayload{
+		Name: "test-5",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			NetworkID:  networkID,
+			SubnetID:   subnetID,
+		}),
+		Provider: types.GCP,
+	})
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types2.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types2.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types2.Azure)
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types2.Azure)
-	testSubnet.VMs[vm1.Identifier.ID] = vm1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	testSubnet := NewSubnetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	testSubnet.VMs[vm1.Identifier.VMID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -164,8 +223,8 @@ func TestVM_Insert(t *testing.T) {
 				vm: vm2,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				vm: vm2,
@@ -177,8 +236,8 @@ func TestVM_Insert(t *testing.T) {
 				vm: vm3,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				vm: vm3,
@@ -190,8 +249,8 @@ func TestVM_Insert(t *testing.T) {
 				vm: vm4,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				err: errors.Conflict,
@@ -204,8 +263,8 @@ func TestVM_Insert(t *testing.T) {
 				vm: vm5,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -220,13 +279,17 @@ func TestVM_Insert(t *testing.T) {
 				if r := recover(); r != nil {
 					err := r.(errors.Error)
 					if err.Code != tt.want.err.Code {
-						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+						t.Errorf("Insert()  %v, want %v", err.Code, tt.want.err.Code)
 					}
 				}
 			}()
-			vm.Insert(tt.args.project, tt.args.update...)
+			if tt.args.update {
+				tt.args.project.Update(&vm)
+			} else {
+				tt.args.project.Insert(&vm)
+			}
 			id := tt.fields.vm.Identifier
-			gotVM := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.ID]
+			gotVM := tt.args.project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetID].VMs[id.VMID]
 			if !gotVM.Equals(tt.want.vm) {
 				t.Errorf("Insert() = %v, want %v", vm, tt.want.vm)
 			}
@@ -249,15 +312,55 @@ func TestVM_Remove(t *testing.T) {
 	networkID := "test"
 	subnetID := "test"
 
-	vm1 := NewVM(identifier.VM{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
-	vm2 := NewVM(identifier.VM{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID, SubnetID: subnetID}, types2.Azure)
-
+	vm1 := NewVM(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			NetworkID:  networkID,
+			SubnetID:   subnetID,
+		}),
+		Provider: types.GCP,
+	})
+	vm2 := NewVM(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			NetworkID:  networkID,
+			SubnetID:   subnetID,
+		}),
+		Provider: types.GCP,
+	})
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types2.Azure)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types2.Azure)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types2.Azure)
-	testSubnet := NewSubnetwork(identifier.Subnetwork{ID: subnetID, ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types2.Azure)
-	testSubnet.VMs[vm1.Identifier.ID] = vm1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	testSubnet := NewSubnetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	testSubnet.VMs[vm1.Identifier.VMID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
@@ -275,7 +378,7 @@ func TestVM_Remove(t *testing.T) {
 				vm: vm1,
 			},
 			args: args{
-				testProject,
+				*testProject,
 			},
 			want: want{},
 		},
@@ -285,7 +388,7 @@ func TestVM_Remove(t *testing.T) {
 				vm: vm2,
 			},
 			args: args{
-				testProject,
+				*testProject,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -303,7 +406,7 @@ func TestVM_Remove(t *testing.T) {
 					}
 				}
 			}()
-			vm.Remove(tt.args.project)
+			tt.args.project.Delete(&vm)
 		})
 	}
 }

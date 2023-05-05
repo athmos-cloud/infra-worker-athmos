@@ -28,7 +28,7 @@ func (service *Service) CreateSecret(ctx context.Context, request CreateSecretRe
 		},
 	})
 	currentProject := project.(project2.GetProjectByIDResponse).Payload
-	logger.Info.Printf("Project ID : %s", request.ProjectID)
+	logger.Info.Printf("Project FirewallID : %s", request.ProjectID)
 
 	if _, ok := currentProject.Authentications[request.Name]; ok {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Secret %s already exists", request.Name)))
@@ -102,6 +102,44 @@ func (service *Service) ListSecret(ctx context.Context, request ListSecretReques
 }
 
 func (service *Service) UpdateSecret(ctx context.Context, request UpdateSecretRequest) {
+	project := service.ProjectRepository.Get(ctx, option.Option{
+		Value: project2.GetProjectByIDRequest{
+			ProjectID: request.ProjectID,
+		},
+	})
+
+	currentProject := project.(project2.GetProjectByIDResponse).Payload
+	if _, exists := currentProject.Authentications[request.Name]; !exists {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Cannot update secret %s", request.Name)))
+	}
+
+	secretName := fmt.Sprintf("%s-%s", request.Name, utils.RandomString(randomSecretStringLength))
+	currentProject.Authentications[request.Name] = auth.Auth{
+		Name:        request.Name,
+		Description: request.Description,
+		AuthType:    auth.AuthTypeSecret,
+		SecretAuth: auth.SecretAuth{
+			SecretName: secretName,
+			SecretKey:  auth.DefaultSecretKey,
+			Namespace:  currentProject.Namespace,
+		},
+	}
+
+	service.KubernetesDAO.Update(ctx, option.Option{
+		Value: kubernetesDAO.UpdateSecretRequest{
+			Name:      secretName,
+			Namespace: currentProject.Namespace,
+			Key:       auth.DefaultSecretKey,
+			Data:      []byte(request.Data),
+		},
+	})
+
+	service.ProjectRepository.Update(ctx, option.Option{
+		Value: projectRepo.UpdateProjectRequest{
+			ProjectID:      request.ProjectID,
+			UpdatedProject: currentProject,
+		},
+	})
 }
 
 func (service *Service) DeleteSecret(ctx context.Context, request DeleteSecretRequest) {
@@ -118,9 +156,11 @@ func (service *Service) DeleteSecret(ctx context.Context, request DeleteSecretRe
 
 	delete(currentProject.Authentications, request.Name)
 
-	service.KubernetesDAO.DeleteSecret(ctx, kubernetesDAO.DeleteSecretRequest{
-		Namespace: currentProject.Namespace,
-		Name:      request.Name,
+	service.KubernetesDAO.Delete(ctx, option.Option{
+		Value: kubernetesDAO.DeleteSecretRequest{
+			Namespace: currentProject.Namespace,
+			Name:      request.Name,
+		},
 	})
 
 	service.ProjectRepository.Update(ctx, option.Option{

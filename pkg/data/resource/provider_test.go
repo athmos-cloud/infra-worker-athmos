@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"reflect"
 	"testing"
 )
@@ -22,7 +23,13 @@ func TestProvider_FromMap(t *testing.T) {
 		err      errors.Error
 		provider Provider
 	}
-	provider := NewProvider(identifier.Provider{ID: "test"}, types.GCP)
+	provider := NewProvider(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+		}),
+		Provider: types.GCP,
+	})
 	expectedProvider1 := provider
 	expectedProvider1.Auth = auth.Auth{
 		AuthType: auth.AuthTypeSecret,
@@ -32,9 +39,7 @@ func TestProvider_FromMap(t *testing.T) {
 			Namespace:  "default",
 		},
 	}
-	expectedProvider1.VPC = "vpc-test"
 	expectedProvider2 := provider
-	expectedProvider2.VPC = "vpc-test"
 
 	tests := []struct {
 		name   string
@@ -112,13 +117,20 @@ func TestProvider_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err      errors.Error
 		provider Provider
 	}
+	testProvider := NewProvider(NewResourcePayload{
+		Provider:         types.GCP,
+		Name:             "test",
+		ParentIdentifier: identifier.Empty{},
+	})
+	testProvider.Identifier.ProviderID = "test"
 	testProject := NewProject("test", "owner_test")
+	testProject.Resources["test"] = testProvider
 	tests := []struct {
 		name   string
 		fields fields
@@ -129,17 +141,17 @@ func TestProvider_Insert(t *testing.T) {
 			name: "Insert non existing provider (creation)",
 			fields: fields{
 				Identifier: identifier.Provider{
-					ID: "test",
+					ProviderID: "test-1",
 				},
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				provider: Provider{
 					Identifier: identifier.Provider{
-						ID: "test",
+						ProviderID: "test-1",
 					},
 				},
 			},
@@ -147,20 +159,19 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (update)",
 			fields: fields{
-				Type: types.AWS,
+				Type: types.GCP,
 				Identifier: identifier.Provider{
-					ID: "test",
+					ProviderID: "test",
 				},
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				provider: Provider{
-					Type: types.AWS,
 					Identifier: identifier.Provider{
-						ID: "test",
+						ProviderID: "test",
 					},
 				},
 			},
@@ -168,23 +179,18 @@ func TestProvider_Insert(t *testing.T) {
 		{
 			name: "Update existing provider (no update)",
 			fields: fields{
-				Type: types.Azure,
+				Type: types.GCP,
 				Identifier: identifier.Provider{
-					ID: "test",
+					ProviderID: "test",
 				},
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
-				err: errors.Conflict,
-				provider: Provider{
-					Type: types.AWS,
-					Identifier: identifier.Provider{
-						ID: "test",
-					},
-				},
+				err:      errors.Conflict,
+				provider: testProvider,
 			},
 		},
 		{
@@ -192,12 +198,12 @@ func TestProvider_Insert(t *testing.T) {
 			fields: fields{
 				Type: types.GCP,
 				Identifier: identifier.Provider{
-					ID: "test-2",
+					ProviderID: "test-2",
 				},
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err:      errors.NotFound,
@@ -210,11 +216,9 @@ func TestProvider_Insert(t *testing.T) {
 			provider := &Provider{
 				Metadata:   tt.fields.Metadata,
 				Identifier: tt.fields.Identifier,
-				Type:       tt.fields.Type,
 				Auth:       tt.fields.Auth,
 				VPCs:       tt.fields.VPCs,
 			}
-			provider.Insert(tt.args.project, tt.args.update...)
 			defer func() {
 				if r := recover(); r != nil {
 					err := r.(errors.Error)
@@ -223,8 +227,23 @@ func TestProvider_Insert(t *testing.T) {
 					}
 				}
 			}()
-			if !reflect.DeepEqual(testProject.Resources[tt.fields.Identifier.ID], tt.want.provider) {
-				t.Errorf("Insert() = %v, want %v", testProject.Resources[tt.fields.Identifier.ID], tt.want.provider)
+			defer func() {
+				if r := recover(); r != nil {
+					err := r.(errors.Error)
+					if err.Code != tt.want.err.Code {
+						logger.Info.Println(err)
+						t.Errorf("Insert()  %v, want %v", err.Code, tt.want.err.Code)
+					}
+				}
+			}()
+			if tt.args.update {
+				testProject.Update(provider)
+			} else {
+				testProject.Insert(provider)
+			}
+
+			if !reflect.DeepEqual(tt.args.project.Resources[tt.fields.Identifier.ProviderID], tt.want.provider) {
+				t.Errorf("Insert() = %v, want %v", testProject.Resources[tt.fields.Identifier.ProviderID], tt.want.provider)
 			}
 		})
 	}
@@ -246,12 +265,12 @@ func TestProvider_Remove(t *testing.T) {
 		err errors.Error
 	}
 	testProject := NewProject("test", "owner_test")
-	providerTest1 := Provider{
-		Identifier: identifier.Provider{
-			ID: "test-1",
-		},
-	}
-	testProject.Resources[providerTest1.Identifier.ID] = providerTest1
+	providerTest1 := NewProvider(NewResourcePayload{
+		Name:             "test-1",
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testProject.Resources[providerTest1.Identifier.ProviderID] = providerTest1
 	tests := []struct {
 		name   string
 		fields fields
@@ -262,11 +281,11 @@ func TestProvider_Remove(t *testing.T) {
 			name: "Remove existing provider",
 			fields: fields{
 				Identifier: identifier.Provider{
-					ID: "test-1",
+					ProviderID: "test-1",
 				},
 			},
 			args: args{
-				testProject,
+				*testProject,
 			},
 			want: want{
 				err: errors.NoContent,
@@ -276,11 +295,11 @@ func TestProvider_Remove(t *testing.T) {
 			name: "Remove non-existing provider",
 			fields: fields{
 				Identifier: identifier.Provider{
-					ID: "test-2",
+					ProviderID: "test-2",
 				},
 			},
 			args: args{
-				testProject,
+				*testProject,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -292,7 +311,6 @@ func TestProvider_Remove(t *testing.T) {
 			provider := &Provider{
 				Metadata:   tt.fields.Metadata,
 				Identifier: tt.fields.Identifier,
-				Type:       tt.fields.Type,
 				Auth:       tt.fields.Auth,
 				VPCs:       tt.fields.VPCs,
 			}
@@ -304,7 +322,7 @@ func TestProvider_Remove(t *testing.T) {
 					}
 				}
 			}()
-			provider.Remove(tt.args.project)
+			testProject.Delete(provider)
 		})
 	}
 }

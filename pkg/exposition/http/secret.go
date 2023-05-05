@@ -7,6 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type UpdateSecretHttpRequest struct {
+	Data        string `json:"data"`
+	Description string `json:"description"`
+}
+
 func (server *Server) WithSecretRouter() *Server {
 	server.Router.GET("/secrets/:projectId/:name", func(c *gin.Context) {
 		err := errors.OK
@@ -69,35 +74,33 @@ func (server *Server) WithSecretRouter() *Server {
 			"message": "Secret created",
 		})
 	})
+
 	server.Router.PUT("/secrets/:projectId/:name", func(c *gin.Context) {
-		//err := errors.NoContent
-		//type Request struct {
-		//	Name string `json:"name"`
-		//}
-		//var request Request
-		//errRequestBody := c.BindJSON(&request)
-		//if errRequestBody != nil {
-		//	c.JSON(400, gin.H{
-		//		"message": fmt.Sprintf("Wrong request body: %s", errRequestBody),
-		//	})
-		//	return
-		//}
-		//defer func() {
-		//	if r := recover(); r != nil {
-		//		err = r.(errors.Error)
-		//		c.JSON(err.Code, gin.H{
-		//			"message": err.ToString(),
-		//		})
-		//	}
-		//}()
-		//server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
-		//	ProjectID:   c.Param("id"),
-		//	ProjectName: request.Name,
-		//})
-		//
-		//c.JSON(err.Code, gin.H{
-		//	"message": fmt.Sprintf("UpdatedProject %s updated", c.Param("id")),
-		//})
+		var request UpdateSecretHttpRequest
+		err := errors.Created
+		errRequestBody := c.BindJSON(&request)
+		if errRequestBody != nil {
+			c.JSON(400, gin.H{
+				"message": fmt.Sprintf("Wrong request body: %s", errRequestBody),
+			})
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				err = r.(errors.Error)
+				c.JSON(err.Code, gin.H{
+					"message": err.ToString(),
+				})
+			}
+		}()
+
+		server.SecretService.UpdateSecret(c, secret.UpdateSecretRequest{
+			ProjectID:   c.Param("projectId"),
+			Name:        c.Param("name"),
+			Description: request.Description,
+			Data:        request.Data,
+		})
+
+		c.Status(err.Code)
 	})
 	server.Router.DELETE("/secrets/:projectId/:name", func(c *gin.Context) {
 		err := errors.NoContent

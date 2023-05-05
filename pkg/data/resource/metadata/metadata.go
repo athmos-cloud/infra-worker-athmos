@@ -1,31 +1,27 @@
 package metadata
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 )
 
 type Metadata struct {
+	mgm.DefaultModel `bson:",inline"`
 	Name             string            `bson:"name"`
 	Managed          bool              `bson:"managed,default=true" plugin:"managed"`
 	Tags             map[string]string `bson:"tags,omitempty"`
-	ReleaseReference ReleaseReference  `bson:"releaseReference"`
 }
 
 type CreateMetadataRequest struct {
-	Name             string
-	ProjectNamespace string
-	NotMonitored     bool
-	Tags             map[string]string
+	Name         string
+	NotMonitored bool
+	Tags         map[string]string
 }
 
 func (metadata *Metadata) Equals(other Metadata) bool {
 	return metadata.Name == other.Name &&
 		metadata.Managed == other.Managed &&
-		utils.MapEquals(metadata.Tags, other.Tags) &&
-		metadata.ReleaseReference.Name == other.ReleaseReference.Name &&
-		metadata.ReleaseReference.Namespace == other.ReleaseReference.Namespace &&
-		utils.SliceEquals(metadata.ReleaseReference.Versions, other.ReleaseReference.Versions)
+		utils.MapEquals(metadata.Tags, other.Tags)
 }
 
 func New(request CreateMetadataRequest) Metadata {
@@ -33,16 +29,5 @@ func New(request CreateMetadataRequest) Metadata {
 		Name:    request.Name,
 		Managed: !request.NotMonitored,
 		Tags:    request.Tags,
-		ReleaseReference: ReleaseReference{
-			Name:      fmt.Sprintf("%s-%s", request.Name, utils.GenerateUUID()),
-			Namespace: request.ProjectNamespace,
-			Versions:  make([]string, 0),
-		},
 	}
-}
-
-type ReleaseReference struct {
-	Name      string   `bson:"name"`
-	Namespace string   `bson:"namespace"`
-	Versions  []string `bson:"versions"`
 }

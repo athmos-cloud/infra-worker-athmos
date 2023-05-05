@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/auth"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 	"strings"
@@ -35,7 +35,8 @@ func InjectMapIntoStruct(m map[string]interface{}, s interface{}) errors.Error {
 		fieldType := field.Type()
 		if fieldType.Kind() == reflect.Struct {
 			nestedStructPtr := field.Addr().Interface()
-			err := InjectMapIntoStruct(value.(map[string]interface{}), nestedStructPtr)
+			val := value.(map[string]interface{})
+			err := InjectMapIntoStruct(val, nestedStructPtr)
 			if !err.IsOk() {
 				return err
 			}
@@ -76,8 +77,8 @@ func handleEnumTypes(key string, field reflect.Value, value reflect.Value) error
 		}
 		field.SetString(value.String())
 	} else if key == diskModeKey {
-		if _, err := types.DiskModeType(value.String()); !err.IsOk() {
-			return err
+		if res := types.DiskModeType(value.String()); res == "" {
+			return errors.InvalidArgument.WithMessage(fmt.Sprintf("invalid disk mode: %s", value.String()))
 		}
 		field.SetString(value.String())
 	} else {

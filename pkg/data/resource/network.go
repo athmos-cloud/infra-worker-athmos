@@ -9,26 +9,41 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
-type Network struct {
-	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.Network    `bson:"identifier"`
-	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"vpc" plugin:"vpc"`
-	Provider    string                `bson:"provider" plugin:"providerName"`
-	Subnetworks SubnetworkCollection  `bson:"subnetworks"`
-	Firewalls   FirewallCollection    `bson:"firewalls"`
-}
+func NewNetwork(payload NewResourcePayload) Network {
+	payload.Validate()
+	var id identifier.Network
+	if reflect.TypeOf(payload.ParentIdentifier) == reflect.TypeOf(identifier.Provider{}) {
+		parentID := payload.ParentIdentifier.(identifier.Provider)
+		id = identifier.Network{
+			ProviderID: parentID.ProviderID,
+			NetworkID:  fmt.Sprintf("%s-%s", payload.Name, utils.RandomString(resourceIDSuffixLength)),
+		}
+	} else if reflect.TypeOf(payload.ParentIdentifier) == reflect.TypeOf(identifier.VPC{}) {
+		parentID := payload.ParentIdentifier.(identifier.VPC)
+		id = identifier.Network{
+			ProviderID: parentID.ProviderID,
+			VPCID:      parentID.VPCID,
+			NetworkID:  fmt.Sprintf("%s-%s", payload.Name, utils.RandomString(resourceIDSuffixLength)),
+		}
+	} else {
+		errors.InvalidArgument.WithMessage("ID type must be provider or VPC ID")
+	}
 
-func NewNetwork(id identifier.Network, providerType types.ProviderType) Network {
 	return Network{
-		Metadata:    metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
+		Metadata: metadata.New(metadata.CreateMetadataRequest{
+			Name:         payload.Name,
+			NotMonitored: !payload.Monitored,
+			Tags:         payload.Tags,
+		}),
 		Identifier:  id,
-		Status:      status.New(id.ID, types.Network, providerType),
-		Subnetworks: make(SubnetworkCollection),
-		Firewalls:   make(FirewallCollection),
+		Status:      status.New(id.NetworkID, types.Network, payload.Provider),
+		Subnetworks: map[string]Subnetwork{},
+		Firewalls:   map[string]Firewall{},
 	}
 }
 
@@ -46,11 +61,25 @@ func (netCollection *NetworkCollection) Equals(other NetworkCollection) bool {
 	return true
 }
 
-func (network *Network) New(id identifier.ID, providerType types.ProviderType) IResource {
+type Network struct {
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Network    `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Subnetworks      SubnetworkCollection  `bson:"subnetworks,omitempty"`
+	Firewalls        FirewallCollection    `bson:"firewalls,omitempty"`
+}
+
+func (network *Network) GetIdentifier() identifier.ID {
+	return network.Identifier
+}
+
+func (network *Network) New(payload NewResourcePayload) IResource {
+	id := payload.ParentIdentifier
 	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Network{}) {
 		panic(errors.InvalidArgument.WithMessage("id type is not NetworkID"))
 	}
-	res := NewNetwork(id.(identifier.Network), providerType)
+	res := NewNetwork(payload)
 	return &res
 }
 
@@ -91,29 +120,83 @@ func (network *Network) FromMap(data map[string]interface{}) {
 	}
 }
 
-func (network *Network) Insert(project Project, update ...bool) {
+func (network *Network) Insert(resource IResource, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
 	}
-	id := network.Identifier
-	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
-	if !ok && shouldUpdate {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+
+	if idPayload.FirewallID != "" {
+		if _, ok := network.Firewalls[idPayload.FirewallID]; ok && !shouldUpdate {
+			panic(errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in network %s", idPayload.FirewallID, network.Identifier.NetworkID)))
+		} else if !ok && shouldUpdate {
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in network %s", idPayload.FirewallID, network.Identifier.NetworkID)))
+		}
+		firewall := resource.(*Firewall)
+		if network.Firewalls == nil {
+			network.Firewalls = map[string]Firewall{
+				idPayload.FirewallID: *firewall,
+			}
+		} else {
+			network.Firewalls[idPayload.FirewallID] = *firewall
+		}
+		return
+	} else if reflect.TypeOf(resource) == reflect.TypeOf(&Subnetwork{}) {
+		if _, ok := network.Subnetworks[idPayload.SubnetID]; ok && !shouldUpdate {
+			panic(errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in network %s", idPayload.FirewallID, network.Identifier.NetworkID)))
+		} else if !ok && shouldUpdate {
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in network %s", idPayload.FirewallID, network.Identifier.NetworkID)))
+		}
+		subnet := resource.(*Subnetwork)
+		if network.Subnetworks == nil {
+			network.Subnetworks = map[string]Subnetwork{
+				idPayload.SubnetID: *subnet,
+			}
+		} else {
+			network.Subnetworks[idPayload.SubnetID] = *subnet
+		}
+		return
+	} else if reflect.TypeOf(resource) != reflect.TypeOf(&Subnetwork{}) {
+		network.insertInSubnetwork(resource, shouldUpdate)
+		return
 	}
-	if ok && !shouldUpdate {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", id.ID, id.VPCID)))
-	}
-	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID] = *network
+	panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("resource %v not supported for network insertion", resource)))
 }
 
-func (network *Network) Remove(project Project) {
-	id := network.Identifier
-	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
-	if !ok {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", id.ID, id.VPCID)))
+func (network *Network) insertInSubnetwork(resource IResource, update ...bool) {
+	shouldUpdate := false
+	if len(update) > 0 {
+		shouldUpdate = update[0]
 	}
-	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks, id.ID)
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	_, ok := network.Subnetworks[idPayload.NetworkID]
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Subnetwork{}) && !ok && shouldUpdate {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in network %s", idPayload.SubnetID, network.Identifier.NetworkID)))
+	}
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Subnetwork{}) && ok && !shouldUpdate {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists in network %s", idPayload.SubnetID, network.Identifier.NetworkID)))
+	}
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Subnetwork{}) && (ok && shouldUpdate || !ok && !shouldUpdate) {
+		subnet := resource.(*Subnetwork)
+		network.Subnetworks[idPayload.NetworkID] = *subnet
+		return
+	} else if reflect.TypeOf(resource) != reflect.TypeOf(&Subnetwork{}) && idPayload.NetworkID != "" {
+		subnet := network.Subnetworks[idPayload.NetworkID]
+		subnet.Insert(resource, update...)
+		return
+	}
+	panic(errors.InternalError.WithMessage(fmt.Sprintf("Invalid network insertion %v", resource)))
+}
+
+func (network *Network) Remove(resource IResource) {
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	if idPayload.FirewallID != "" {
+		delete(network.Firewalls, idPayload.FirewallID)
+	} else {
+		subnet := network.Subnetworks[idPayload.NetworkID]
+		subnet.Remove(resource)
+	}
 }
 
 func (network *Network) Equals(other Network) bool {

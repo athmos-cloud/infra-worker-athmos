@@ -7,11 +7,13 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 )
 
 const randomNameUUIDLength = 5
 
 type ResourceStatus struct {
+	mgm.DefaultModel    `bson:",inline"`
 	HelmRelease         helm.ReleaseReference   `bson:"helmRelease"`
 	KubernetesResources kubernetes.ResourceList `bson:"kubernetesResources"`
 	PluginReference     plugin.Reference        `bson:"pluginReference"`

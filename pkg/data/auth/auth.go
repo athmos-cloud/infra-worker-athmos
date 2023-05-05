@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 )
 
 const (
@@ -28,14 +29,15 @@ func AuthType(str string) (Type, errors.Error) {
 }
 
 type Auth struct {
-	Name        string      `bson:"name"`
-	Description string      `bson:"description"`
-	AuthType    Type        `bson:"authType" plugin:"authType"`
-	SecretAuth  SecretAuth  `bson:"secretAuth" plugin:"secret"`
-	SecretVault SecretVault `bson:"secretVault" plugin:"vault"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string      `bson:"name"`
+	Description      string      `bson:"description,omitempty"`
+	AuthType         Type        `bson:"authType" plugin:"authType"`
+	SecretAuth       SecretAuth  `bson:"secretAuth,omitempty" plugin:"secret"`
+	SecretVault      SecretVault `bson:"secretVault,omitempty" plugin:"vault"`
 }
 
-type AuthList map[string]Auth
+type List map[string]Auth
 
 func (a *Auth) Equals(auth Auth) bool {
 	return a.AuthType == auth.AuthType &&
@@ -44,9 +46,10 @@ func (a *Auth) Equals(auth Auth) bool {
 }
 
 type SecretAuth struct {
-	SecretName string `bson:"secretName" plugin:"name"`
-	SecretKey  string `bson:"secretKey" plugin:"key"`
-	Namespace  string `bson:"namespace" plugin:"namespace"`
+	mgm.DefaultModel `bson:",inline"`
+	SecretName       string `bson:"secretName" plugin:"name"`
+	SecretKey        string `bson:"secretKey" plugin:"key"`
+	Namespace        string `bson:"namespace" plugin:"namespace"`
 }
 
 func (a *SecretAuth) Equals(auth SecretAuth) bool {

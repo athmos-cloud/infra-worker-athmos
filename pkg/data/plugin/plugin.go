@@ -5,6 +5,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
+	"github.com/kamva/mgm/v3"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -16,35 +17,40 @@ const (
 )
 
 type Plugin struct {
-	Prerequisites []Prerequisite `yaml:"prerequisites"`
-	Inputs        []Input        `yaml:"inputs"`
-	Types         []Type         `yaml:"metadata,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Prerequisites    []Prerequisite `yaml:"prerequisites" bson:"prerequisites"`
+	Inputs           []Input        `yaml:"inputs" bson:"inputs"`
+	Types            []Type         `yaml:"metadata,omitempty" bson:"types"`
 }
 
 type Prerequisite struct {
-	Message   string    `yaml:"message"`
-	Action    string    `yaml:"action"`
-	Condition Condition `yaml:"condition"`
-	Values    []string  `yaml:"with_values"`
+	mgm.DefaultModel `bson:",inline"`
+	Message          string    `yaml:"message" bson:"message"`
+	Action           string    `yaml:"action" bson:"action"`
+	Condition        Condition `yaml:"condition" bson:"condition"`
+	Values           []string  `yaml:"with_values" bson:"values"`
 }
 
 type Condition struct {
-	Assert string      `yaml:"assert"`
-	Equals interface{} `yaml:"equals"`
+	mgm.DefaultModel `bson:",inline"`
+	Assert           string      `yaml:"assert" bson:"assert"`
+	Equals           interface{} `yaml:"equals" bson:"equals"`
 }
 
 type Input struct {
-	Name        string      `yaml:"name"`
-	DisplayName string      `yaml:"displayName,omitempty"`
-	Description string      `yaml:"description,omitempty"`
-	Type        string      `yaml:"type" default:"string"`
-	Default     interface{} `yaml:"default,omitempty"`
-	Required    bool        `yaml:"required,omitempty" default:"false"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string      `yaml:"name" bson:"name"`
+	DisplayName      string      `yaml:"displayName,omitempty" bson:"displayName,omitempty"`
+	Description      string      `yaml:"description,omitempty" bson:"description,omitempty"`
+	Type             string      `yaml:"type" default:"string" bson:"type,omitempty"`
+	Default          interface{} `yaml:"default,omitempty" bson:"default,omitempty"`
+	Required         bool        `yaml:"required,omitempty" default:"false" bson:"required,omitempty"`
 }
 
 type Type struct {
-	Name   string           `yaml:"name"`
-	Fields map[string]Input `yaml:"fields"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string           `yaml:"name" bson:"name,omitempty"`
+	Fields           map[string]Input `yaml:"fields" bson:"fields,omitempty"`
 }
 
 func Get(reference ResourceReference) Plugin {
@@ -55,7 +61,6 @@ func Get(reference ResourceReference) Plugin {
 	pluginBytes, err := os.ReadFile(mainPath)
 	if err != nil {
 		logger.Info.Printf("File %s does not exist, skipping metadata parsing", mainPath)
-
 		panic(errors.NotFound.WithMessage(fmt.Sprintf("Resource %s for provider %s does not exist", resourceType, provider)))
 	}
 	plugin := Plugin{}
@@ -79,33 +84,16 @@ func Get(reference ResourceReference) Plugin {
 	return plugin
 }
 
-func validateMetadataPlugin(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
-	if entry["name"] == nil {
-		return entry, errors.InvalidArgument.WithMessage("Expected name to be set")
-	}
-	if entry["monitored"] == nil || reflect.TypeOf(entry["monitored"]).Kind() != reflect.Bool {
-		entry["monitored"] = true
-	}
-	if entry["tags"] == nil || reflect.TypeOf(entry["tags"]).Kind() != reflect.Map {
-		entry["tags"] = map[string]string{}
-	}
-	return entry, errors.OK
-}
-
-func (p *Plugin) ValidateAndCompletePluginEntry(entry map[string]interface{}) (map[string]interface{}, errors.Error) {
-	entry, err := validateMetadataPlugin(entry)
-	if !err.IsOk() {
-		return entry, err
-	}
+func (p *Plugin) ValidateEntry(entry map[string]interface{}) errors.Error {
 	for _, input := range p.Inputs {
 		if entry[input.Name] == nil && input.Required && input.Default == nil {
-			return entry, errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
+			return errors.ValidationError.WithMessage(fmt.Sprintf("Expected %s to be set", input.Name))
 		}
 		if err2 := input.Validate(entry, p.Types); !err2.IsOk() {
-			return entry, err2
+			return err2
 		}
 	}
-	return entry, errors.OK
+	return errors.OK
 }
 
 func (i Input) Validate(entry map[string]interface{}, types []Type) errors.Error {

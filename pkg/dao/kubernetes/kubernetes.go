@@ -3,7 +3,9 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,14 +13,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sync"
-)
-
-const (
-	kubeConfigEnvVar = "KUBECONFIG"
 )
 
 var Client *DAO
@@ -33,23 +30,30 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
-		config := ctrl.GetConfigOrDie()
-		dynamicCli := dynamic.NewForConfigOrDie(config)
+		logger.Info.Printf("Init kubernetes client...")
+		conf := ctrl.GetConfigOrDie()
+		dynamicCli := dynamic.NewForConfigOrDie(conf)
 
 		var restConfig *rest.Config
 		var err error
-		if kubeConfig := os.Getenv(kubeConfigEnvVar); kubeConfig != "" {
+		kubeConfig := config.Current.Kubernetes.ConfigPath
+		if kubeConfig != "" {
 			restConfig, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
+			if err != nil {
+				panic(errors.InternalError.WithMessage(fmt.Sprintf("Error getting Kubernetes configuration: %v", err)))
+			}
 		} else {
 			restConfig, err = rest.InClusterConfig()
+			if err != nil {
+				panic(errors.InternalError.WithMessage(fmt.Sprintf("Error getting Kubernetes configuration: %v", err)))
+			}
 		}
 		if err != nil {
-			panic(fmt.Sprintf("Error getting Kubernetes configuration: %v\n", err))
+			panic(fmt.Sprintf("Error getting Kubernetes configuration: %v", err))
 		}
 		clientSet, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
-			fmt.Printf("Error creating Kubernetes clientSet: %v\n", err)
-			os.Exit(1)
+			panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error getting Kubernetes client: %v", err)))
 		}
 		Client = &DAO{
 			DynamicClient: dynamicCli,
@@ -144,21 +148,43 @@ func (dao *DAO) createSecret(ctx context.Context, request CreateSecretRequest) i
 	return createdSecret
 }
 
-func (dao *DAO) DeleteSecret(ctx context.Context, request DeleteSecretRequest) {
+func (dao *DAO) updateSecret(ctx context.Context, request UpdateSecretRequest) {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: request.Name,
+		},
+		Data: map[string][]byte{
+			request.Key: request.Data,
+		},
+	}
+
+	_, err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not update secret %s", request.Name)))
+	}
+}
+
+func (dao *DAO) deleteSecret(ctx context.Context, request DeleteSecretRequest) {
 	err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Delete(ctx, request.Name, metav1.DeleteOptions{})
 	if err != nil {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not remove secret %s", request.Name)))
 	}
 }
 
-func (dao *DAO) Update(ctx context.Context, option option.Option) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func (dao *DAO) Update(ctx context.Context, option option.Option) {
+	if option = option.SetType(reflect.TypeOf(UpdateSecretRequest{}).String()); option.Validate() {
+		dao.updateSecret(ctx, option.Get().(UpdateSecretRequest))
+	} else {
+		panic(errors.InternalError.WithMessage("Invalid kubernetes update request"))
+	}
 }
 
-func (dao *DAO) Delete(ctx context.Context, option option.Option) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func (dao *DAO) Delete(ctx context.Context, option option.Option) {
+	if option = option.SetType(reflect.TypeOf(DeleteSecretRequest{}).String()); option.Validate() {
+		dao.deleteSecret(ctx, option.Get().(DeleteSecretRequest))
+	} else {
+		panic(errors.InternalError.WithMessage("Invalid kubernetes delete request"))
+	}
 }
 
 func (dao *DAO) Close(context context.Context) errors.Error {

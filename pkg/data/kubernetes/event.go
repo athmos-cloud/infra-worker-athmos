@@ -1,6 +1,9 @@
 package kubernetes
 
-import "time"
+import (
+	"github.com/kamva/mgm/v3"
+	"time"
+)
 
 type EventType string
 
@@ -13,13 +16,15 @@ type Reason string
 const (
 	PendingExternalResource  Reason = "PendingExternalResource"
 	CreatingExternalResource Reason = "CreatingExternalResource"
+	CannotConnectToProvider  Reason = "CannotConnectToProvider"
 )
 
 type Event struct {
-	Type    EventType
-	Date    time.Time
-	Reason  string
-	Message string
+	mgm.DefaultModel `bson:",inline"`
+	Type             EventType `bson:"type"`
+	Date             time.Time `bson:"date"`
+	Reason           string    `bson:"reason"`
+	Message          string    `bson:"message"`
 }
 
 func (event *Event) Equals(other Event) bool {

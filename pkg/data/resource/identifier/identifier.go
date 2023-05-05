@@ -1,8 +1,16 @@
 package identifier
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
+	"reflect"
+)
+
+const (
+	IdentifierKey = "identifier"
 )
 
 type ID interface {
@@ -18,10 +26,71 @@ type IdPayload struct {
 	FirewallID string `json:"firewallID"`
 }
 
-func NewID(payload IdPayload) ID {
+func IDToPayload(input ID) IdPayload {
+	switch reflect.TypeOf(input) {
+	case reflect.TypeOf(Provider{}):
+		id := input.(Provider)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+		}
+	case reflect.TypeOf(VPC{}):
+		id := input.(VPC)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+			VPCID:      id.VPCID,
+		}
+	case reflect.TypeOf(Network{}):
+		id := input.(Network)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+			VPCID:      id.VPCID,
+			NetworkID:  id.NetworkID,
+		}
+	case reflect.TypeOf(Subnetwork{}):
+		id := input.(Subnetwork)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+			VPCID:      id.VPCID,
+			NetworkID:  id.NetworkID,
+			SubnetID:   id.SubnetworkID,
+		}
+	case reflect.TypeOf(Firewall{}):
+		id := input.(Firewall)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+			VPCID:      id.VPCID,
+			NetworkID:  id.NetworkID,
+			FirewallID: id.FirewallID,
+		}
+	case reflect.TypeOf(VM{}):
+		id := input.(VM)
+		return IdPayload{
+			ProviderID: id.ProviderID,
+			VPCID:      id.VPCID,
+			NetworkID:  id.NetworkID,
+			SubnetID:   id.SubnetID,
+			VMID:       id.VMID,
+		}
+	}
+	return IdPayload{}
+}
+
+func BuildFromMap(payload map[string]interface{}) ID {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error while marshalling payload: %s", err.Error())))
+	}
+	var idPayload IdPayload
+	if errUnmarshal := json.Unmarshal(body, &idPayload); errUnmarshal != nil {
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a valid FirewallID payload", payload)))
+	}
+	return Build(idPayload)
+}
+
+func Build(payload IdPayload) ID {
 	if payload.VMID != "" && payload.ProviderID != "" && payload.VPCID != "" && payload.NetworkID != "" && payload.SubnetID != "" {
 		return VM{
-			ID:         payload.VMID,
+			VMID:       payload.VMID,
 			ProviderID: payload.ProviderID,
 			VPCID:      payload.VPCID,
 			NetworkID:  payload.NetworkID,
@@ -29,53 +98,62 @@ func NewID(payload IdPayload) ID {
 		}
 	} else if payload.FirewallID != "" && payload.ProviderID != "" && payload.VPCID != "" && payload.NetworkID != "" {
 		return Firewall{
-			ID:         payload.FirewallID,
+			FirewallID: payload.FirewallID,
 			ProviderID: payload.ProviderID,
 			VPCID:      payload.VPCID,
 			NetworkID:  payload.NetworkID,
 		}
-	} else if payload.ProviderID != "" && payload.VPCID != "" && payload.NetworkID != "" && payload.SubnetID != "" {
+	} else if payload.ProviderID != "" && payload.NetworkID != "" && payload.SubnetID != "" {
 		return Subnetwork{
-			ID:         payload.SubnetID,
-			ProviderID: payload.ProviderID,
-			VPCID:      payload.VPCID,
-			NetworkID:  payload.NetworkID,
+			SubnetworkID: payload.SubnetID,
+			ProviderID:   payload.ProviderID,
+			VPCID:        payload.VPCID,
+			NetworkID:    payload.NetworkID,
 		}
-	} else if payload.ProviderID != "" && payload.VPCID != "" && payload.NetworkID != "" {
+	} else if payload.ProviderID != "" && payload.NetworkID != "" {
 		return Network{
-			ID:         payload.NetworkID,
+			NetworkID:  payload.NetworkID,
 			ProviderID: payload.ProviderID,
 			VPCID:      payload.VPCID,
 		}
 	} else if payload.ProviderID != "" && payload.VPCID != "" {
 		return VPC{
-			ID:         payload.VPCID,
+			VPCID:      payload.VPCID,
 			ProviderID: payload.ProviderID,
 		}
 	} else if payload.ProviderID != "" {
 		return Provider{
-			ID: payload.ProviderID,
+			ProviderID: payload.ProviderID,
 		}
 	} else {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("Invalid ID payload: %v", payload)))
+		return Empty{}
 	}
 }
 
+type Empty struct{}
+
+func (e Empty) Equals(other ID) bool {
+	_, ok := other.(Empty)
+	return ok
+}
+
 type Provider struct {
-	ID string `bson:"id" plugin:"name"`
+	mgm.DefaultModel `bson:",inline"`
+	ProviderID       string `bson:"id" plugin:"id"`
 }
 
 func (provider Provider) Equals(other ID) bool {
 	otherProviderID, ok := other.(Provider)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Provider ID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Provider FirewallID", other)))
 	}
-	return provider.ID == otherProviderID.ID
+	return provider.ProviderID == otherProviderID.ProviderID
 }
 
 type VPC struct {
-	ID         string `bson:"id" json:"id"`
-	ProviderID string `bson:"providerId" json:"providerID"`
+	mgm.DefaultModel `bson:",inline"`
+	VPCID            string `bson:"id" json:"id"`
+	ProviderID       string `bson:"providerId" json:"providerID"`
 }
 
 func (id VPC) Equals(other ID) bool {
@@ -83,14 +161,15 @@ func (id VPC) Equals(other ID) bool {
 	if !ok {
 		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a VPC VMID", other)))
 	}
-	return id.ID == otherVPCID.ID &&
+	return id.VPCID == otherVPCID.VPCID &&
 		id.ProviderID == otherVPCID.ProviderID
 }
 
 type Network struct {
-	ID         string `bson:"id" json:"id" plugin:"networkID"`
-	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	mgm.DefaultModel `bson:",inline"`
+	NetworkID        string `bson:"id" json:"id" plugin:"networkID"`
+	ProviderID       string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID            string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
 }
 
 func (id Network) Equals(other ID) bool {
@@ -98,63 +177,83 @@ func (id Network) Equals(other ID) bool {
 	if !ok {
 		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Network VMID", other)))
 	}
-	return id.ID == otherNetworkID.ID &&
+	return id.NetworkID == otherNetworkID.NetworkID &&
 		id.ProviderID == otherNetworkID.ProviderID &&
 		id.VPCID == otherNetworkID.VPCID
 }
 
 type Subnetwork struct {
-	ID         string `bson:"id" json:"subnetID" plugin:"subnetID"`
-	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
+	mgm.DefaultModel `bson:",inline"`
+	SubnetworkID     string `bson:"id" json:"subnetID" plugin:"subnetID"`
+	ProviderID       string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID            string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID        string `bson:"networkId" json:"networkID" plugin:"networkID"`
 }
 
 func (id Subnetwork) Equals(other ID) bool {
 	otherSubneworkID, ok := other.(Subnetwork)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Subnetwork ID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Subnetwork FirewallID", other)))
 	}
-	return id.ID == otherSubneworkID.ID &&
+	return id.SubnetworkID == otherSubneworkID.SubnetworkID &&
 		id.ProviderID == otherSubneworkID.ProviderID &&
 		id.VPCID == otherSubneworkID.VPCID &&
 		id.NetworkID == otherSubneworkID.NetworkID
 }
 
 type Firewall struct {
-	ID         string `bson:"id" json:"id" plugin:"firewallID"`
-	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
+	mgm.DefaultModel `bson:",inline"`
+	FirewallID       string `bson:"id" json:"id" plugin:"firewallID"`
+	ProviderID       string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID            string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID        string `bson:"networkId" json:"networkID" plugin:"networkID"`
 }
 
 func (id Firewall) Equals(other ID) bool {
 	otherFirewallID, ok := other.(Firewall)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Firewall ID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a Firewall FirewallID", other)))
 	}
-	return id.ID == otherFirewallID.ID &&
+	return id.FirewallID == otherFirewallID.FirewallID &&
 		id.ProviderID == otherFirewallID.ProviderID &&
 		id.VPCID == otherFirewallID.VPCID &&
 		id.NetworkID == otherFirewallID.NetworkID
 }
 
 type VM struct {
-	ID         string `bson:"id" json:"vmID" plugin:"vmID"`
-	ProviderID string `bson:"providerId" json:"providerID" plugin:"providerID"`
-	VPCID      string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
-	NetworkID  string `bson:"networkId" json:"networkID" plugin:"networkID"`
-	SubnetID   string `bson:"subnetId" json:"subnetID" plugin:"subnetID"`
+	mgm.DefaultModel `bson:",inline"`
+	VMID             string `bson:"id" json:"vmID" plugin:"vmID"`
+	ProviderID       string `bson:"providerId" json:"providerID" plugin:"providerID"`
+	VPCID            string `bson:"vpcId" json:"vpcID" plugin:"vpcID"`
+	NetworkID        string `bson:"networkId" json:"networkID" plugin:"networkID"`
+	SubnetID         string `bson:"subnetId" json:"subnetID" plugin:"subnetID"`
 }
 
 func (id VM) Equals(other ID) bool {
 	otherVMID, ok := other.(VM)
 	if !ok {
-		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a VM ID", other)))
+		panic(errors.InvalidArgument.WithMessage(fmt.Sprintf("%v is not a VM FirewallID", other)))
 	}
-	return id.ID == otherVMID.ID &&
+	return id.VMID == otherVMID.VMID &&
 		id.ProviderID == otherVMID.ProviderID &&
 		id.VPCID == otherVMID.VPCID &&
 		id.NetworkID == otherVMID.NetworkID &&
 		id.SubnetID == otherVMID.SubnetID
+}
+
+func IDParentMatchesWithResource(idParent ID, resourceType types.ResourceType) bool {
+	switch reflect.TypeOf(idParent) {
+	case nil:
+		return resourceType == types.Provider
+	case reflect.TypeOf(Provider{}):
+		return resourceType == types.VPC || resourceType == types.Network
+	case reflect.TypeOf(VPC{}):
+		return resourceType == types.Network
+	case reflect.TypeOf(Network{}):
+		return resourceType == types.Subnetwork || resourceType == types.Firewall
+	case reflect.TypeOf(Subnetwork{}):
+		return resourceType == types.VM
+	default:
+		return false
+	}
 }

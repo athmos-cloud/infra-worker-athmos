@@ -7,65 +7,90 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Project struct {
-	ID              string             `bson:"_id,omitempty"`
-	Name            string             `bson:"name"`
-	Namespace       string             `bson:"namespace"`
-	OwnerID         string             `bson:"owner_id"`
-	Resources       ProviderCollection `bson:"providers"`
-	Authentications auth.AuthList      `bson:"authentications"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string             `bson:"name"`
+	Namespace        string             `bson:"namespace"`
+	OwnerID          string             `bson:"owner_id"`
+	Resources        ProviderCollection `bson:"providers"`
+	Authentications  auth.List          `bson:"authentications,omitempty"`
 }
 
-func NewProject(name string, ownerID string) Project {
-	return Project{
+func NewProject(name string, ownerID string) *Project {
+	return &Project{
 		Name:            name,
 		Namespace:       kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
 		OwnerID:         ownerID,
 		Resources:       make(ProviderCollection),
-		Authentications: make(auth.AuthList),
+		Authentications: make(auth.List),
 	}
 }
 
 func (project *Project) Insert(resource IResource) {
-	resource.Insert(*project)
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	if _, ok := project.Resources[idPayload.ProviderID]; reflect.TypeOf(resource) == reflect.TypeOf(&Provider{}) && ok {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", idPayload.ProviderID)))
+	} else if reflect.TypeOf(resource) == reflect.TypeOf(&Provider{}) && !ok {
+		provider := resource.(*Provider)
+		project.Resources[idPayload.ProviderID] = *provider
+	} else {
+		provider := project.Resources[idPayload.ProviderID]
+		provider.Insert(resource)
+	}
 }
 
 func (project *Project) Update(resource IResource) {
-	resource.Insert(*project, true)
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	if _, ok := project.Resources[idPayload.ProviderID]; reflect.TypeOf(resource) == reflect.TypeOf(&Provider{}) && !ok {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", idPayload.ProviderID)))
+	} else if reflect.TypeOf(resource) == reflect.TypeOf(&Provider{}) && ok {
+		provider := resource.(*Provider)
+		project.Resources[idPayload.ProviderID] = *provider
+	} else {
+		provider := project.Resources[idPayload.ProviderID]
+		provider.Insert(resource, true)
+	}
 }
 
 func (project *Project) Delete(resource IResource) {
-	resource.Remove(*project)
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Provider{}) {
+		delete(project.Resources, resource.GetIdentifier().(identifier.Provider).ProviderID)
+	} else {
+		providerID := identifier.IDToPayload(resource.GetIdentifier()).ProviderID
+		provider := project.Resources[providerID]
+		provider.Remove(resource)
+	}
 }
 
 func (project *Project) Exists(id identifier.ID) bool {
 	switch reflect.TypeOf(id) {
 	case reflect.TypeOf(identifier.Provider{}):
 		providerID := id.(identifier.Provider)
-		_, ok := project.Resources[providerID.ID]
+		_, ok := project.Resources[providerID.ProviderID]
 		return ok
 	case reflect.TypeOf(identifier.VPC{}):
 		vpcID := id.(identifier.VPC)
-		_, ok := project.Resources[vpcID.ProviderID].VPCs[vpcID.ID]
+		_, ok := project.Resources[vpcID.ProviderID].VPCs[vpcID.VPCID]
 		return ok
 	case reflect.TypeOf(identifier.Network{}):
 		networkID := id.(identifier.Network)
-		_, ok := project.Resources[networkID.ProviderID].VPCs[networkID.VPCID].Networks[networkID.ID]
+		_, ok := project.Resources[networkID.ProviderID].VPCs[networkID.VPCID].Networks[networkID.NetworkID]
 		return ok
 	case reflect.TypeOf(identifier.Subnetwork{}):
 		subnetID := id.(identifier.Subnetwork)
-		_, ok := project.Resources[subnetID.ProviderID].VPCs[subnetID.VPCID].Networks[subnetID.NetworkID].Subnetworks[subnetID.ID]
+		_, ok := project.Resources[subnetID.ProviderID].VPCs[subnetID.VPCID].Networks[subnetID.NetworkID].Subnetworks[subnetID.SubnetworkID]
 		return ok
 	case reflect.TypeOf(identifier.Firewall{}):
 		firewallID := id.(identifier.Firewall)
-		_, ok := project.Resources[firewallID.ProviderID].VPCs[firewallID.VPCID].Networks[firewallID.NetworkID].Firewalls[firewallID.ID]
+		_, ok := project.Resources[firewallID.ProviderID].VPCs[firewallID.VPCID].Networks[firewallID.NetworkID].Firewalls[firewallID.FirewallID]
 		return ok
 	case reflect.TypeOf(identifier.VM{}):
 		vmID := id.(identifier.VM)
-		_, ok := project.Resources[vmID.ProviderID].VPCs[vmID.VPCID].Networks[vmID.NetworkID].Subnetworks[vmID.ID]
+		_, ok := project.Resources[vmID.ProviderID].VPCs[vmID.VPCID].Networks[vmID.NetworkID].Subnetworks[vmID.VMID]
 		return ok
 	}
 	panic(errors.InvalidArgument.WithMessage("invalid id type"))
@@ -75,44 +100,44 @@ func (project *Project) Get(id identifier.ID) IResource {
 	switch reflect.TypeOf(id) {
 	case reflect.TypeOf(identifier.Provider{}):
 		providerID := id.(identifier.Provider)
-		provider, ok := project.Resources[providerID.ID]
+		provider, ok := project.Resources[providerID.ProviderID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", providerID.ID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", providerID.ProviderID)))
 		}
 		return &provider
 	case reflect.TypeOf(identifier.VPC{}):
 		vpcID := id.(identifier.VPC)
-		vpc, ok := project.Resources[vpcID.ProviderID].VPCs[vpcID.ID]
+		vpc, ok := project.Resources[vpcID.ProviderID].VPCs[vpcID.VPCID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("vpc %s not found in provider %s", vpcID.ID, vpcID.ProviderID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("vpc %s not found in provider %s", vpcID.VPCID, vpcID.ProviderID)))
 		}
 		return &vpc
 	case reflect.TypeOf(identifier.Network{}):
 		networkID := id.(identifier.Network)
-		network, ok := project.Resources[networkID.ProviderID].VPCs[networkID.VPCID].Networks[networkID.ID]
+		network, ok := project.Resources[networkID.ProviderID].VPCs[networkID.VPCID].Networks[networkID.NetworkID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", networkID.ID, networkID.VPCID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", networkID.NetworkID, networkID.VPCID)))
 		}
 		return &network
 	case reflect.TypeOf(identifier.Subnetwork{}):
 		subnetID := id.(identifier.Subnetwork)
-		subnet, ok := project.Resources[subnetID.ProviderID].VPCs[subnetID.VPCID].Networks[subnetID.NetworkID].Subnetworks[subnetID.ID]
+		subnet, ok := project.Resources[subnetID.ProviderID].VPCs[subnetID.VPCID].Networks[subnetID.NetworkID].Subnetworks[subnetID.SubnetworkID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", subnetID.ID, subnetID.NetworkID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", subnetID.SubnetworkID, subnetID.NetworkID)))
 		}
 		return &subnet
 	case reflect.TypeOf(identifier.Firewall{}):
 		firewallID := id.(identifier.Firewall)
-		firewall, ok := project.Resources[firewallID.ProviderID].VPCs[firewallID.VPCID].Networks[firewallID.NetworkID].Firewalls[firewallID.ID]
+		firewall, ok := project.Resources[firewallID.ProviderID].VPCs[firewallID.VPCID].Networks[firewallID.NetworkID].Firewalls[firewallID.FirewallID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in network %s", firewallID.ID, firewallID.NetworkID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in network %s", firewallID.FirewallID, firewallID.NetworkID)))
 		}
 		return &firewall
 	case reflect.TypeOf(identifier.VM{}):
 		vmID := id.(identifier.VM)
-		vm, ok := project.Resources[vmID.ProviderID].VPCs[vmID.VPCID].Networks[vmID.NetworkID].Subnetworks[vmID.ID]
+		vm, ok := project.Resources[vmID.ProviderID].VPCs[vmID.VPCID].Networks[vmID.NetworkID].Subnetworks[vmID.VMID]
 		if !ok {
-			panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", vmID.ID, vmID.SubnetID)))
+			panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", vmID.VMID, vmID.SubnetID)))
 		}
 		return &vm
 	}

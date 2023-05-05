@@ -27,6 +27,10 @@ type ListSecretRequest struct {
 type ListSecretResponse = []GetSecretResponse
 
 type UpdateSecretRequest struct {
+	ProjectID   string `json:"projectID"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Data        string `json:"data"`
 }
 
 type DeleteSecretRequest struct {

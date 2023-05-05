@@ -5,7 +5,7 @@ type ResourceType string
 const (
 	Provider   ResourceType = "provider"
 	VPC        ResourceType = "vpc"
-	Subnetwork ResourceType = "subnetwork"
+	Subnetwork ResourceType = "subnet"
 	Network    ResourceType = "network"
 	VM         ResourceType = "vm"
 	Firewall   ResourceType = "firewall"

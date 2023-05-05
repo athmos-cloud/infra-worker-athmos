@@ -18,7 +18,15 @@ func TestSubnetwork_FromMap(t *testing.T) {
 		err        errors.Error
 		subnetwork Subnetwork
 	}
-	subnet := NewSubnetwork(identifier.Subnetwork{ID: "test", ProviderID: "test", NetworkID: "test"}, types.GCP)
+	subnet := NewSubnetwork(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+			VPCID:      "test",
+			NetworkID:  "test",
+		}),
+		Provider: types.GCP,
+	})
 	expectedSubnet := subnet
 	expectedSubnet.Region = "eu-west-1"
 	expectedSubnet.IPCIDRRange = "10.0.0.0/8"
@@ -70,7 +78,7 @@ func TestSubnetwork_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err        errors.Error
@@ -80,19 +88,68 @@ func TestSubnetwork_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	testProject := NewProject("test", "owner_test")
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	_ = identifier.Build(identifier.IdPayload{
+		ProviderID: providerID,
+		VPCID:      vpcID,
+		NetworkID:  networkID,
+	})
+	subnetwork1 := NewSubnetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	subnetwork1.Identifier.SubnetworkID = "test-1"
+	subnetwork2 := NewSubnetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	subnetwork2.Identifier.SubnetworkID = "test-2"
 	subnetwork3 := subnetwork1
 	subnetwork3.Metadata.Tags = map[string]string{"test": "test"}
 	subnetwork4 := subnetwork3
 	subnetwork4.Metadata.Tags = map[string]string{"hello": "world"}
-	subnetwork5 := NewSubnetwork(identifier.Subnetwork{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	subnetwork5 := NewSubnetwork(NewResourcePayload{
+		Name: "test-5",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	subnetwork5.Identifier.SubnetworkID = "test-5"
 
-	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
+	testNetwork.Subnetworks[subnetwork1.Identifier.SubnetworkID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -109,8 +166,8 @@ func TestSubnetwork_Insert(t *testing.T) {
 				subnetwork: subnetwork2,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				subnetwork: subnetwork2,
@@ -122,8 +179,8 @@ func TestSubnetwork_Insert(t *testing.T) {
 				subnetwork: subnetwork3,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				subnetwork: subnetwork3,
@@ -135,8 +192,8 @@ func TestSubnetwork_Insert(t *testing.T) {
 				subnetwork: subnetwork4,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				err:        errors.Conflict,
@@ -149,8 +206,8 @@ func TestSubnetwork_Insert(t *testing.T) {
 				subnetwork: subnetwork5,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err:        errors.NotFound,
@@ -169,9 +226,13 @@ func TestSubnetwork_Insert(t *testing.T) {
 					}
 				}
 			}()
-			subnet.Insert(tt.args.project, tt.args.update...)
+			if tt.args.update {
+				tt.args.project.Update(&subnet)
+			} else {
+				tt.args.project.Insert(&subnet)
+			}
 			id := tt.fields.subnetwork.Identifier
-			subnetworkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
+			subnetworkGot := tt.args.project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.SubnetworkID]
 			if !subnetworkGot.Equals(tt.want.subnetwork) {
 				t.Errorf("Insert() = %v, want %v", subnet, tt.want.subnetwork)
 			}
@@ -193,15 +254,51 @@ func TestSubnetwork_Remove(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 	networkID := "test"
-
-	subnetwork1 := NewSubnetwork(identifier.Subnetwork{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
-	subnetwork2 := NewSubnetwork(identifier.Subnetwork{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
-
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	testNetwork.Subnetworks[subnetwork1.Identifier.ID] = subnetwork1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	subnetwork1 := NewSubnetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	subnetwork2 := NewSubnetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+
+	testNetwork.Subnetworks[subnetwork1.Identifier.SubnetworkID] = subnetwork1
+	testVPC.Networks[networkID] = testNetwork
+	testProvider.VPCs[vpcID] = testVPC
+	testProject.Resources[providerID] = testProvider
+	testNetwork.Subnetworks[subnetwork1.Identifier.SubnetworkID] = subnetwork1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -218,7 +315,7 @@ func TestSubnetwork_Remove(t *testing.T) {
 				Subnetwork: subnetwork1,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NoContent,
@@ -230,7 +327,7 @@ func TestSubnetwork_Remove(t *testing.T) {
 				Subnetwork: subnetwork2,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -248,7 +345,7 @@ func TestSubnetwork_Remove(t *testing.T) {
 					}
 				}
 			}()
-			subnet.Remove(tt.args.project)
+			tt.args.project.Delete(&subnet)
 		})
 	}
 }
