@@ -9,14 +9,16 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type VPC struct {
-	Metadata   metadata.Metadata     `bson:"metadata"`
-	Identifier identifier.VPC        `bson:"identifier"`
-	Status     status.ResourceStatus `bson:"status"`
-	Networks   NetworkCollection     `bson:"networks,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.VPC        `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Networks         NetworkCollection     `bson:"networks,omitempty"`
 }
 
 type VPCCollection map[string]VPC

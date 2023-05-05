@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
@@ -15,9 +16,10 @@ const (
 )
 
 type Identifier struct {
-	ResourceID schema.GroupVersionResource
-	Name       string
-	Namespace  string
+	mgm.DefaultModel `bson:",inline"`
+	ResourceID       schema.GroupVersionResource `bson:"resourceId"`
+	Name             string                      `bson:"name"`
+	Namespace        string                      `bson:"namespace"`
 }
 
 func (identifier Identifier) Equals(other Identifier) bool {

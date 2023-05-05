@@ -10,15 +10,17 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Firewall struct {
-	Metadata   metadata.Metadata     `bson:"metadata"`
-	Identifier identifier.Firewall   `bson:"identifier"`
-	Status     status.ResourceStatus `bson:"status"`
-	Allow      RuleList              `bson:"allow" plugin:"allow,omitempty"`
-	Deny       RuleList              `bson:"deny" plugin:"deny,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Firewall   `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Allow            RuleList              `bson:"allow" plugin:"allow,omitempty"`
+	Deny             RuleList              `bson:"deny" plugin:"deny,omitempty"`
 }
 
 func NewFirewall(id identifier.Firewall, providerType types.ProviderType) Firewall {
@@ -54,8 +56,9 @@ func (firewall *Firewall) New(id identifier.ID, providerType types.ProviderType)
 }
 
 type Rule struct {
-	Protocol string `bson:"protocol" plugin:"protocol"`
-	Ports    []int  `bson:"ports" plugin:"ports"`
+	mgm.DefaultModel `bson:",inline"`
+	Protocol         string `bson:"protocol" plugin:"protocol"`
+	Ports            []int  `bson:"ports" plugin:"ports"`
 }
 
 func (rule *Rule) Equals(other Rule) bool {

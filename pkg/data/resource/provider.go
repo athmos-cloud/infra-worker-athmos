@@ -10,15 +10,17 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Provider struct {
-	Metadata   metadata.Metadata     `bson:"metadata"`
-	Identifier identifier.Provider   `bson:"identifier"`
-	Status     status.ResourceStatus `bson:"status"`
-	Auth       auth.Auth             `bson:"auth" plugin:"auth"`
-	VPCs       VPCCollection         `bson:"vpcs"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Provider   `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Auth             auth.Auth             `bson:"auth" plugin:"auth"`
+	VPCs             VPCCollection         `bson:"vpcs"`
 }
 
 func (provider *Provider) Equals(other Provider) bool {

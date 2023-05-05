@@ -7,16 +7,18 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Project struct {
-	ID              string             `bson:"_id,omitempty"`
-	Name            string             `bson:"name"`
-	Namespace       string             `bson:"namespace"`
-	OwnerID         string             `bson:"owner_id"`
-	Resources       ProviderCollection `bson:"providers"`
-	Authentications auth.AuthList      `bson:"authentications,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	ID               string             `bson:"_id,omitempty"`
+	Name             string             `bson:"name"`
+	Namespace        string             `bson:"namespace"`
+	OwnerID          string             `bson:"owner_id"`
+	Resources        ProviderCollection `bson:"providers"`
+	Authentications  auth.List          `bson:"authentications,omitempty"`
 }
 
 func NewProject(name string, ownerID string) Project {
@@ -25,7 +27,7 @@ func NewProject(name string, ownerID string) Project {
 		Namespace:       kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
 		OwnerID:         ownerID,
 		Resources:       make(ProviderCollection),
-		Authentications: make(auth.AuthList),
+		Authentications: make(auth.List),
 	}
 }
 

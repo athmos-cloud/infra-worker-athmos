@@ -9,19 +9,21 @@ import (
 	commonTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type VM struct {
-	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.VM         `bson:"identifier" plugin:"identifier"`
-	Status      status.ResourceStatus `bson:"status"`
-	PublicIP    bool                  `bson:"publicIP" plugin:"publicIP"`
-	Zone        string                `bson:"zone" plugin:"zone"`
-	MachineType string                `bson:"machineType" plugin:"machineType"`
-	Auths       VMAuthList            `bson:"auths" plugin:"auth"`
-	Disk        Disk                  `bson:"disk" plugin:"disk"`
-	OS          OS                    `bson:"os" plugin:"os"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.VM         `bson:"identifier" plugin:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	PublicIP         bool                  `bson:"publicIP" plugin:"publicIP"`
+	Zone             string                `bson:"zone" plugin:"zone"`
+	MachineType      string                `bson:"machineType" plugin:"machineType"`
+	Auths            VMAuthList            `bson:"auths" plugin:"auth"`
+	Disk             Disk                  `bson:"disk" plugin:"disk"`
+	OS               OS                    `bson:"os" plugin:"os"`
 }
 
 func NewVM(id identifier.VM, providerType commonTypes.ProviderType) VM {
@@ -49,10 +51,11 @@ func (collection *VMCollection) Equals(other VMCollection) bool {
 }
 
 type Disk struct {
-	Type       string               `bson:"type" plugin:"type"`
-	Mode       commonTypes.DiskMode `bson:"mode" plugin:"diskMode"`
-	SizeGib    int                  `bson:"sizeGib" plugin:"sizeGib"`
-	AutoDelete bool                 `bson:"autoDelete" plugin:"autoDelete"`
+	mgm.DefaultModel `bson:",inline"`
+	Type             string               `bson:"type" plugin:"type"`
+	Mode             commonTypes.DiskMode `bson:"mode" plugin:"diskMode"`
+	SizeGib          int                  `bson:"sizeGib" plugin:"sizeGib"`
+	AutoDelete       bool                 `bson:"autoDelete" plugin:"autoDelete"`
 }
 
 func (disk *Disk) Equals(other Disk) bool {
@@ -97,8 +100,9 @@ func (authList *VMAuthList) Equals(other VMAuthList) bool {
 }
 
 type OS struct {
-	Type    string `bson:"type" plugin:"osType"`
-	Version string `bson:"version" plugin:"version"`
+	mgm.DefaultModel `bson:",inline"`
+	Type             string `bson:"type" plugin:"osType"`
+	Version          string `bson:"version" plugin:"version"`
 }
 
 func (os *OS) Equals(other OS) bool {

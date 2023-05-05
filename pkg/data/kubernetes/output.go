@@ -1,9 +1,12 @@
 package kubernetes
 
+import "github.com/kamva/mgm/v3"
+
 type Output struct {
-	Name     string      `bson:"name"`
-	JsonPath string      `bson:"jsonPath"`
-	Value    interface{} `bson:"value,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string      `yaml:"name" bson:"name"`
+	JsonPath         string      `yaml:"jsonPath" bson:"jsonPath"`
+	Value            interface{} `yaml:"value,omitempty" bson:"value,omitempty"`
 }
 
 func (output *Output) Equals(other Output) bool {

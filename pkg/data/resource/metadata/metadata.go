@@ -3,9 +3,11 @@ package metadata
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 )
 
 type Metadata struct {
+	mgm.DefaultModel `bson:",inline"`
 	Name             string            `bson:"name"`
 	Managed          bool              `bson:"managed,default=true" plugin:"managed"`
 	Tags             map[string]string `bson:"tags,omitempty"`
@@ -42,7 +44,8 @@ func New(request CreateMetadataRequest) Metadata {
 }
 
 type ReleaseReference struct {
-	Name      string   `bson:"name"`
-	Namespace string   `bson:"namespace"`
-	Versions  []string `bson:"versions,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string   `bson:"name"`
+	Namespace        string   `bson:"namespace"`
+	Versions         []string `bson:"versions,omitempty"`
 }

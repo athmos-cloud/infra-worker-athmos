@@ -9,16 +9,18 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Subnetwork struct {
-	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.Subnetwork `bson:"hierarchyLocation"`
-	Status      status.ResourceStatus `bson:"status"`
-	Region      string                `bson:"region" plugin:"region"`
-	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
-	VMs         VMCollection          `bson:"vmList,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Subnetwork `bson:"hierarchyLocation"`
+	Status           status.ResourceStatus `bson:"status"`
+	Region           string                `bson:"region" plugin:"region"`
+	IPCIDRRange      string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
+	VMs              VMCollection          `bson:"vmList,omitempty"`
 }
 
 func NewSubnetwork(id identifier.Subnetwork, providerType types.ProviderType) Subnetwork {

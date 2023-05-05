@@ -9,15 +9,17 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Network struct {
-	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.Network    `bson:"identifier"`
-	Status      status.ResourceStatus `bson:"status"`
-	Subnetworks SubnetworkCollection  `bson:"subnetworks,omitempty"`
-	Firewalls   FirewallCollection    `bson:"firewalls,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Network    `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Subnetworks      SubnetworkCollection  `bson:"subnetworks,omitempty"`
+	Firewalls        FirewallCollection    `bson:"firewalls,omitempty"`
 }
 
 func NewNetwork(id identifier.Network, providerType types.ProviderType) Network {

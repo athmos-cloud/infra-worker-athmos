@@ -1,9 +1,12 @@
 package kubernetes
 
+import "github.com/kamva/mgm/v3"
+
 type Resource struct {
-	Identifier Identifier `bson:"identifier"`
-	Events     EventList  `bson:"events,omitempty"`
-	Outputs    OutputList `bson:"outputs,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Identifier       Identifier `bson:"identifier"`
+	Events           EventList  `bson:"events,omitempty"`
+	Outputs          OutputList `bson:"outputs,omitempty"`
 }
 
 func NewResourceList(identifiers []Identifier) ResourceList {

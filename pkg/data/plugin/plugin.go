@@ -5,6 +5,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
+	"github.com/kamva/mgm/v3"
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
@@ -16,35 +17,40 @@ const (
 )
 
 type Plugin struct {
-	Prerequisites []Prerequisite `yaml:"prerequisites"`
-	Inputs        []Input        `yaml:"inputs"`
-	Types         []Type         `yaml:"metadata,omitempty"`
+	mgm.DefaultModel `bson:",inline"`
+	Prerequisites    []Prerequisite `yaml:"prerequisites" bson:"prerequisites"`
+	Inputs           []Input        `yaml:"inputs" bson:"inputs"`
+	Types            []Type         `yaml:"metadata,omitempty" bson:"types"`
 }
 
 type Prerequisite struct {
-	Message   string    `yaml:"message"`
-	Action    string    `yaml:"action"`
-	Condition Condition `yaml:"condition"`
-	Values    []string  `yaml:"with_values"`
+	mgm.DefaultModel `bson:",inline"`
+	Message          string    `yaml:"message" bson:"message"`
+	Action           string    `yaml:"action" bson:"action"`
+	Condition        Condition `yaml:"condition" bson:"condition"`
+	Values           []string  `yaml:"with_values" bson:"values"`
 }
 
 type Condition struct {
-	Assert string      `yaml:"assert"`
-	Equals interface{} `yaml:"equals"`
+	mgm.DefaultModel `bson:",inline"`
+	Assert           string      `yaml:"assert" bson:"assert"`
+	Equals           interface{} `yaml:"equals" bson:"equals"`
 }
 
 type Input struct {
-	Name        string      `yaml:"name"`
-	DisplayName string      `yaml:"displayName,omitempty"`
-	Description string      `yaml:"description,omitempty"`
-	Type        string      `yaml:"type" default:"string"`
-	Default     interface{} `yaml:"default,omitempty"`
-	Required    bool        `yaml:"required,omitempty" default:"false"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string      `yaml:"name" bson:"name"`
+	DisplayName      string      `yaml:"displayName,omitempty" bson:"displayName,omitempty"`
+	Description      string      `yaml:"description,omitempty" bson:"description,omitempty"`
+	Type             string      `yaml:"type" default:"string" bson:"type,omitempty"`
+	Default          interface{} `yaml:"default,omitempty" bson:"default,omitempty"`
+	Required         bool        `yaml:"required,omitempty" default:"false" bson:"required,omitempty"`
 }
 
 type Type struct {
-	Name   string           `yaml:"name"`
-	Fields map[string]Input `yaml:"fields"`
+	mgm.DefaultModel `bson:",inline"`
+	Name             string           `yaml:"name" bson:"name,omitempty"`
+	Fields           map[string]Input `yaml:"fields" bson:"fields,omitempty"`
 }
 
 func Get(reference ResourceReference) Plugin {
