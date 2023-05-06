@@ -12,10 +12,7 @@ func (server *Server) WithPluginController() *Server {
 		err := errors.OK
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		resp := server.PluginService.GetPlugin(dto.GetPluginRequest{
