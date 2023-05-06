@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -42,15 +41,8 @@ func (server *Server) WithProjectRouter() *Server {
 			OwnerID: c.Param("id"),
 		})
 
-		jsonBytes, errMarshal := json.Marshal(resp.Payload)
-		if errMarshal != nil {
-			c.JSON(500, gin.H{
-				"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
-			})
-			return
-		}
 		c.JSON(err.Code, gin.H{
-			"payload": string(jsonBytes[:]),
+			"payload": resp.Payload,
 		})
 	})
 	server.Router.POST("/projects", func(c *gin.Context) {

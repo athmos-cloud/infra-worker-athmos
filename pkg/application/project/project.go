@@ -40,7 +40,7 @@ func (ps *Service) GetProjectByID(ctx context.Context, request GetProjectByIDReq
 			ProjectID: request.ProjectID,
 		},
 	})
-	projectResp := resp.(GetProjectByIDResponse)
+	projectResp := resp.(projectRepository.GetProjectByIDResponse)
 	return GetProjectByIDResponse{
 		Payload: projectResp.Payload,
 	}

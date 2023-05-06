@@ -11,7 +11,7 @@ type Project struct {
 
 func FromProjectDataMapper(project resource.Project) Project {
 	return Project{
-		ID:        project.ID,
+		ID:        project.ID.Hex(),
 		Name:      project.Name,
 		Owner:     project.OwnerID,
 		Providers: FromProviderCollectionDataMapper(project.Resources),

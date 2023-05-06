@@ -10,7 +10,7 @@ func toGetProjectByOwnerIDResponse(projectList []resource.Project) GetProjectByO
 	resp := GetProjectByOwnerIDResponse{}
 	for _, project := range projectList {
 		resp.Payload = append(resp.Payload, GetProjectByOwnerIDItemResponse{
-			ID:   project.ID,
+			ID:   project.ID.Hex(),
 			Name: project.Name,
 			URI:  fmt.Sprintf("%s/%s", config.Current.RedirectionURI, project.ID),
 		})

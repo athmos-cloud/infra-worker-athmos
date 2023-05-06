@@ -6,10 +6,10 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/mongo"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
 	"sync"
@@ -49,17 +49,14 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		))
 	}
 	request := opt.Value.(CreateProjectRequest)
-	exists := repository.MongoDAO.Exists(ctx, option.Option{
-		Value: mongo.ExistsRequest{
-			CollectionName: config.Current.Mongo.ProjectCollection,
-			Filter:         bson.M{NameDocumentKey: request.ProjectName, OwnerIDDocumentKey: request.OwnerID},
-		},
-	})
-	logger.Info.Printf("UpdatedProject %s owned by %s already exists: %v", request.ProjectName, request.OwnerID, exists)
-	if exists {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("UpdatedProject %s owned by %s already exists", request.ProjectName, request.OwnerID)))
-	}
 
+	var projects []resource.Project
+	if err := mgm.Coll(&resource.Project{}).SimpleFind(&projects, bson.M{NameDocumentKey: request.ProjectName, OwnerIDDocumentKey: request.OwnerID}); err != nil {
+		panic(errors.InternalError.WithMessage(err.Error()))
+	}
+	if len(projects) > 0 {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Project with name %s owned by %s already exists", request.ProjectName, request.OwnerID)))
+	}
 	newProject := resource.NewProject(request.ProjectName, request.OwnerID)
 	_ = repository.kubernetesDAO.Create(ctx, option.Option{
 		Value: kubernetes.CreateNamespaceRequest{
@@ -67,16 +64,12 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		},
 	})
 
-	mongoRequest := mongo.CreateRequest{
-		Payload:        newProject,
-		CollectionName: config.Current.Mongo.ProjectCollection,
+	if err := mgm.Coll(newProject).Create(newProject); err != nil {
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
-	resp := mongo.Client.Create(ctx, option.Option{
-		Value: mongoRequest,
-	})
-
+	logger.Info.Printf("Project %s created", newProject.ID)
 	return CreateProjectResponse{
-		ProjectID: resp.(mongo.CreateResponse).Id,
+		ProjectID: newProject.ID.Hex(),
 	}
 }
 
@@ -89,18 +82,15 @@ func (repository *Repository) Get(ctx context.Context, opt option.Option) interf
 		))
 	}
 	request := opt.Value.(GetProjectByIDRequest)
-	mongoGetRequest := mongo.GetRequest{
-		CollectionName: config.Current.Mongo.ProjectCollection,
-		Id:             request.ProjectID,
+
+	project := &resource.Project{}
+
+	err := mgm.Coll(project).FindByID(request.ProjectID, project)
+	if err != nil {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("Project with id %s not found", request.ProjectID)))
 	}
-	resp := mongo.Client.Get(ctx, option.Option{
-		Value: mongoGetRequest,
-	})
-
-	project := fromBsonRaw(resp.(mongo.GetResponse).Payload)
-
 	return GetProjectByIDResponse{
-		Payload: project,
+		Payload: *project,
 	}
 }
 
@@ -118,29 +108,9 @@ func (repository *Repository) List(ctx context.Context, opt option.Option) inter
 		))
 	}
 	request := opt.Value.(GetProjectByOwnerIDRequest)
-	mongoGetRequest := mongo.GetAllRequest{
-		CollectionName: config.Current.Mongo.ProjectCollection,
-		Filter: bson.M{
-			"owner_id": request.OwnerID,
-		},
-	}
-	resp := mongo.Client.GetAll(ctx, option.Option{
-		Value: mongoGetRequest,
-	})
-
-	// From mongo raw to UpdatedProject entity
 	var projects []resource.Project
-	for _, p := range resp.(mongo.GetAllResponse).Payload {
-		primitive := p.(bson.D)
-		doc, errMarshal := bson.Marshal(primitive)
-		if errMarshal != nil {
-			logger.Error.Printf("Error marshalling bson: %v", errMarshal)
-		}
-		var projectItem resource.Project
-		if errUnmarshall := bson.Unmarshal(doc, &projectItem); errUnmarshall != nil {
-			logger.Error.Printf("Error unmarshalling bson: %v", errUnmarshall)
-		}
-		projects = append(projects, projectItem)
+	if err := mgm.Coll(&resource.Project{}).SimpleFind(&projects, bson.M{OwnerIDDocumentKey: request.OwnerID}); err != nil {
+		panic(errors.InternalError.WithMessage(err.Error()))
 	}
 
 	return GetProjectByOwnerIDResponse{
@@ -159,35 +129,22 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 	request := opt.Value.(UpdateProjectRequest)
 	var projectToUpdate resource.Project
 	if request.ProjectName != "" {
-		resp := mongo.Client.Get(ctx, option.Option{
-			Value: mongo.GetRequest{
-				CollectionName: config.Current.Mongo.ProjectCollection,
-				Id:             request.ProjectID,
+		projectToUpdate = repository.Get(ctx, option.Option{
+			Value: GetProjectByIDRequest{
+				ProjectID: request.ProjectID,
 			},
-		})
-		projectRaw := resp.(mongo.GetResponse).Payload
-		projectToUpdate = fromBsonRaw(projectRaw)
+		}).(GetProjectByIDResponse).Payload
 		projectToUpdate.Name = request.ProjectName
 	} else if !reflect.DeepEqual(request.UpdatedProject, resource.Project{}) {
 		projectToUpdate = request.UpdatedProject
 	} else {
 		panic(errors.InvalidArgument.WithMessage("A project or a project name must be provided"))
 	}
-	//bsonDoc, err := bson.Marshal(projectToUpdate)
-	//if err != nil {
-	//	panic(errors.InternalError.WithMessage(err.Error()))
-	//}
-	//var bsonDocMap map[string]interface{}
-	//if errUnmarshal := bson.Unmarshal(bsonDoc, &bsonDocMap); errUnmarshal != nil {
-	//	panic(errors.InternalError.WithMessage(errUnmarshal.Error()))
-	//}
-	mongo.Client.Update(ctx, option.Option{
-		Value: mongo.UpdateRequest{
-			CollectionName: config.Current.Mongo.ProjectCollection,
-			Id:             request.ProjectID,
-			Payload:        projectToUpdate,
-		},
-	})
+
+	err := mgm.Coll(&projectToUpdate).Update(&projectToUpdate)
+	if err != nil {
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
+	}
 	return nil
 }
 
@@ -200,11 +157,11 @@ func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
 		))
 	}
 	request := opt.Value.(DeleteRequest)
-	mongoDeleteRequest := mongo.DeleteRequest{
-		CollectionName: config.Current.Mongo.ProjectCollection,
-		Id:             request.ProjectID,
+	var project resource.Project
+	if err := mgm.Coll(&resource.Project{}).FindByID(request.ProjectID, &project); err != nil {
+		return
 	}
-	mongo.Client.Delete(ctx, option.Option{
-		Value: mongoDeleteRequest,
-	})
+	if err := mgm.Coll(&resource.Project{}).Delete(&project); err != nil {
+		panic(errors.InternalError.WithMessage(err.Error()))
+	}
 }

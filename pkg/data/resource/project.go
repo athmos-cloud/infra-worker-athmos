@@ -13,7 +13,6 @@ import (
 
 type Project struct {
 	mgm.DefaultModel `bson:",inline"`
-	ID               string             `bson:"_id,omitempty"`
 	Name             string             `bson:"name"`
 	Namespace        string             `bson:"namespace"`
 	OwnerID          string             `bson:"owner_id"`
@@ -21,8 +20,8 @@ type Project struct {
 	Authentications  auth.List          `bson:"authentications,omitempty"`
 }
 
-func NewProject(name string, ownerID string) Project {
-	return Project{
+func NewProject(name string, ownerID string) *Project {
+	return &Project{
 		Name:            name,
 		Namespace:       kubernetes.NamespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
 		OwnerID:         ownerID,
