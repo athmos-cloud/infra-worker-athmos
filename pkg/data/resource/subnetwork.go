@@ -9,26 +9,32 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
+	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
-type Subnetwork struct {
-	Metadata    metadata.Metadata     `bson:"metadata"`
-	Identifier  identifier.Subnetwork `bson:"hierarchyLocation"`
-	Status      status.ResourceStatus `bson:"status"`
-	VPC         string                `bson:"vpc" plugin:"vpc"`
-	Network     string                `bson:"network" plugin:"network"`
-	Region      string                `bson:"region" plugin:"region"`
-	Provider    types.ProviderType    `bson:"provider" plugin:"provider"`
-	IPCIDRRange string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
-	VMs         VMCollection          `bson:"vmList"`
-}
+func NewSubnetwork(payload NewResourcePayload) Subnetwork {
+	payload.Validate()
+	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.Network{}) {
+		panic(errors.InvalidArgument.WithMessage("ID type must be network ID"))
+	}
+	parentID := payload.ParentIdentifier.(identifier.Network)
+	id := identifier.Subnetwork{
+		ProviderID:   parentID.ProviderID,
+		NetworkID:    parentID.NetworkID,
+		VPCID:        parentID.VPCID,
+		SubnetworkID: fmt.Sprintf("%s-%s", payload.Name, utils.RandomString(resourceIDSuffixLength)),
+	}
 
-func NewSubnetwork(id identifier.Subnetwork, providerType types.ProviderType) Subnetwork {
 	return Subnetwork{
-		Metadata:   metadata.New(metadata.CreateMetadataRequest{Name: id.ID}),
+		Metadata: metadata.New(metadata.CreateMetadataRequest{
+			Name:         id.ProviderID,
+			NotMonitored: !payload.Monitored,
+			Tags:         payload.Tags,
+		}),
 		Identifier: id,
-		Status:     status.New(id.ID, types.Subnetwork, providerType),
+		Status:     status.New(id.SubnetworkID, types.Subnetwork, payload.Provider),
 		VMs:        make(VMCollection),
 	}
 }
@@ -47,11 +53,25 @@ func (collection *SubnetworkCollection) Equals(other SubnetworkCollection) bool 
 	return true
 }
 
-func (subnet *Subnetwork) New(id identifier.ID, provider types.ProviderType) IResource {
-	if reflect.TypeOf(id) != reflect.TypeOf(identifier.Subnetwork{}) {
+type Subnetwork struct {
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.Subnetwork `bson:"hierarchyLocation"`
+	Status           status.ResourceStatus `bson:"status"`
+	Region           string                `bson:"region" plugin:"region"`
+	IPCIDRRange      string                `bson:"ipCidrRange" plugin:"ipCidrRange"`
+	VMs              VMCollection          `bson:"vmList,omitempty"`
+}
+
+func (subnet *Subnetwork) GetIdentifier() identifier.ID {
+	return subnet.Identifier
+}
+
+func (subnet *Subnetwork) New(payload NewResourcePayload) IResource {
+	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.Subnetwork{}) {
 		panic(errors.InvalidArgument.WithMessage("id type is not SubnetworkID"))
 	}
-	res := NewSubnetwork(id.(identifier.Subnetwork), provider)
+	res := NewSubnetwork(payload)
 	return &res
 }
 
@@ -92,37 +112,38 @@ func (subnet *Subnetwork) FromMap(data map[string]interface{}) {
 	}
 }
 
-func (subnet *Subnetwork) Insert(project Project, update ...bool) {
+func (subnet *Subnetwork) Insert(resource IResource, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
 	}
-	id := subnet.Identifier
-	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
-	if !ok && shouldUpdate {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID)))
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	_, ok := subnet.VMs[idPayload.VMID]
+	if reflect.TypeOf(resource) == reflect.TypeOf(&VM{}) && !ok && shouldUpdate {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in subnet %s", idPayload.NetworkID, subnet.Identifier.SubnetworkID)))
 	}
-	if ok && !shouldUpdate {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("subnet %s already exists in network %s", id.ID, id.NetworkID)))
+	if reflect.TypeOf(resource) == reflect.TypeOf(&VM{}) && ok && !shouldUpdate {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", idPayload.NetworkID, subnet.Identifier.VPCID)))
 	}
-	project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID] = *subnet
+	if reflect.TypeOf(resource) == reflect.TypeOf(&VM{}) && (ok && shouldUpdate || !ok && !shouldUpdate) {
+		vm := resource.(*VM)
+		subnet.VMs[idPayload.VMID] = *vm
+		return
+	}
+	panic(errors.InternalError.WithMessage(fmt.Sprintf("Invalid subnet insertion %v", resource)))
 }
 
-func (subnet *Subnetwork) Remove(project Project) {
-	id := subnet.Identifier
-	_, ok := project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks[id.ID]
-	if !ok {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("subnet %s not found in network %s", id.ID, id.NetworkID)))
+func (subnet *Subnetwork) Remove(resource IResource) {
+	if reflect.TypeOf(resource) != reflect.TypeOf(&VM{}) {
+		return
 	}
-	delete(project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Subnetworks, id.ID)
+	delete(subnet.VMs, identifier.IDToPayload(resource.GetIdentifier()).VMID)
 }
 
 func (subnet *Subnetwork) Equals(other Subnetwork) bool {
 	return subnet.Metadata.Equals(other.Metadata) &&
 		subnet.Identifier.Equals(other.Identifier) &&
 		subnet.Status.Equals(other.Status) &&
-		subnet.VPC == other.VPC &&
-		subnet.Network == other.Network &&
 		subnet.Region == other.Region &&
 		subnet.IPCIDRRange == other.IPCIDRRange &&
 		subnet.VMs.Equals(other.VMs)

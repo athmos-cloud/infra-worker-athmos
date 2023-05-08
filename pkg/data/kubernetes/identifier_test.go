@@ -98,7 +98,7 @@ status: {}
 		if identifiers[i].ResourceID != expected[i].ResourceID ||
 			identifiers[i].Name != expected[i].Name ||
 			identifiers[i].Namespace != expected[i].Namespace {
-			t.Errorf("Identifier mismatch. Expected: %+v, Got: %+v", expected[i], identifiers[i])
+			t.Errorf("ParentIdentifier mismatch. Expected: %+v, Got: %+v", expected[i], identifiers[i])
 		}
 	}
 }

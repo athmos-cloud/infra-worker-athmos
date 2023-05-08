@@ -39,7 +39,7 @@ func init() {
 			Connection: conn,
 			Channel:    ch,
 			MessageHandler: func(queue string, msg amqp.Delivery, err error) {
-				logger.Error.Printf("Error occurred in RMQ consumer", err)
+				logger.Error.Printf("Error occurred in RMQ consumer: %v", err)
 			},
 		}
 	}

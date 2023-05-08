@@ -3,8 +3,8 @@ package resource
 import (
 	"context"
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
@@ -19,23 +19,24 @@ type Service struct {
 
 func (service *Service) CreateResource(ctx context.Context, payload CreateResourceRequest) CreateResourceResponse {
 	// Get resource
+	validateCreate(payload)
 	response := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
-	currentProject := response.(project.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.Identifier)
-	if currentProject.Exists(id) {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
-	}
+	currentProject := response.(projectRepository.GetProjectByIDResponse).Payload
+
 	resp := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
-			Project:       currentProject,
-			Identifier:    id,
-			ProviderType:  payload.ProviderType,
-			ResourceType:  payload.ResourceType,
-			ResourceSpecs: payload.ResourceSpecs,
+			Project:          currentProject,
+			Name:             payload.Name,
+			Monitored:        payload.Managed,
+			Tags:             payload.Tags,
+			ParentIdentifier: payload.ParentIdentifier,
+			ProviderType:     payload.ProviderType,
+			ResourceType:     payload.ResourceType,
+			ResourceSpecs:    payload.ResourceSpecs,
 		},
 	})
 	createdResource := resp.(resourceRepository.CreateResponse).Resource
@@ -46,16 +47,16 @@ func (service *Service) CreateResource(ctx context.Context, payload CreateResour
 		},
 	})
 
-	return CreateResourceResponse{Resource: createdResource}
+	return CreateResourceResponse{Resource: domain.FromDataMapper(createdResource)}
 }
 
 func (service *Service) GetResource(ctx context.Context, payload GetResourceRequest) CreateResourceResponse {
 	resp := service.ResourceRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
-	projectResponse := resp.(project.GetProjectByIDResponse).Payload
+	projectResponse := resp.(projectRepository.GetProjectByIDResponse).Payload
 	resource := service.ResourceRepository.Get(ctx, option.Option{
 		Value: resourceRepository.GetRequest{
 			Project:    projectResponse,
@@ -63,17 +64,18 @@ func (service *Service) GetResource(ctx context.Context, payload GetResourceRequ
 		},
 	})
 	// Return domain
-	return CreateResourceResponse{Resource: resource.(resourceRepository.GetResourceResponse).Resource}
+	dataResource := resource.(resourceRepository.GetResourceResponse).Resource
+	return CreateResourceResponse{Resource: domain.FromDataMapper(dataResource)}
 }
 
 func (service *Service) UpdateResource(ctx context.Context, payload UpdateResourceRequest) {
 	projectResponse := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
 	currentProject := projectResponse.(projectRepository.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.ResourceID)
+	id := identifier.Build(payload.ResourceID)
 	if currentProject.Exists(id) {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
 	}
@@ -93,15 +95,15 @@ func (service *Service) UpdateResource(ctx context.Context, payload UpdateResour
 
 func (service *Service) DeleteResource(ctx context.Context, payload DeleteResourceRequest) {
 	project := service.ProjectRepository.Get(ctx, option.Option{
-		Value: project.GetProjectByIDRequest{
+		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
 	currentProject := project.(projectRepository.GetProjectByIDResponse).Payload
-	id := identifier.NewID(payload.ResourceID)
+	id := identifier.Build(payload.ResourceID)
 	service.ResourceRepository.Delete(ctx, option.Option{
 		Value: resourceRepository.DeleteRequest{
-			Project:    project.(projectRepository.GetProjectByIDResponse).Payload,
+			Project:    currentProject,
 			ResourceID: id,
 		},
 	})

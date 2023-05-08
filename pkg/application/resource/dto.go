@@ -1,22 +1,25 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
 
 type CreateResourceRequest struct {
-	ProjectID     string                 `json:"projectID"`
-	Identifier    identifier.IdPayload   `json:"identifier"`
-	ProviderType  types.ProviderType     `json:"providerType"`
-	ResourceType  types.ResourceType     `json:"resourceType"`
-	ResourceSpecs map[string]interface{} `json:"resourceSpecs"`
+	ProjectID        string                 `json:"projectID"`
+	Name             string                 `json:"name"`
+	Managed          bool                   `json:"managed"`
+	Tags             map[string]string      `json:"tags"`
+	ProviderType     types.ProviderType     `json:"providerType"`
+	ResourceType     types.ResourceType     `json:"resourceType"`
+	ParentIdentifier identifier.ID          `json:"parentIdentifier"`
+	ResourceSpecs    map[string]interface{} `json:"resourceSpecs"`
 }
 
 type CreateResourceResponse struct {
-	Resource resource.IResource
+	Resource domain.IResource
 }
 
 type GetResourceRequest struct {

@@ -35,6 +35,7 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if ReleaseClient == nil {
+		logger.Info.Printf("Init helm client...")
 		cli := client()
 		ReleaseClient = cli
 	}
@@ -43,7 +44,7 @@ func init() {
 func client() *ReleaseDAO {
 	kubeConfig, errFile := os.ReadFile(config.Current.Kubernetes.ConfigPath)
 	if errFile != nil {
-		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error reading kube config file: %s", errFile)))
+		panic(errors.InternalError.WithMessage(fmt.Sprintf("Error reading kube config file: %v", errFile)))
 	}
 	cli, err := helmclient.NewClientFromKubeConf(
 		&helmclient.KubeConfClientOptions{
@@ -67,7 +68,9 @@ func client() *ReleaseDAO {
 			Password: config.Current.Plugins.Crossplane.Registry.Password,
 		})
 	if err != nil {
-		panic(errors.ExternalServiceError.WithMessage(err))
+		logger.Info.Printf("Error adding plugins repo: %v", err)
+		logger.Info.Println(config.Current.Plugins.Crossplane.Registry.Address, config.Current.Plugins.Crossplane.Registry.Username)
+		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
 	helmClient := &ReleaseDAO{
 		HelmClient: cli,
@@ -117,7 +120,6 @@ func (r *ReleaseDAO) Create(ctx context.Context, request option.Option) interfac
 		},
 		&helmclient.GenericHelmOptions{},
 	)
-	logger.Info.Printf("Release %s installed", args.ReleaseName)
 	if err2 != nil {
 		panic(errors.ExternalServiceError.WithMessage(
 			fmt.Sprintf("Error installing chart :  %v", err2),

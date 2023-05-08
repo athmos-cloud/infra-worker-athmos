@@ -91,6 +91,7 @@ var (
 	Created              = New("Created", "201")
 	Accepted             = New("Accepted", "202")
 	NoContent            = New("No content", "204")
+	BadRequest           = New("Bad request", "400")
 	InvalidArgument      = New("Invalid argument", "400")
 	ValidationError      = New("Validation error", "400")
 	Conflict             = New("Conflict", "409")

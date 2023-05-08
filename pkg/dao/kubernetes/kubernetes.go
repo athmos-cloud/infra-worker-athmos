@@ -3,7 +3,9 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,14 +13,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sync"
-)
-
-const (
-	kubeConfigEnvVar = "KUBECONFIG"
 )
 
 var Client *DAO
@@ -33,23 +30,30 @@ func init() {
 	lock.Lock()
 	defer lock.Unlock()
 	if Client == nil {
-		config := ctrl.GetConfigOrDie()
-		dynamicCli := dynamic.NewForConfigOrDie(config)
+		logger.Info.Printf("Init kubernetes client...")
+		conf := ctrl.GetConfigOrDie()
+		dynamicCli := dynamic.NewForConfigOrDie(conf)
 
 		var restConfig *rest.Config
 		var err error
-		if kubeConfig := os.Getenv(kubeConfigEnvVar); kubeConfig != "" {
+		kubeConfig := config.Current.Kubernetes.ConfigPath
+		if kubeConfig != "" {
 			restConfig, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
+			if err != nil {
+				panic(errors.InternalError.WithMessage(fmt.Sprintf("Error getting Kubernetes configuration: %v", err)))
+			}
 		} else {
 			restConfig, err = rest.InClusterConfig()
+			if err != nil {
+				panic(errors.InternalError.WithMessage(fmt.Sprintf("Error getting Kubernetes configuration: %v", err)))
+			}
 		}
 		if err != nil {
-			panic(fmt.Sprintf("Error getting Kubernetes configuration: %v\n", err))
+			panic(fmt.Sprintf("Error getting Kubernetes configuration: %v", err))
 		}
 		clientSet, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
-			fmt.Printf("Error creating Kubernetes clientSet: %v\n", err)
-			os.Exit(1)
+			panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error getting Kubernetes client: %v", err)))
 		}
 		Client = &DAO{
 			DynamicClient: dynamicCli,

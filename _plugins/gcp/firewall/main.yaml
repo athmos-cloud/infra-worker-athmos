@@ -1,0 +1,51 @@
+prerequisites:
+  - message: "You must enable the Cloud Resource Manager API to use this plugin"
+    action: gcloud services enable compute.googleapis.com --project ${project_id}
+    condition:
+      assert: gcloud services list --enabled --project $project_id | grep compute.googleapis.com | wc -l
+      equals: 1
+    with_values:
+      - project_id
+  - message: "You must grant the compute.networkAdmin role to the user service account to use this plugin"
+    action: |
+      gcloud organization add-iam-policy-binding $organization_name \
+      --member="user:${user_service_account_email}" --role=roles/compute.networkAdmin"
+    condition:
+      assert: |
+        gcloud projects get-iam-policy $project_id  --flatten="bindings[].members" --format='table(bindings.role)' \
+        --filter="bindings.members:${user_service_account_email}" | \
+        grep roles/compute.networkAdmin | wc -l
+      equals: 1
+    with_values:
+      - project_id
+      - user_service_account_email
+      - organization_name
+inputs:
+  - name: managed
+    type: bool
+    default: true
+    displayName: "Athmos Managed"
+    description: "If true, the GCP network will be manageable by Athmos only"
+    required: false
+  - name: identifier
+    type: identifier
+    displayName: "Identifier"
+    required: true
+    description: "The identifier of the firewall"
+  - name: deny
+    type: list[policy]
+    required: true
+    displayName: "Deny Policy"
+    description: "The deny policy to apply to the network"
+  - name: allow
+    displayName: "Allow Policy"
+    type: list[policy]
+    required: true
+    description: "The allow policy to apply to the network"
+outputs:
+  - name: ""
+    object:
+      kind: Project
+      apiVersion: gcp.crossplane.io/v1beta1
+    path: "metadata.name"
+

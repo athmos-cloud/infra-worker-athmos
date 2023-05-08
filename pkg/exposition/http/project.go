@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/application/project"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -13,10 +12,7 @@ func (server *Server) WithProjectRouter() *Server {
 		err := errors.OK
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		resp := server.ProjectService.GetProjectByID(c, project.GetProjectByIDRequest{
@@ -31,25 +27,15 @@ func (server *Server) WithProjectRouter() *Server {
 		err := errors.OK
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		resp := server.ProjectService.GetProjectByOwnerID(c, project.GetProjectByOwnerIDRequest{
 			OwnerID: c.Param("id"),
 		})
 
-		jsonBytes, errMarshal := json.Marshal(resp.Payload)
-		if errMarshal != nil {
-			c.JSON(500, gin.H{
-				"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
-			})
-			return
-		}
 		c.JSON(err.Code, gin.H{
-			"payload": string(jsonBytes[:]),
+			"payload": resp.Payload,
 		})
 	})
 	server.Router.POST("/projects", func(c *gin.Context) {
@@ -63,10 +49,7 @@ func (server *Server) WithProjectRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		resp := server.ProjectService.CreateProject(c, request)
@@ -90,10 +73,7 @@ func (server *Server) WithProjectRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		server.ProjectService.UpdateProjectName(c, project.UpdateProjectRequest{
@@ -109,10 +89,7 @@ func (server *Server) WithProjectRouter() *Server {
 		err := errors.NoContent
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		server.ProjectService.DeleteProject(c, project.DeleteRequest{

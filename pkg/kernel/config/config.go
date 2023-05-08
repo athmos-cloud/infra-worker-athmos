@@ -1,101 +1,101 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/tkanos/gonfig"
+	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
 var Current *Config
 var lock = &sync.Mutex{}
 
-const DefaultConfigFileLocation = "config.yaml"
+const DefaultConfigFileLocation = "config.mapstructure"
 
 type Config struct {
-	TempDir        string     `yaml:"tmp_dir" env:"TMP_DIR" env-default:"/tmp/infra-worker"`
-	RedirectionURI string     `yaml:"redirection_uri" env:"REDIRECTION_URI" env-default:"http://localhost:8080"`
-	Test           Test       `yaml:"test" prefix:"TEST_"`
-	Http           Http       `yaml:"http" prefix:"HTTP_"`
-	Queue          Queue      `yaml:"queue" prefix:"QUEUE_"`
-	Kubernetes     Kubernetes `yaml:"kubernetes" prefix:"KUBERNETES_"`
-	Plugins        Plugins    `yaml:"plugins" prefix:"PLUGINS_"`
-	Mongo          Mongo      `yaml:"mongo" prefix:"MONGO_"`
-	Postgres       Postgres   `yaml:"postgres" prefix:"POSTGRES_"`
+	TempDir        string     `mapstructure:"tmpDir" env:"TMP_DIR"`
+	RedirectionURL string     `mapstructure:"redirectionURL" env:"REDIRECTION_URL"`
+	Test           Test       `mapstructure:"test" `
+	Http           Http       `mapstructure:"http" `
+	Queue          Queue      `mapstructure:"queue" `
+	Kubernetes     Kubernetes `mapstructure:"kubernetes" `
+	Plugins        Plugins    `mapstructure:"plugins" `
+	Mongo          Mongo      `mapstructure:"mongo" `
+	Postgres       Postgres   `mapstructure:"postgres" `
 }
 
 type Queue struct {
-	URI      string `yaml:"uri" env:"URI" env-default:"localhost"`
-	Exchange string `yaml:"exchange" env:"EXCHANGE"`
-	Queue    string `yaml:"queue" env:"QUEUE"`
+	URI      string `mapstructure:"uri"`
+	Exchange string `mapstructure:"exchange"`
+	Queue    string `mapstructure:"queue"`
 }
 
 type Http struct {
-	Port int `yaml:"port" env:"PORT" env-default:"8080"`
+	Port int `mapstructure:"port" env:"PORT"`
 }
 type Test struct {
-	Credentials CredentialsTest `yaml:"credentials" prefix:"CREDENTIALS_"`
+	Credentials CredentialsTest `mapstructure:"credentials" `
 }
 
 type CredentialsTest struct {
-	GCP string `yaml:"gcp" env:"GCP" env-default:"/etc/credentials/gcp.json"`
+	GCP string `mapstructure:"gcp"`
 }
 
 type Kubernetes struct {
-	ConfigPath string `yaml:"configPath" env:"KUBECONFIG_PATH" env-default:"~/.kube/config"`
-	Helm       Helm   `yaml:"helm" prefix:"HELM_"`
+	ConfigPath string `mapstructure:"configPath" env:"KUBECONFIG_PATH"`
+	Helm       Helm   `mapstructure:"helm" `
 }
 
 type Helm struct {
-	Debug bool `yaml:"debug" env:"DEBUG" env-default:"false"`
+	Debug bool `mapstructure:"debug" env:"DEBUG" `
 }
 
 type Plugins struct {
-	Location   string            `yaml:"location" env:"LOCATION" env-default:"/plugins"`
-	Crossplane CrossplanePlugins `yaml:"crossplane" prefix:"CROSSPLANE_"`
+	Location   string            `mapstructure:"location" env:"PLUGINS_LOCATION"`
+	Crossplane CrossplanePlugins `mapstructure:"crossplane" `
 }
 
 type CrossplanePlugins struct {
-	Registry ArtifactRegistry `yaml:"artifact-registry" prefix:"ARTIFACT_REGISTRY_"`
-	GCP      ProviderPlugins  `yaml:"gcp"`
+	Registry ArtifactRegistry `mapstructure:"registry"`
+	GCP      ProviderPlugins  `mapstructure:"gcp"`
 }
 
 type ArtifactRegistry struct {
-	Address  string `yaml:"address" env:"ADDRESS"`
-	Username string `yaml:"username" env:"USERNAME"`
-	Password string `yaml:"password" env:"PASSWORD"`
+	Address  string `mapstructure:"address"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type ProviderPlugins struct {
-	Firewall ProviderPluginItem `yaml:"firewall"`
-	Network  ProviderPluginItem `yaml:"network"`
-	Provider ProviderPluginItem `yaml:"provider"`
-	Subnet   ProviderPluginItem `yaml:"subnetwork"`
-	VM       ProviderPluginItem `yaml:"vm"`
-	VPC      ProviderPluginItem `yaml:"vpc"`
+	Firewall ProviderPluginItem `mapstructure:"firewall"`
+	Network  ProviderPluginItem `mapstructure:"network"`
+	Provider ProviderPluginItem `mapstructure:"provider"`
+	Subnet   ProviderPluginItem `mapstructure:"subnetwork"`
+	VM       ProviderPluginItem `mapstructure:"vm"`
+	VPC      ProviderPluginItem `mapstructure:"vpc"`
 }
 
 type ProviderPluginItem struct {
-	Chart   string `yaml:"chart"`
-	Version string `yaml:"version"`
+	Chart   string `mapstructure:"chart"`
+	Version string `mapstructure:"version"`
 }
 
 type Mongo struct {
-	Address           string `yaml:"address" env:"ADDRESS" env-default:"mongo"`
-	Port              int    `yaml:"port" env:"PORT" env-default:"27017"`
-	Username          string `yaml:"username" env:"USERNAME" env-default:"root"`
-	Password          string `yaml:"password" env:"PASSWORD"`
-	Database          string `yaml:"database" env:"DATABASE" env-default:"plugin-db"`
-	ProjectCollection string `yaml:"project_collection" env:"PROJECT_COLLECTION" env-default:"projects"`
+	Address           string `mapstructure:"address"`
+	Port              int    `mapstructure:"port"`
+	Username          string `mapstructure:"username"`
+	Password          string `mapstructure:"password"`
+	Database          string `mapstructure:"database"`
+	ProjectCollection string `mapstructure:"projectCollection"`
 }
 
 type Postgres struct {
-	Address  string `yaml:"host" env:"ADDRESS" env-default:"postgres"`
-	Port     int    `yaml:"port" env:"PORT" env-default:"5432"`
-	Username string `yaml:"username" env:"USERNAME" env-default:"postgres"`
-	Password string `yaml:"password" env:"PASSWORD"`
-	Database string `yaml:"database" env:"DATABASE" env-default:"plugin-db"`
-	SSLMode  string `yaml:"ssl_mode" env:"SSL_MODE" env-default:"disable"`
+	Address  string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Database string `mapstructure:"database"`
+	SSLMode  string `mapstructure:"ssl_mode"`
 }
 
 func init() {
@@ -103,25 +103,38 @@ func init() {
 	defer lock.Unlock()
 	if Current == nil {
 		Current = &Config{}
-		readFile()
-		readEnv()
+		configPath := os.Getenv("CONFIG_FILE_LOCATION")
+		if configPath == "" {
+			configPath = DefaultConfigFileLocation
+		}
+		viper.SetConfigName(filepath.Base(configPath))
+		viper.AddConfigPath(filepath.Dir(configPath))
+		viper.SetConfigType("yaml")
+		bindEnvs()
+		viper.AutomaticEnv()
+		if err := viper.ReadInConfig(); err != nil {
+			panic(err)
+		}
+		if err := viper.Unmarshal(Current); err != nil {
+			panic(err)
+		}
 	}
 }
 
-func readFile() {
-	configFile := os.Getenv("CONFIG_FILE_LOCATION")
-	if configFile == "" {
-		configFile = DefaultConfigFileLocation
-	}
-	err := gonfig.GetConf(configFile, Current)
-	if err != nil {
+func bindEnvs() {
+	if err := viper.BindEnv("redirectionURL", "REDIRECTION_URL"); err != nil {
 		panic(err)
 	}
-}
-
-func readEnv() {
-	err := cleanenv.ReadEnv(Current)
-	if err != nil {
-		return
+	if err := viper.BindEnv("tmpDir", "TMP_DIR"); err != nil {
+		panic(err)
+	}
+	if err := viper.BindEnv("plugins.location", "PLUGINS_LOCATION"); err != nil {
+		panic(err)
+	}
+	if err := viper.BindEnv("kubernetes.configPath", "KUBECONFIG_PATH"); err != nil {
+		panic(err)
+	}
+	if err := viper.BindEnv("http.port", "PORT"); err != nil {
+		panic(err)
 	}
 }

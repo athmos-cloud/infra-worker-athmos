@@ -28,7 +28,7 @@ func (service *Service) CreateSecret(ctx context.Context, request CreateSecretRe
 		},
 	})
 	currentProject := project.(project2.GetProjectByIDResponse).Payload
-	logger.Info.Printf("Project ID : %s", request.ProjectID)
+	logger.Info.Printf("Project FirewallID : %s", request.ProjectID)
 
 	if _, ok := currentProject.Authentications[request.Name]; ok {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Secret %s already exists", request.Name)))

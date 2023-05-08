@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/google/uuid"
 	"math/rand"
 )
 
@@ -12,10 +11,6 @@ func RandomString(length int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
-}
-
-func GenerateUUID() string {
-	return uuid.New().String()
 }
 
 func MapEquals(a map[string]string, b map[string]string) bool {

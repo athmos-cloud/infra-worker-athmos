@@ -1,2 +1,6 @@
-Dockerfile*
+Dockerfile
+Dockerfile_liver
+Dockerfile_debug
+Dockerfile_prod
+Dockerfile_test
 main
