@@ -3,6 +3,7 @@ package identifier
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/kamva/mgm/v3"
 	"reflect"
@@ -238,4 +239,21 @@ func (id VM) Equals(other ID) bool {
 		id.VPCID == otherVMID.VPCID &&
 		id.NetworkID == otherVMID.NetworkID &&
 		id.SubnetID == otherVMID.SubnetID
+}
+
+func IDParentMatchesWithResource(idParent ID, resourceType types.ResourceType) bool {
+	switch reflect.TypeOf(idParent) {
+	case nil:
+		return resourceType == types.Provider
+	case reflect.TypeOf(Provider{}):
+		return resourceType == types.VPC || resourceType == types.Network
+	case reflect.TypeOf(VPC{}):
+		return resourceType == types.Network
+	case reflect.TypeOf(Network{}):
+		return resourceType == types.Subnetwork || resourceType == types.Firewall
+	case reflect.TypeOf(Subnetwork{}):
+		return resourceType == types.VM
+	default:
+		return false
+	}
 }

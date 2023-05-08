@@ -2,7 +2,7 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
-	types2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"testing"
 )
@@ -26,7 +26,7 @@ func TestVM_FromMap(t *testing.T) {
 	vm := NewVM(NewResourcePayload{
 		Name:             "test",
 		ParentIdentifier: vmID,
-		Provider:         types2.GCP,
+		Provider:         types.GCP,
 	})
 	vm.Identifier.VMID = "test"
 	expectedVM1 := vm
@@ -35,7 +35,7 @@ func TestVM_FromMap(t *testing.T) {
 	expectedVM1.Disks = []Disk{
 		{
 			Type:       "SSD",
-			Mode:       types2.ReadOnly,
+			Mode:       types.ReadOnly,
 			SizeGib:    10,
 			AutoDelete: true,
 		},
@@ -148,7 +148,7 @@ func TestVM_Insert(t *testing.T) {
 			NetworkID:  networkID,
 			SubnetID:   subnetID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	vm1.Identifier.VMID = "test-1"
 	vm2 := NewVM(NewResourcePayload{
@@ -158,7 +158,7 @@ func TestVM_Insert(t *testing.T) {
 			NetworkID:  networkID,
 			SubnetID:   subnetID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	vm2.Identifier.VMID = "test-2"
 	vm3 := vm1
@@ -172,21 +172,21 @@ func TestVM_Insert(t *testing.T) {
 			NetworkID:  networkID,
 			SubnetID:   subnetID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 
 	testProject := NewProject("test", "owner_test")
 	testProvider := NewProvider(NewResourcePayload{
 		Name:             providerID,
 		ParentIdentifier: identifier.Empty{},
-		Provider:         types2.GCP,
+		Provider:         types.GCP,
 	})
 	testVPC := NewVPC(NewResourcePayload{
 		Name: vpcID,
 		ParentIdentifier: identifier.Build(identifier.IdPayload{
 			ProviderID: providerID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testNetwork := NewNetwork(NewResourcePayload{
 		Name: networkID,
@@ -194,7 +194,7 @@ func TestVM_Insert(t *testing.T) {
 			ProviderID: providerID,
 			VPCID:      vpcID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testSubnet := NewSubnetwork(NewResourcePayload{
 		Name: networkID,
@@ -203,7 +203,7 @@ func TestVM_Insert(t *testing.T) {
 			VPCID:      vpcID,
 			NetworkID:  networkID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testSubnet.VMs[vm1.Identifier.VMID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet
@@ -319,7 +319,7 @@ func TestVM_Remove(t *testing.T) {
 			NetworkID:  networkID,
 			SubnetID:   subnetID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	vm2 := NewVM(NewResourcePayload{
 		Name: "test-2",
@@ -328,20 +328,20 @@ func TestVM_Remove(t *testing.T) {
 			NetworkID:  networkID,
 			SubnetID:   subnetID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testProject := NewProject("test", "owner_test")
 	testProvider := NewProvider(NewResourcePayload{
 		Name:             providerID,
 		ParentIdentifier: identifier.Empty{},
-		Provider:         types2.GCP,
+		Provider:         types.GCP,
 	})
 	testVPC := NewVPC(NewResourcePayload{
 		Name: vpcID,
 		ParentIdentifier: identifier.Build(identifier.IdPayload{
 			ProviderID: providerID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testNetwork := NewNetwork(NewResourcePayload{
 		Name: networkID,
@@ -349,7 +349,7 @@ func TestVM_Remove(t *testing.T) {
 			ProviderID: providerID,
 			VPCID:      vpcID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testSubnet := NewSubnetwork(NewResourcePayload{
 		Name: networkID,
@@ -358,7 +358,7 @@ func TestVM_Remove(t *testing.T) {
 			VPCID:      vpcID,
 			NetworkID:  networkID,
 		}),
-		Provider: types2.GCP,
+		Provider: types.GCP,
 	})
 	testSubnet.VMs[vm1.Identifier.VMID] = vm1
 	testNetwork.Subnetworks[subnetID] = testSubnet

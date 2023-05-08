@@ -29,7 +29,7 @@ func NewFirewall(payload NewResourcePayload) Firewall {
 	return Firewall{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         id.FirewallID,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Status:     status.New(id.FirewallID, types.Firewall, payload.Provider),

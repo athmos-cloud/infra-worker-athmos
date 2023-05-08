@@ -30,7 +30,7 @@ func NewVM(payload NewResourcePayload) VM {
 	return VM{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         id.VMID,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Identifier: id,

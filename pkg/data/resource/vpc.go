@@ -41,7 +41,7 @@ func NewVPC(payload NewResourcePayload) VPC {
 	return VPC{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         id.VPCID,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Identifier: id,

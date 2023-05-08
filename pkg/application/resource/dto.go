@@ -8,10 +8,14 @@ import (
 )
 
 type CreateResourceRequest struct {
-	ProjectID     string                 `json:"projectID"`
-	ProviderType  types.ProviderType     `json:"providerType"`
-	ResourceType  types.ResourceType     `json:"resourceType"`
-	ResourceSpecs map[string]interface{} `json:"resourceSpecs"`
+	ProjectID        string                 `json:"projectID"`
+	Name             string                 `json:"name"`
+	Managed          bool                   `json:"managed"`
+	Tags             map[string]string      `json:"tags"`
+	ProviderType     types.ProviderType     `json:"providerType"`
+	ResourceType     types.ResourceType     `json:"resourceType"`
+	ParentIdentifier identifier.ID          `json:"parentIdentifier"`
+	ResourceSpecs    map[string]interface{} `json:"resourceSpecs"`
 }
 
 type CreateResourceResponse struct {

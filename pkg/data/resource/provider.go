@@ -25,7 +25,7 @@ func NewProvider(payload NewResourcePayload) Provider {
 	return Provider{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         id.ProviderID,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Identifier: id,
@@ -58,9 +58,6 @@ func (provider *Provider) Equals(other Provider) bool {
 }
 
 func (provider *Provider) New(payload NewResourcePayload) IResource {
-	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.Provider{}) {
-		panic(errors.InvalidArgument.WithMessage("invalid id type"))
-	}
 	res := NewProvider(payload)
 	return &res
 }

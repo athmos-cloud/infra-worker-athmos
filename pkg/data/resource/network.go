@@ -37,7 +37,7 @@ func NewNetwork(payload NewResourcePayload) Network {
 	return Network{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         payload.Name,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Identifier:  id,

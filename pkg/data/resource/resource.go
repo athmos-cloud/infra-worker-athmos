@@ -31,16 +31,13 @@ type NewResourcePayload struct {
 	Name             string
 	ParentIdentifier identifier.ID
 	Provider         types.ProviderType
-	Managed          bool
+	Monitored        bool
 	Tags             map[string]string
 }
 
 func (payload NewResourcePayload) Validate() {
 	if payload.Name == "" {
 		panic(errors.InternalError.WithMessage(fmt.Sprintf("invalid name: %s", payload.Name)))
-	}
-	if payload.ParentIdentifier == nil {
-		panic(errors.InternalError.WithMessage(fmt.Sprintf("invalid parent id: %s", payload.ParentIdentifier)))
 	}
 	if payload.Provider == "" {
 		panic(errors.InternalError.WithMessage(fmt.Sprintf("invalid provider: %s", payload.Provider)))

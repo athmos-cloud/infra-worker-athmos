@@ -10,7 +10,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/repository"
 	projectRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/project"
 	resourceRepository "github.com/athmos-cloud/infra-worker-athmos/pkg/repository/resource"
-	"reflect"
 )
 
 type Service struct {
@@ -20,24 +19,21 @@ type Service struct {
 
 func (service *Service) CreateResource(ctx context.Context, payload CreateResourceRequest) CreateResourceResponse {
 	// Get resource
+	validateCreate(payload)
 	response := service.ProjectRepository.Get(ctx, option.Option{
 		Value: projectRepository.GetProjectByIDRequest{
 			ProjectID: payload.ProjectID,
 		},
 	})
 	currentProject := response.(projectRepository.GetProjectByIDResponse).Payload
-	if _, ok := payload.ResourceSpecs[identifier.IdentifierKey]; !ok || reflect.TypeOf(payload.ResourceSpecs[identifier.IdentifierKey]).Kind() != reflect.TypeOf(map[string]interface{}{}).Kind() {
-		panic(errors.InvalidArgument.WithMessage("Missing identifier in resource specs"))
-	}
-	id := identifier.BuildFromMap(payload.ResourceSpecs[identifier.IdentifierKey].(map[string]interface{}))
-	if currentProject.Exists(id) {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("Resource %s already exists", id)))
-	}
 
 	resp := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
 			Project:          currentProject,
-			ParentIdentifier: id,
+			Name:             payload.Name,
+			Monitored:        payload.Managed,
+			Tags:             payload.Tags,
+			ParentIdentifier: payload.ParentIdentifier,
 			ProviderType:     payload.ProviderType,
 			ResourceType:     payload.ResourceType,
 			ResourceSpecs:    payload.ResourceSpecs,

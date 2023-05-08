@@ -8,7 +8,6 @@ import (
 	kubernetesData "github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -54,11 +53,8 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 		Name:             request.Name,
 		ParentIdentifier: request.ParentIdentifier,
 		Provider:         request.ProviderType,
-	})
-	curResource.SetMetadata(metadata.CreateMetadataRequest{
-		Name:         request.Name,
-		NotMonitored: !request.Monitored,
-		Tags:         request.Tags,
+		Monitored:        request.Monitored,
+		Tags:             request.Tags,
 	})
 
 	pluginReference := curResource.GetPluginReference()

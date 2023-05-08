@@ -30,7 +30,7 @@ func NewSubnetwork(payload NewResourcePayload) Subnetwork {
 	return Subnetwork{
 		Metadata: metadata.New(metadata.CreateMetadataRequest{
 			Name:         id.ProviderID,
-			NotMonitored: !payload.Managed,
+			NotMonitored: !payload.Monitored,
 			Tags:         payload.Tags,
 		}),
 		Identifier: id,
