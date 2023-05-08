@@ -8,17 +8,18 @@ const (
 
 type ReleaseReference struct {
 	mgm.DefaultModel `bson:",inline"`
-	Name             string `bson:"name"`
-	Version          string `bson:"version"`
+	Name             string   `bson:"name"`
+	LatestVersion    string   `bson:"LatestVersion"`
+	Versions         []string `bson:"versions,omitempty"` //not handled yet
 }
 
 func NewRelease(name string) ReleaseReference {
 	return ReleaseReference{
-		Name:    name,
-		Version: initialReleaseNumber,
+		Name:          name,
+		LatestVersion: initialReleaseNumber,
 	}
 }
 
 func (release *ReleaseReference) Equals(other ReleaseReference) bool {
-	return release.Name == other.Name && release.Version == other.Version
+	return release.Name == other.Name && release.LatestVersion == other.LatestVersion
 }

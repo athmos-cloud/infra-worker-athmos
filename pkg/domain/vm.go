@@ -15,13 +15,13 @@ type VM struct {
 	Zone         string             `json:"zone"`
 	MachineType  string             `json:"machineType"`
 	Auths        []VMAuth           `json:"auths"`
-	Disk         Disk               `json:"disk"`
+	Disks        []Disk             `json:"disks"`
 	OS           OS                 `json:"os"`
 }
 
 func (vm VM) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 	vmInput := resourceInput.(*resource.VM)
-	vmInput.Identifier.ID = vm.Name
+	vmInput.Identifier.VMID = vm.Name
 	vmInput.Identifier.VPCID = vm.VPC
 	vmInput.Identifier.NetworkID = vm.Network
 	vmInput.Identifier.SubnetID = vm.Subnetwork
@@ -34,9 +34,15 @@ func (vm VM) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 			SSHPublicKey: auth.SSHPublicKey,
 		}
 	}
-	vmInput.Disk.Type = vm.Disk.Type
-	vmInput.Disk.Mode = vm.Disk.Mode
-	vmInput.Disk.SizeGib = vm.Disk.SizeGib
+	vmInput.Disks = make([]resource.Disk, len(vm.Disks))
+	for i, disk := range vm.Disks {
+		vmInput.Disks[i] = resource.Disk{
+			Type:       disk.Type,
+			Mode:       disk.Mode,
+			SizeGib:    disk.SizeGib,
+			AutoDelete: disk.AutoDelete,
+		}
+	}
 	vmInput.OS.Type = vm.OS.Type
 	vmInput.OS.Version = vm.OS.Version
 	return vmInput
@@ -52,8 +58,17 @@ func FromVMDataMapper(vm *resource.VM) VM {
 			SSHPublicKey: auth.SSHPublicKey,
 		}
 	}
+	disks := make([]Disk, len(vm.Disks))
+	for i, disk := range vm.Disks {
+		disks[i] = Disk{
+			Type:       disk.Type,
+			Mode:       disk.Mode,
+			SizeGib:    disk.SizeGib,
+			AutoDelete: disk.AutoDelete,
+		}
+	}
 	return VM{
-		Name:         vm.Identifier.ID,
+		Name:         vm.Identifier.VMID,
 		ProviderType: vm.GetPluginReference().ResourceReference.ProviderType,
 		Monitored:    vm.Metadata.Managed,
 		VPC:          vm.Identifier.VPCID,
@@ -62,19 +77,14 @@ func FromVMDataMapper(vm *resource.VM) VM {
 		Zone:         vm.Zone,
 		MachineType:  vm.MachineType,
 		Auths:        auths,
-		Disk: Disk{
-			Type:       vm.Disk.Type,
-			Mode:       vm.Disk.Mode,
-			SizeGib:    vm.Disk.SizeGib,
-			AutoDelete: vm.Disk.AutoDelete,
-		},
+		Disks:        disks,
 	}
 }
 
 func FromVMCollectionDataMapper(vmCollection resource.VMCollection) VMCollection {
 	vms := VMCollection{}
 	for _, vm := range vmCollection {
-		vms[vm.Identifier.ID] = FromVMDataMapper(&vm)
+		vms[vm.Identifier.VMID] = FromVMDataMapper(&vm)
 	}
 	return vms
 }

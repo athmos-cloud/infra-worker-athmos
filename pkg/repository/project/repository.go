@@ -63,17 +63,16 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			Name: newProject.Namespace,
 		},
 	})
-
 	if err := mgm.Coll(newProject).Create(newProject); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(err.Error()))
 	}
-	logger.Info.Printf("Project %s created", newProject.ID)
+
 	return CreateProjectResponse{
 		ProjectID: newProject.ID.Hex(),
 	}
 }
 
-func (repository *Repository) Get(ctx context.Context, opt option.Option) interface{} {
+func (repository *Repository) Get(_ context.Context, opt option.Option) interface{} {
 	if !opt.SetType(reflect.TypeOf(GetProjectByIDRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -148,7 +147,7 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 	return nil
 }
 
-func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
+func (repository *Repository) Delete(_ context.Context, opt option.Option) {
 	if !opt.SetType(reflect.TypeOf(DeleteRequest{}).String()).Validate() {
 		panic(errors.InvalidArgument.WithMessage(
 			fmt.Sprintf(
@@ -164,4 +163,5 @@ func (repository *Repository) Delete(ctx context.Context, opt option.Option) {
 	if err := mgm.Coll(&resource.Project{}).Delete(&project); err != nil {
 		panic(errors.InternalError.WithMessage(err.Error()))
 	}
+	// Delete namespace
 }

@@ -9,17 +9,10 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"github.com/kamva/mgm/v3"
 	"reflect"
 )
-
-type VPC struct {
-	mgm.DefaultModel `bson:",inline"`
-	Metadata         metadata.Metadata     `bson:"metadata"`
-	Identifier       identifier.VPC        `bson:"identifier"`
-	Status           status.ResourceStatus `bson:"status"`
-	Networks         NetworkCollection     `bson:"networks,omitempty"`
-}
 
 type VPCCollection map[string]VPC
 
@@ -35,22 +28,45 @@ func (collection *VPCCollection) Equals(other VPCCollection) bool {
 	return true
 }
 
-func NewVPC(id identifier.VPC, provider types.ProviderType) VPC {
+func NewVPC(payload NewResourcePayload) VPC {
+	payload.Validate()
+	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.Provider{}) {
+		panic(errors.InvalidArgument.WithMessage("invalid id type"))
+	}
+	parentID := payload.ParentIdentifier.(identifier.Provider)
+	id := identifier.VPC{
+		ProviderID: parentID.ProviderID,
+		VPCID:      fmt.Sprintf("%s-%s", payload.Name, utils.RandomString(resourceIDSuffixLength)),
+	}
 	return VPC{
-		Metadata: metadata.Metadata{
-			Name: id.ID,
-		},
+		Metadata: metadata.New(metadata.CreateMetadataRequest{
+			Name:         id.VPCID,
+			NotMonitored: !payload.Managed,
+			Tags:         payload.Tags,
+		}),
 		Identifier: id,
-		Status:     status.New(id.ID, types.VPC, provider),
+		Status:     status.New(id.VPCID, types.VPC, payload.Provider),
 		Networks:   make(NetworkCollection),
 	}
 }
 
-func (vpc *VPC) New(id identifier.ID, provider types.ProviderType) IResource {
-	if reflect.TypeOf(id) != reflect.TypeOf(identifier.VPC{}) {
+type VPC struct {
+	mgm.DefaultModel `bson:",inline"`
+	Metadata         metadata.Metadata     `bson:"metadata"`
+	Identifier       identifier.VPC        `bson:"identifier"`
+	Status           status.ResourceStatus `bson:"status"`
+	Networks         NetworkCollection     `bson:"networks,omitempty"`
+}
+
+func (vpc *VPC) GetIdentifier() identifier.ID {
+	return vpc.Identifier
+}
+
+func (vpc *VPC) New(payload NewResourcePayload) IResource {
+	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.VPC{}) {
 		panic(errors.InvalidArgument.WithMessage("invalid id type"))
 	}
-	res := NewVPC(id.(identifier.VPC), provider)
+	res := NewVPC(payload)
 	return &res
 }
 
@@ -92,27 +108,45 @@ func (vpc *VPC) FromMap(data map[string]interface{}) {
 	}
 }
 
-func (vpc *VPC) Insert(project Project, update ...bool) {
+func (vpc *VPC) Insert(resource IResource, update ...bool) {
 	shouldUpdate := false
 	if len(update) > 0 {
 		shouldUpdate = update[0]
 	}
-	_, ok := project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID]
-	if !ok && shouldUpdate {
-		errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", vpc.Identifier.ProviderID))
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	_, ok := vpc.Networks[idPayload.NetworkID]
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Network{}) && !ok && shouldUpdate {
+		panic(errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in vpc %s", idPayload.NetworkID, vpc.Identifier.VPCID)))
 	}
-	if ok && !shouldUpdate {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("vpc %s in provider %s already exists", vpc.Identifier.ID, vpc.Identifier.ProviderID)))
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Network{}) && ok && !shouldUpdate {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in vpc %s", idPayload.NetworkID, vpc.Identifier.VPCID)))
 	}
-	project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID] = *vpc
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Network{}) && (ok && shouldUpdate || !ok && !shouldUpdate) {
+		network := resource.(*Network)
+		if vpc.Networks == nil {
+			vpc.Networks = map[string]Network{
+				idPayload.NetworkID: *network,
+			}
+		} else {
+			vpc.Networks[idPayload.NetworkID] = *network
+		}
+		return
+	} else if reflect.TypeOf(resource) != reflect.TypeOf(&Network{}) && idPayload.NetworkID != "" {
+		network := vpc.Networks[idPayload.NetworkID]
+		network.Insert(resource, update...)
+		return
+	}
+	panic(errors.InternalError.WithMessage(fmt.Sprintf("Invalid vpc insertion %v", resource)))
 }
 
-func (vpc *VPC) Remove(project Project) {
-	_, ok := project.Resources[vpc.Identifier.ProviderID].VPCs[vpc.Identifier.ID]
-	if !ok {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("vpc %s in provider %s not found", vpc.Identifier.ID, vpc.Identifier.ProviderID)))
+func (vpc *VPC) Remove(resource IResource) {
+	idPayload := identifier.IDToPayload(resource.GetIdentifier())
+	if reflect.TypeOf(resource) == reflect.TypeOf(&Network{}) {
+		delete(vpc.Networks, idPayload.NetworkID)
+	} else {
+		network := vpc.Networks[idPayload.NetworkID]
+		network.Remove(resource)
 	}
-	delete(project.Resources[vpc.Identifier.ProviderID].VPCs, vpc.Identifier.ID)
 }
 
 func (vpc *VPC) Equals(other VPC) bool {

@@ -18,7 +18,16 @@ func TestFirewall_FromMap(t *testing.T) {
 		err      errors.Error
 		firewall Firewall
 	}
-	firewall := NewFirewall(identifier.Firewall{ID: "test", ProviderID: "test", NetworkID: "test"}, types.GCP)
+	firewall := NewFirewall(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+			VPCID:      "test",
+			NetworkID:  "test",
+		}),
+		Provider: types.GCP,
+	})
+	firewall.Identifier.FirewallID = "test"
 	expectedFirewall := firewall
 	expectedFirewall.Allow = RuleList{
 		{
@@ -94,7 +103,7 @@ func TestFirewall_FromMap(t *testing.T) {
 			}()
 			curFirewall.FromMap(tt.args.data)
 			if !curFirewall.Equals(tt.want.firewall) {
-				t.Errorf("FromMap() = %v, want %v", curFirewall, tt.want.firewall)
+				t.Errorf("FromMap() = %v, want %v", curFirewall.Status, tt.want.firewall.Status)
 			}
 		})
 	}
@@ -106,7 +115,7 @@ func TestFirewall_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err      errors.Error
@@ -116,19 +125,60 @@ func TestFirewall_Insert(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	firewall1 := NewFirewall(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	firewall2 := NewFirewall(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
 	firewall3 := firewall1
 	firewall3.Metadata.Tags = map[string]string{"test": "test"}
 	firewall4 := firewall3
 	firewall4.Metadata.Tags = map[string]string{"hello": "world"}
-	firewall5 := NewFirewall(identifier.Firewall{ID: "test-5", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	firewall5 := NewFirewall(NewResourcePayload{
+		Name: "test-5",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork.Firewalls[firewall1.Identifier.FirewallID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -145,8 +195,8 @@ func TestFirewall_Insert(t *testing.T) {
 				firewall: firewall2,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				firewall: firewall2,
@@ -158,8 +208,8 @@ func TestFirewall_Insert(t *testing.T) {
 				firewall: firewall3,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				firewall: firewall3,
@@ -171,8 +221,8 @@ func TestFirewall_Insert(t *testing.T) {
 				firewall: firewall4,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				err:      errors.Conflict,
@@ -185,8 +235,8 @@ func TestFirewall_Insert(t *testing.T) {
 				firewall: firewall5,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err:      errors.NotFound,
@@ -205,9 +255,13 @@ func TestFirewall_Insert(t *testing.T) {
 					}
 				}
 			}()
-			firewall.Insert(tt.args.project, tt.args.update...)
+			if tt.args.update {
+				tt.args.project.Update(&firewall)
+			} else {
+				tt.args.project.Insert(&firewall)
+			}
 			id := tt.fields.firewall.Identifier
-			firewallGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.ID]
+			firewallGot := tt.args.project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID].Firewalls[id.FirewallID]
 			if !firewallGot.Equals(tt.want.firewall) {
 				t.Errorf("Insert() = %v, want %v", firewall, tt.want.firewall)
 			}
@@ -230,14 +284,47 @@ func TestFirewall_Remove(t *testing.T) {
 	vpcID := "test"
 	networkID := "test"
 
-	firewall1 := NewFirewall(identifier.Firewall{ID: "test-1", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
-	firewall2 := NewFirewall(identifier.Firewall{ID: "test-2", ProviderID: providerID, VPCID: vpcID, NetworkID: networkID}, types.GCP)
+	firewall1 := NewFirewall(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
+	firewall2 := NewFirewall(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+			NetworkID:  networkID,
+		}),
+		Provider: types.GCP,
+	})
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testNetwork := NewNetwork(identifier.Network{ID: networkID, ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	testNetwork.Firewalls[firewall1.Identifier.ID] = firewall1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork := NewNetwork(NewResourcePayload{
+		Name: networkID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	testNetwork.Firewalls[firewall1.Identifier.FirewallID] = firewall1
 	testVPC.Networks[networkID] = testNetwork
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
@@ -254,7 +341,7 @@ func TestFirewall_Remove(t *testing.T) {
 				Firewall: firewall1,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NoContent,
@@ -266,7 +353,7 @@ func TestFirewall_Remove(t *testing.T) {
 				Firewall: firewall2,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -284,7 +371,7 @@ func TestFirewall_Remove(t *testing.T) {
 					}
 				}
 			}()
-			firewall.Remove(tt.args.project)
+			tt.args.project.Delete(&firewall)
 		})
 	}
 }

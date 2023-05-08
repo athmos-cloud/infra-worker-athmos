@@ -16,6 +16,7 @@ type Reason string
 const (
 	PendingExternalResource  Reason = "PendingExternalResource"
 	CreatingExternalResource Reason = "CreatingExternalResource"
+	CannotConnectToProvider  Reason = "CannotConnectToProvider"
 )
 
 type Event struct {

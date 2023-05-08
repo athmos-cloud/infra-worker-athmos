@@ -6,6 +6,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/helm"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/dao/kubernetes"
 	kubernetesData "github.com/athmos-cloud/infra-worker-athmos/pkg/data/kubernetes"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/plugin"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -49,20 +50,27 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 
 	curResource := resource.Factory(request.ResourceType)
 	// Execute curPlugin
-	curResource = curResource.New(request.Identifier, request.ProviderType)
-	pluginReference := curResource.GetPluginReference()
+	curResource = curResource.New(resource.NewResourcePayload{
+		Name:             request.Name,
+		ParentIdentifier: request.ParentIdentifier,
+		Provider:         request.ProviderType,
+	})
+	curResource.SetMetadata(metadata.CreateMetadataRequest{
+		Name:         request.Name,
+		NotMonitored: !request.Monitored,
+		Tags:         request.Tags,
+	})
 
-	completedPayload, err := pluginReference.Plugin.ValidateAndCompletePluginEntry(request.ResourceSpecs)
-	if !err.IsOk() {
+	pluginReference := curResource.GetPluginReference()
+	if err := pluginReference.Plugin.ValidateEntry(request.ResourceSpecs); !err.IsOk() {
 		panic(err)
 	}
-	curResource.FromMap(completedPayload)
-	curResource.SetMetadata(metadata.CreateMetadataRequest{
-		Name:             completedPayload["name"].(string),
-		ProjectNamespace: request.Project.Namespace,
-		NotMonitored:     !(completedPayload["monitored"].(bool)),
-		Tags:             completedPayload["tags"].(map[string]string),
+	specs := request.ResourceSpecs
+	plugin.InputWithBaseFields(&specs, plugin.BasePayload{
+		Identifier: curResource.GetIdentifier(),
 	})
+
+	curResource.FromMap(request.ResourceSpecs)
 	updatedStatus := curResource.GetStatus()
 
 	resp := repository.HelmDAO.Create(ctx, option.Option{
@@ -70,7 +78,7 @@ func (repository *Repository) Create(ctx context.Context, opt option.Option) int
 			ReleaseName:  updatedStatus.HelmRelease.Name,
 			ChartName:    pluginReference.ChartReference.ChartName,
 			ChartVersion: pluginReference.ChartReference.ChartVersion,
-			Values:       completedPayload,
+			Values:       specs,
 			Namespace:    request.Project.Namespace,
 		},
 	})
@@ -128,7 +136,7 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 	res := request.Project.Get(request.ResourceID)
 	pluginReference := res.GetPluginReference()
 
-	completedPayload, err := pluginReference.Plugin.ValidateAndCompletePluginEntry(request.NewResourceSpecs)
+	err := pluginReference.Plugin.ValidateEntry(request.NewResourceSpecs)
 	if !err.IsOk() {
 		panic(err)
 	}
@@ -139,7 +147,7 @@ func (repository *Repository) Update(ctx context.Context, opt option.Option) int
 			ReleaseName:  updatedStatus.HelmRelease.Name,
 			ChartName:    pluginReference.ChartReference.ChartName,
 			ChartVersion: pluginReference.ChartReference.ChartVersion,
-			Values:       completedPayload,
+			Values:       request.NewResourceSpecs,
 			Namespace:    request.Project.Namespace,
 		},
 	})

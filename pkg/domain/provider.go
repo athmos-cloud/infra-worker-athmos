@@ -14,7 +14,7 @@ type Provider struct {
 
 func (provider Provider) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 	providerInput := resourceInput.(*resource.Provider)
-	providerInput.Identifier.ID = provider.Name
+	providerInput.Identifier.ProviderID = provider.Name
 	providerInput.Metadata.Managed = provider.Monitored
 	providerInput.Status.PluginReference.ResourceReference.ProviderType = provider.ProviderType
 	return providerInput
@@ -22,7 +22,7 @@ func (provider Provider) ToDataMapper(resourceInput resource.IResource) resource
 
 func FromProviderDataMapper(provider *resource.Provider) Provider {
 	return Provider{
-		Name:         provider.Identifier.ID,
+		Name:         provider.Identifier.ProviderID,
 		Monitored:    provider.Metadata.Managed,
 		ProviderType: provider.GetPluginReference().ResourceReference.ProviderType,
 		VPCs:         FromVPCCollectionDataMapper(provider.VPCs),
@@ -34,7 +34,7 @@ type ProviderCollection map[string]Provider
 func FromProviderCollectionDataMapper(providers resource.ProviderCollection) ProviderCollection {
 	result := make(ProviderCollection)
 	for _, provider := range providers {
-		result[provider.Identifier.ID] = FromProviderDataMapper(&provider)
+		result[provider.Identifier.ProviderID] = FromProviderDataMapper(&provider)
 	}
 	return result
 }

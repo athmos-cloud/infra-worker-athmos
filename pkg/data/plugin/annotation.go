@@ -35,7 +35,8 @@ func InjectMapIntoStruct(m map[string]interface{}, s interface{}) errors.Error {
 		fieldType := field.Type()
 		if fieldType.Kind() == reflect.Struct {
 			nestedStructPtr := field.Addr().Interface()
-			err := InjectMapIntoStruct(value.(map[string]interface{}), nestedStructPtr)
+			val := value.(map[string]interface{})
+			err := InjectMapIntoStruct(val, nestedStructPtr)
 			if !err.IsOk() {
 				return err
 			}

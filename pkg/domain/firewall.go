@@ -15,7 +15,7 @@ type Firewall struct {
 
 func (firewall Firewall) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 	firewallInput := resourceInput.(*resource.Firewall)
-	firewallInput.Identifier.ID = firewall.Name
+	firewallInput.Identifier.FirewallID = firewall.Name
 	firewallInput.Metadata.Managed = firewall.Monitored
 	firewallInput.Status.PluginReference.ResourceReference.ProviderType = firewall.Type
 	newAllow := make(resource.RuleList, len(firewall.Allow))
@@ -39,7 +39,7 @@ func (firewall Firewall) ToDataMapper(resourceInput resource.IResource) resource
 
 func FromFirewallDataMapper(firewall *resource.Firewall) Firewall {
 	return Firewall{
-		Name:      firewall.Identifier.ID,
+		Name:      firewall.Identifier.FirewallID,
 		Monitored: firewall.Metadata.Managed,
 		Allow:     FromRuleListDataMapper(firewall.Allow),
 		Deny:      FromRuleListDataMapper(firewall.Deny),
@@ -73,7 +73,7 @@ type FirewallCollection map[string]Firewall
 func FromFirewallCollectionDataMapper(firewalls resource.FirewallCollection) FirewallCollection {
 	result := make(FirewallCollection)
 	for _, firewall := range firewalls {
-		result[firewall.Identifier.ID] = FromFirewallDataMapper(&firewall)
+		result[firewall.Identifier.FirewallID] = FromFirewallDataMapper(&firewall)
 	}
 	return result
 }

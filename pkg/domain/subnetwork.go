@@ -16,7 +16,7 @@ type Subnetwork struct {
 
 func (subnet Subnetwork) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 	subnetInput := resourceInput.(*resource.Subnetwork)
-	subnetInput.Identifier.ID = subnet.Name
+	subnetInput.Identifier.SubnetworkID = subnet.Name
 	subnetInput.Metadata.Managed = subnet.Monitored
 	subnetInput.IPCIDRRange = subnet.IPCIDRRange
 	subnetInput.Region = subnet.Region
@@ -25,7 +25,7 @@ func (subnet Subnetwork) ToDataMapper(resourceInput resource.IResource) resource
 
 func FromSubnetworkDataMapper(subnet *resource.Subnetwork) Subnetwork {
 	return Subnetwork{
-		Name:         subnet.Identifier.ID,
+		Name:         subnet.Identifier.SubnetworkID,
 		ProviderType: subnet.GetPluginReference().ResourceReference.ProviderType,
 		Monitored:    subnet.Metadata.Managed,
 		IPCIDRRange:  subnet.IPCIDRRange,
@@ -39,7 +39,7 @@ type SubnetworkCollection map[string]Subnetwork
 func FromSubnetworkCollectionDataMapper(subnets resource.SubnetworkCollection) SubnetworkCollection {
 	result := make(SubnetworkCollection)
 	for _, subnet := range subnets {
-		result[subnet.Identifier.ID] = FromSubnetworkDataMapper(&subnet)
+		result[subnet.Identifier.SubnetworkID] = FromSubnetworkDataMapper(&subnet)
 	}
 	return result
 }

@@ -18,7 +18,7 @@ func (vpc VPC) ToDataMapper(resourceInput resource.IResource) resource.IResource
 
 func FromVPCDataMapper(vpc *resource.VPC) VPC {
 	return VPC{
-		Name:      vpc.Identifier.ID,
+		Name:      vpc.Identifier.VPCID,
 		Monitored: vpc.Metadata.Managed,
 		Networks:  FromNetworkCollectionDataMapper(vpc.Networks),
 	}
@@ -29,7 +29,7 @@ type VPCCollection map[string]VPC
 func FromVPCCollectionDataMapper(vpcs resource.VPCCollection) VPCCollection {
 	result := make(VPCCollection)
 	for _, vpc := range vpcs {
-		result[vpc.Identifier.ID] = FromVPCDataMapper(&vpc)
+		result[vpc.Identifier.VPCID] = FromVPCDataMapper(&vpc)
 	}
 	return result
 }

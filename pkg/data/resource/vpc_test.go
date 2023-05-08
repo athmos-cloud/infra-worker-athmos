@@ -18,7 +18,13 @@ func TestVPC_FromMap(t *testing.T) {
 		err errors.Error
 		vpc VPC
 	}
-	vpc := NewVPC(identifier.VPC{ID: "test", ProviderID: "test"}, types.GCP)
+	vpc := NewVPC(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+		}),
+		Provider: types.GCP,
+	})
 	expectedVPC := vpc
 
 	tests := []struct {
@@ -67,7 +73,7 @@ func TestVPC_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err errors.Error
@@ -75,10 +81,30 @@ func TestVPC_Insert(t *testing.T) {
 	}
 	providerID := "test"
 	testProject := NewProject("test", "owner_test")
-	provider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
+	provider := NewProvider(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+		}),
+		Provider: types.GCP,
+	})
 	testProject.Resources[providerID] = provider
-	vpc1 := NewVPC(identifier.VPC{ID: "test", ProviderID: providerID}, types.GCP)
-	vpc2 := NewVPC(identifier.VPC{ID: "test-2", ProviderID: providerID}, types.GCP)
+	vpc1 := NewVPC(NewResourcePayload{
+		Name: "test",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+		}),
+		Provider: types.GCP,
+	})
+	vpc1.Identifier.VPCID = "test"
+	vpc2 := NewVPC(NewResourcePayload{
+		Name: "test2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: "test",
+		}),
+		Provider: types.GCP,
+	})
+	vpc2.Identifier.VPCID = "test2"
 	vpc3 := vpc1
 	vpc3.Metadata.Tags = map[string]string{"test": "test"}
 	vpc4 := vpc1
@@ -96,8 +122,8 @@ func TestVPC_Insert(t *testing.T) {
 				vpc: vpc1,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				vpc: vpc1,
@@ -109,8 +135,8 @@ func TestVPC_Insert(t *testing.T) {
 				vpc: vpc3,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				vpc: vpc3,
@@ -122,8 +148,8 @@ func TestVPC_Insert(t *testing.T) {
 				vpc: vpc4,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				err: errors.Conflict,
@@ -136,8 +162,8 @@ func TestVPC_Insert(t *testing.T) {
 				vpc: vpc2,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -152,15 +178,19 @@ func TestVPC_Insert(t *testing.T) {
 				if r := recover(); r != nil {
 					err := r.(errors.Error)
 					if err.Code != tt.want.err.Code {
-						t.Errorf("FromMap()  %v, want %v", err.Code, tt.want.err.Code)
+						t.Errorf("Insert()  %v, want %v", err.Code, tt.want.err.Code)
 					}
 				}
 			}()
-			vpc.Insert(tt.args.project, tt.args.update...)
+			if tt.args.update {
+				tt.args.project.Update(&vpc)
+			} else {
+				tt.args.project.Insert(&vpc)
+			}
 			id := tt.fields.vpc.Identifier
-			vpcGot := testProject.Resources[id.ProviderID].VPCs[id.ID]
+			vpcGot := tt.args.project.Resources[id.ProviderID].VPCs[id.VPCID]
 			if !vpcGot.Equals(tt.want.vpc) {
-				t.Errorf("Insert() = %v, want %v", testProject.Resources[providerID].VPCs[tt.fields.vpc.Identifier.ID], tt.want.vpc)
+				t.Errorf("Insert() = %v, want %v", testProject.Resources[providerID].VPCs[tt.fields.vpc.Identifier.VPCID], tt.want.vpc)
 			}
 		})
 	}

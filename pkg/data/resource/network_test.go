@@ -13,7 +13,7 @@ func TestNetwork_Insert(t *testing.T) {
 	}
 	type args struct {
 		project Project
-		update  []bool
+		update  bool
 	}
 	type want struct {
 		err     errors.Error
@@ -23,18 +23,53 @@ func TestNetwork_Insert(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.GCP)
+	network1 := NewNetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	network1.Identifier.NetworkID = "test"
+	network2 := NewNetwork(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	network2.Identifier.NetworkID = "test-2"
 	network3 := network1
 	network3.Metadata.Tags = map[string]string{"test": "test"}
 	network4 := network3
 	network4.Metadata.Tags = map[string]string{"hello": "world"}
-	network5 := NewNetwork(identifier.Network{ID: "test-5", ProviderID: providerID, VPCID: vpcID}, types.GCP)
+	network5 := NewNetwork(NewResourcePayload{
+		Name: "test-5",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testVPC.Networks[network1.Identifier.ID] = network1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testProvider.Identifier.ProviderID = providerID
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testVPC.Identifier.VPCID = vpcID
+	testVPC.Networks[network1.Identifier.NetworkID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
 
@@ -50,8 +85,8 @@ func TestNetwork_Insert(t *testing.T) {
 				network: network2,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				false,
 			},
 			want: want{
 				network: network2,
@@ -63,8 +98,8 @@ func TestNetwork_Insert(t *testing.T) {
 				network: network3,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				network: network3,
@@ -76,12 +111,12 @@ func TestNetwork_Insert(t *testing.T) {
 				network: network4,
 			},
 			args: args{
-				testProject,
-				[]bool{},
+				*testProject,
+				true,
 			},
 			want: want{
 				err:     errors.Conflict,
-				network: network3,
+				network: network4,
 			},
 		},
 		{
@@ -90,8 +125,8 @@ func TestNetwork_Insert(t *testing.T) {
 				network: network5,
 			},
 			args: args{
-				testProject,
-				[]bool{true},
+				*testProject,
+				true,
 			},
 			want: want{
 				err:     errors.NotFound,
@@ -102,7 +137,6 @@ func TestNetwork_Insert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			network := tt.fields.network
-			network.Insert(tt.args.project, tt.args.update...)
 			defer func() {
 				if r := recover(); r != nil {
 					err := r.(errors.Error)
@@ -111,8 +145,14 @@ func TestNetwork_Insert(t *testing.T) {
 					}
 				}
 			}()
+
+			if tt.args.update {
+				tt.args.project.Update(&network)
+			} else {
+				tt.args.project.Insert(&network)
+			}
 			id := tt.fields.network.Identifier
-			networkGot := testProject.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.ID]
+			networkGot := tt.args.project.Resources[id.ProviderID].VPCs[id.VPCID].Networks[id.NetworkID]
 			if !networkGot.Equals(tt.want.network) {
 				t.Errorf("Insert() = %v, want %v", network, tt.want.network)
 			}
@@ -134,13 +174,37 @@ func TestNetwork_Remove(t *testing.T) {
 	providerID := "test"
 	vpcID := "test"
 
-	network1 := NewNetwork(identifier.Network{ID: "test-1", ProviderID: providerID, VPCID: vpcID}, types.GCP)
-	network2 := NewNetwork(identifier.Network{ID: "test-2", ProviderID: providerID, VPCID: vpcID}, types.GCP)
+	network1 := NewNetwork(NewResourcePayload{
+		Name: "test-1",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
+	network2 := NewNetwork(NewResourcePayload{
+		Name: "test-2",
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+			VPCID:      vpcID,
+		}),
+		Provider: types.GCP,
+	})
 
 	testProject := NewProject("test", "owner_test")
-	testProvider := NewProvider(identifier.Provider{ID: providerID}, types.GCP)
-	testVPC := NewVPC(identifier.VPC{ID: vpcID, ProviderID: providerID}, types.GCP)
-	testVPC.Networks[network1.Identifier.ID] = network1
+	testProvider := NewProvider(NewResourcePayload{
+		Name:             providerID,
+		ParentIdentifier: identifier.Empty{},
+		Provider:         types.GCP,
+	})
+	testVPC := NewVPC(NewResourcePayload{
+		Name: vpcID,
+		ParentIdentifier: identifier.Build(identifier.IdPayload{
+			ProviderID: providerID,
+		}),
+		Provider: types.GCP,
+	})
+	testVPC.Networks[network1.Identifier.NetworkID] = network1
 	testProvider.VPCs[vpcID] = testVPC
 	testProject.Resources[providerID] = testProvider
 
@@ -156,7 +220,7 @@ func TestNetwork_Remove(t *testing.T) {
 				Network: network1,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NoContent,
@@ -168,7 +232,7 @@ func TestNetwork_Remove(t *testing.T) {
 				Network: network2,
 			},
 			args: args{
-				project: testProject,
+				project: *testProject,
 			},
 			want: want{
 				err: errors.NotFound,
@@ -186,7 +250,7 @@ func TestNetwork_Remove(t *testing.T) {
 					}
 				}
 			}()
-			network.Remove(tt.args.project)
+			tt.args.project.Delete(&network)
 		})
 	}
 }

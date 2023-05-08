@@ -3,7 +3,6 @@ package domain
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/data/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"reflect"
 )
@@ -14,7 +13,7 @@ type IResource interface {
 
 func FromDataMapper(resourceInput resource.IResource) IResource {
 	switch reflect.TypeOf(resourceInput) {
-	case reflect.TypeOf(resource.NewProvider(identifier.Provider{}, "")):
+	case reflect.TypeOf(Provider{}):
 		provider := resourceInput.(*resource.Provider)
 		return FromProviderDataMapper(provider)
 	case reflect.TypeOf(resource.Network{}):

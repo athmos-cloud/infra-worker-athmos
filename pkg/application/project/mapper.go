@@ -12,7 +12,7 @@ func toGetProjectByOwnerIDResponse(projectList []resource.Project) GetProjectByO
 		resp.Payload = append(resp.Payload, GetProjectByOwnerIDItemResponse{
 			ID:   project.ID.Hex(),
 			Name: project.Name,
-			URI:  fmt.Sprintf("%s/%s", config.Current.RedirectionURL, project.ID.Hex()),
+			URI:  fmt.Sprintf("%s/projects/%s", config.Current.RedirectionURL, project.ID.Hex()),
 		})
 	}
 	return resp

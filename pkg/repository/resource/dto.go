@@ -16,11 +16,14 @@ type GetResourceResponse struct {
 }
 
 type CreateRequest struct {
-	Project       resource.Project
-	ProviderType  types.ProviderType
-	ResourceType  types.ResourceType
-	Identifier    identifier.ID
-	ResourceSpecs map[string]interface{}
+	Project          resource.Project
+	Name             string
+	ProviderType     types.ProviderType
+	ResourceType     types.ResourceType
+	ParentIdentifier identifier.ID
+	Monitored        bool
+	Tags             map[string]string
+	ResourceSpecs    map[string]interface{}
 }
 
 type CreateResponse struct {

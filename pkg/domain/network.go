@@ -15,7 +15,7 @@ type Network struct {
 
 func (network Network) ToDataMapper(resourceInput resource.IResource) resource.IResource {
 	networkInput := resourceInput.(*resource.Network)
-	networkInput.Identifier.ID = network.Name
+	networkInput.Identifier.NetworkID = network.Name
 	networkInput.Metadata.Managed = network.Monitored
 	networkInput.Status.PluginReference.ResourceReference.ProviderType = network.ProviderType
 	return networkInput
@@ -24,7 +24,7 @@ func (network Network) ToDataMapper(resourceInput resource.IResource) resource.I
 func FromNetworkDataMapper(network *resource.Network) Network {
 	return Network{
 		Monitored:   network.Metadata.Managed,
-		Name:        network.Identifier.ID,
+		Name:        network.Identifier.NetworkID,
 		Subnetworks: FromSubnetworkCollectionDataMapper(network.Subnetworks),
 		Firewalls:   FromFirewallCollectionDataMapper(network.Firewalls),
 	}
@@ -35,7 +35,7 @@ type NetworkCollection map[string]Network
 func FromNetworkCollectionDataMapper(networks resource.NetworkCollection) NetworkCollection {
 	result := make(NetworkCollection)
 	for _, network := range networks {
-		result[network.Identifier.ID] = FromNetworkDataMapper(&network)
+		result[network.Identifier.NetworkID] = FromNetworkDataMapper(&network)
 	}
 	return result
 }

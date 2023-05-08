@@ -36,11 +36,11 @@ func (service *Service) CreateResource(ctx context.Context, payload CreateResour
 
 	resp := service.ResourceRepository.Create(ctx, option.Option{
 		Value: resourceRepository.CreateRequest{
-			Project:       currentProject,
-			Identifier:    id,
-			ProviderType:  payload.ProviderType,
-			ResourceType:  payload.ResourceType,
-			ResourceSpecs: payload.ResourceSpecs,
+			Project:          currentProject,
+			ParentIdentifier: id,
+			ProviderType:     payload.ProviderType,
+			ResourceType:     payload.ResourceType,
+			ResourceSpecs:    payload.ResourceSpecs,
 		},
 	})
 	createdResource := resp.(resourceRepository.CreateResponse).Resource
