@@ -7,18 +7,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type UpdateSecretHttpRequest struct {
+	Data        string `json:"data"`
+	Description string `json:"description"`
+}
+
 func (server *Server) WithSecretRouter() *Server {
 	server.Router.GET("/secrets/:projectId/:name", func(c *gin.Context) {
 		err := errors.OK
+		projectID := c.Param("projectId")
+		name := c.Param("name")
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
-		resp := server.SecretService.GetSecret(c, secret.GetSecretRequest{})
+		resp := server.SecretService.GetSecret(c, secret.GetSecretRequest{
+			Name:      name,
+			ProjectID: projectID,
+		})
 
 		c.JSON(err.Code, gin.H{
 			"payload": resp,
@@ -26,28 +33,17 @@ func (server *Server) WithSecretRouter() *Server {
 	})
 	server.Router.GET("/secrets/:projectId", func(c *gin.Context) {
 		err := errors.OK
+		projectID := c.Param("projectId")
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
-		//resp := server.ProjectService.GetProjectByOwnerID(c, dtoProject.GetProjectByOwnerIDRequest{
-		//	OwnerID: c.Param("id"),
-		//})
-		//
-		//jsonBytes, errMarshal := json.Marshal(resp.Payload)
-		//if errMarshal != nil {
-		//	c.JSON(500, gin.H{
-		//		"message": fmt.Sprintf("Error marshalling response: %s", errMarshal),
-		//	})
-		//	return
-		//}
-		//c.JSON(err.Code, gin.H{
-		//	"payload": string(jsonBytes[:]),
-		//})
+
+		resp := server.SecretService.ListSecret(c, secret.ListSecretRequest{ProjectID: projectID})
+		c.JSON(err.Code, gin.H{
+			"payload": resp,
+		})
 	})
 	server.Router.POST("/secrets", func(c *gin.Context) {
 		var request secret.CreateSecretRequest
@@ -60,10 +56,7 @@ func (server *Server) WithSecretRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		server.SecretService.CreateSecret(c, request)
@@ -72,52 +65,44 @@ func (server *Server) WithSecretRouter() *Server {
 			"message": "Secret created",
 		})
 	})
+
 	server.Router.PUT("/secrets/:projectId/:name", func(c *gin.Context) {
-		//err := errors.NoContent
-		//type Request struct {
-		//	Name string `json:"name"`
-		//}
-		//var request Request
-		//errRequestBody := c.BindJSON(&request)
-		//if errRequestBody != nil {
-		//	c.JSON(400, gin.H{
-		//		"message": fmt.Sprintf("Wrong request body: %s", errRequestBody),
-		//	})
-		//	return
-		//}
-		//defer func() {
-		//	if r := recover(); r != nil {
-		//		err = r.(errors.Error)
-		//		c.JSON(err.Code, gin.H{
-		//			"message": err.ToString(),
-		//		})
-		//	}
-		//}()
-		//server.ProjectService.UpdateProjectName(c, dtoProject.UpdateProjectRequest{
-		//	ProjectID:   c.Param("id"),
-		//	ProjectName: request.Name,
-		//})
-		//
-		//c.JSON(err.Code, gin.H{
-		//	"message": fmt.Sprintf("UpdatedProject %s updated", c.Param("id")),
-		//})
+		var request UpdateSecretHttpRequest
+		err := errors.Created
+		errRequestBody := c.BindJSON(&request)
+		if errRequestBody != nil {
+			c.JSON(400, gin.H{
+				"message": fmt.Sprintf("Wrong request body: %s", errRequestBody),
+			})
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				handleError(c, r)
+			}
+		}()
+
+		server.SecretService.UpdateSecret(c, secret.UpdateSecretRequest{
+			ProjectID:   c.Param("projectId"),
+			Name:        c.Param("name"),
+			Description: request.Description,
+			Data:        request.Data,
+		})
+
+		c.Status(err.Code)
 	})
 	server.Router.DELETE("/secrets/:projectId/:name", func(c *gin.Context) {
-		//err := errors.NoContent
-		//defer func() {
-		//	if r := recover(); r != nil {
-		//		err = r.(errors.Error)
-		//		c.JSON(err.Code, gin.H{
-		//			"message": err.ToString(),
-		//		})
-		//	}
-		//}()
-		//server.ProjectService.DeleteProject(c, dtoProject.DeleteRequest{
-		//	ProjectID: c.Param("id"),
-		//})
-		//c.JSON(err.Code, gin.H{
-		//	"message": fmt.Sprintf("UpdatedProject %s deleted", c.Param("id")),
-		//})
+		err := errors.NoContent
+		defer func() {
+			if r := recover(); r != nil {
+				handleError(c, r)
+			}
+		}()
+
+		server.SecretService.DeleteSecret(c, secret.DeleteSecretRequest{
+			ProjectID: c.Param("projectId"),
+			Name:      c.Param("name"),
+		})
+		c.Status(err.Code)
 	})
 	return server
 }

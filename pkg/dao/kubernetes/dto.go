@@ -24,3 +24,15 @@ type CreateSecretRequest struct {
 	Key       string
 	Data      []byte
 }
+
+type UpdateSecretRequest struct {
+	Name      string
+	Namespace string
+	Key       string
+	Data      []byte
+}
+
+type DeleteSecretRequest struct {
+	Name      string
+	Namespace string
+}
