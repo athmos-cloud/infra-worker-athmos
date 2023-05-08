@@ -112,7 +112,7 @@ func (dao *DAO) Create(ctx context.Context, opt option.Option) interface{} {
 		return dao.createSecret(ctx, opt.Get().(CreateSecretRequest))
 	} else {
 		panic(errors.InvalidArgument.WithMessage(
-			"Argument must be a kubernetes.CreateNamespaceRequest{name}",
+			"Argument must be a kubernetes.CreateNamespaceRequest or a CreateSecretRequest",
 		))
 	}
 
@@ -148,6 +148,14 @@ func (dao *DAO) createSecret(ctx context.Context, request CreateSecretRequest) i
 	return createdSecret
 }
 
+func (dao *DAO) Update(ctx context.Context, option option.Option) {
+	if option = option.SetType(reflect.TypeOf(UpdateSecretRequest{}).String()); option.Validate() {
+		dao.updateSecret(ctx, option.Get().(UpdateSecretRequest))
+	} else {
+		panic(errors.InternalError.WithMessage("Invalid kubernetes update request"))
+	}
+}
+
 func (dao *DAO) updateSecret(ctx context.Context, request UpdateSecretRequest) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -163,27 +171,18 @@ func (dao *DAO) updateSecret(ctx context.Context, request UpdateSecretRequest) {
 		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not update secret %s", request.Name)))
 	}
 }
-
-func (dao *DAO) deleteSecret(ctx context.Context, request DeleteSecretRequest) {
-	err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Delete(ctx, request.Name, metav1.DeleteOptions{})
-	if err != nil {
-		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not remove secret %s", request.Name)))
-	}
-}
-
-func (dao *DAO) Update(ctx context.Context, option option.Option) {
-	if option = option.SetType(reflect.TypeOf(UpdateSecretRequest{}).String()); option.Validate() {
-		dao.updateSecret(ctx, option.Get().(UpdateSecretRequest))
-	} else {
-		panic(errors.InternalError.WithMessage("Invalid kubernetes update request"))
-	}
-}
-
 func (dao *DAO) Delete(ctx context.Context, option option.Option) {
 	if option = option.SetType(reflect.TypeOf(DeleteSecretRequest{}).String()); option.Validate() {
 		dao.deleteSecret(ctx, option.Get().(DeleteSecretRequest))
 	} else {
 		panic(errors.InternalError.WithMessage("Invalid kubernetes delete request"))
+	}
+}
+
+func (dao *DAO) deleteSecret(ctx context.Context, request DeleteSecretRequest) {
+	err := dao.ClientSet.CoreV1().Secrets(request.Namespace).Delete(ctx, request.Name, metav1.DeleteOptions{})
+	if err != nil {
+		panic(errors.Conflict.WithMessage(fmt.Sprintf("Could not remove secret %s", request.Name)))
 	}
 }
 

@@ -19,10 +19,7 @@ func (server *Server) WithSecretRouter() *Server {
 		name := c.Param("name")
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		resp := server.SecretService.GetSecret(c, secret.GetSecretRequest{
@@ -39,10 +36,7 @@ func (server *Server) WithSecretRouter() *Server {
 		projectID := c.Param("projectId")
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 
@@ -62,10 +56,7 @@ func (server *Server) WithSecretRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 		server.SecretService.CreateSecret(c, request)
@@ -86,10 +77,7 @@ func (server *Server) WithSecretRouter() *Server {
 		}
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 
@@ -106,10 +94,7 @@ func (server *Server) WithSecretRouter() *Server {
 		err := errors.NoContent
 		defer func() {
 			if r := recover(); r != nil {
-				err = r.(errors.Error)
-				c.JSON(err.Code, gin.H{
-					"message": err.ToString(),
-				})
+				handleError(c, r)
 			}
 		}()
 

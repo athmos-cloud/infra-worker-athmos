@@ -18,6 +18,7 @@ type GetSecretRequest struct {
 type GetSecretResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	References  interface{}
 }
 
 type ListSecretRequest struct {
