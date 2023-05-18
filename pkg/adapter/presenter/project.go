@@ -6,10 +6,15 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"
 	"github.com/gin-gonic/gin"
 )
 
 type Project struct{}
+
+func NewProjectPresenter() output.ProjectPort {
+	return &Project{}
+}
 
 func (p *Project) Render(ctx context.Context, project *model.Project) {
 	resp := dto.GetProjectResponse{
@@ -28,9 +33,13 @@ func (p *Project) RenderCreate(ctx context.Context, project *model.Project) {
 	ctx.JSON(201, gin.H{"payload": resp})
 }
 
-func (p *Project) RenderAll(ctx context.Context, projects []*model.Project) {
-	resp := make([]dto.ListProjectResponseItem, len(projects))
-	for i, project := range projects {
+func (p *Project) RenderUpdate(ctx context.Context, project *model.Project) {
+	ctx.JSON(204, gin.H{"message": fmt.Sprintf("Project %s updated", project.ID.Hex())})
+}
+
+func (p *Project) RenderAll(ctx context.Context, projects *[]model.Project) {
+	resp := make([]dto.ListProjectResponseItem, len(*projects))
+	for i, project := range *projects {
 		resp[i] = dto.ListProjectResponseItem{
 			ID:             project.ID.Hex(),
 			Name:           project.Name,

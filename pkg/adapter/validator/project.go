@@ -7,47 +7,58 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 )
 
-func GetProject(ctx context.Context) {
+func GetProject(ctx context.Context) errors.Error {
 	if ctx.Value(share.ProjectIDKey) == nil {
 		panic(errors.BadRequest.WithMessage("ProjectID is mandatory"))
 	}
 	if _, ok := ctx.Value(share.ProjectIDKey).(string); !ok {
 		panic(errors.BadRequest.WithMessage("ProjectID must be a string"))
 	}
+	return errors.OK
 }
 
-func ListProjectByOwner(ctx context.Context) {
+func ListProjectByOwner(ctx context.Context) errors.Error {
 	if ctx.Value(share.OwnerIDKey) == nil {
-		panic(errors.BadRequest.WithMessage("OwnerID is mandatory"))
+		return errors.BadRequest.WithMessage("OwnerID is mandatory")
 	}
 	if _, ok := ctx.Value(share.OwnerIDKey).(string); !ok {
-		panic(errors.BadRequest.WithMessage("OwnerID must be a string"))
+		return errors.BadRequest.WithMessage("OwnerID must be a string")
 	}
+	return errors.OK
 }
 
-func CreateProject(ctx context.Context) {
+func CreateProject(ctx context.Context) errors.Error {
 	if ctx.Value(share.RequestContextKey) == nil {
 		panic(errors.BadRequest.WithMessage("Request is mandatory"))
 	}
 	if _, ok := ctx.Value(share.RequestContextKey).(dto.CreateProjectRequest); !ok {
 		panic(errors.BadRequest.WithMessage("Request must be a Project DTO"))
 	}
+	return errors.OK
 }
 
-func UpdateProject(ctx context.Context) {
+func UpdateProject(ctx context.Context) errors.Error {
 	if ctx.Value(share.RequestContextKey) == nil {
-		panic(errors.BadRequest.WithMessage("Request is mandatory"))
+		return errors.BadRequest.WithMessage("Request is mandatory")
 	}
 	if _, ok := ctx.Value(share.RequestContextKey).(dto.UpdateProjectRequest); !ok {
-		panic(errors.BadRequest.WithMessage("Request must be a Project DTO"))
+		return errors.BadRequest.WithMessage("Request must be a Project DTO")
 	}
+	if ctx.Value(share.ProjectIDKey) == nil {
+		return errors.BadRequest.WithMessage("ProjectID is mandatory")
+	}
+	if _, ok := ctx.Value(share.ProjectIDKey).(string); !ok {
+		return errors.BadRequest.WithMessage("ProjectID must be a string")
+	}
+	return errors.OK
 }
 
-func DeleteProject(ctx context.Context) {
+func DeleteProject(ctx context.Context) errors.Error {
 	if ctx.Value(share.ProjectIDKey) == nil {
 		panic(errors.BadRequest.WithMessage("ProjectID is mandatory"))
 	}
 	if _, ok := ctx.Value(share.ProjectIDKey).(string); !ok {
 		panic(errors.BadRequest.WithMessage("ProjectID must be a string"))
 	}
+	return errors.OK
 }

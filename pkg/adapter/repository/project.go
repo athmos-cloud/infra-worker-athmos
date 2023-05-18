@@ -7,8 +7,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	_ "github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/mongo"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	corev1 "k8s.io/api/core/v1"
@@ -21,7 +21,11 @@ const (
 	OwnerIDDocumentKey = "owner_id"
 )
 
-type Project struct{}
+type projectRepository struct{}
+
+func NewProjectRepository() repository.Project {
+	return &projectRepository{}
+}
 
 type FindByIDRequest struct {
 	ID string
@@ -31,92 +35,75 @@ type FindAllByOwnerRequest struct {
 	Owner string
 }
 
-func (p *Project) Find(_ context.Context, opt option.Option) *model.Project {
+func (p *projectRepository) Find(_ context.Context, opt option.Option) (*model.Project, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(FindByIDRequest{}).String()).Validate() {
-		panic(errors.InvalidOption.WithMessage(
-			fmt.Sprintf(
-				"expected FindByIDRequest option, got %s",
-				reflect.TypeOf(opt.Value).String(),
-			),
-		))
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf(
+			"expected FindByIDRequest option, got %s",
+			reflect.TypeOf(opt.Value).String()))
 	}
 	request := opt.Value.(FindByIDRequest)
 	project := &model.Project{}
 	err := mgm.Coll(project).FindByID(request.ID, project)
 	if err != nil {
-		panic(errors.NotFound.WithMessage(fmt.Sprintf("Project with id %s not found", request.ID)))
+		return nil, errors.NotFound.WithMessage(fmt.Sprintf("Project with id %s not found", request.ID))
 	}
 
-	return project
+	return project, errors.OK
 }
 
-func (p *Project) FindAll(_ context.Context, opt option.Option) []*model.Project {
+func (p *projectRepository) FindAll(_ context.Context, opt option.Option) (*[]model.Project, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(FindAllByOwnerRequest{}).String()).Validate() {
-		panic(errors.InvalidOption.WithMessage(
-			fmt.Sprintf(
-				"expected FindAllByOwnerRequest option, got %s",
-				reflect.TypeOf(opt.Value).String(),
-			),
-		))
+		return nil, errors.InvalidOption.WithMessage(
+			fmt.Sprintf("expected FindAllByOwnerRequest option, got %s", reflect.TypeOf(opt.Value).String()),
+		)
 	}
 	request := opt.Value.(FindAllByOwnerRequest)
-	var projects []model.Project
-	if err := mgm.Coll(&model.Project{}).SimpleFind(&projects, bson.M{OwnerIDDocumentKey: request.Owner}); err != nil {
-		panic(errors.InternalError.WithMessage(err.Error()))
+	projects := &[]model.Project{}
+	if err := mgm.Coll(&model.Project{}).SimpleFind(projects, bson.M{OwnerIDDocumentKey: request.Owner}); err != nil {
+		return nil, errors.InternalError.WithMessage(err.Error())
 	}
-	foundProjects := make([]*model.Project, len(projects))
-	for i, project := range projects {
-		foundProjects[i] = &project
-	}
-	return foundProjects
+
+	return projects, errors.OK
 }
 
-func (p *Project) Create(ctx context.Context, projectCh chan *model.Project, errCh chan errors.Error) {
-	logger.Info.Println("Creating project repo")
-	project := <-projectCh
-	logger.Info.Println("Creating project repo1")
+func (p *projectRepository) Create(ctx context.Context, project *model.Project) errors.Error {
 	projects := &[]model.Project{}
 	if err := mgm.Coll(&model.Project{}).SimpleFind(projects, bson.M{NameDocumentKey: project.Name, OwnerIDDocumentKey: project.OwnerID}); err != nil {
-		errCh <- errors.InternalError.WithMessage(err.Error())
-		return
+		return errors.InternalError.WithMessage(err.Error())
 	}
 	if len(*projects) > 0 {
-		logger.Info.Println("Project already exists")
-		errCh <- errors.Conflict.WithMessage(fmt.Sprintf("Project with name %s already exists", project.Name))
-		return
+		return errors.Conflict.WithMessage(fmt.Sprintf("Project with name %s already exists", project.Name))
 	}
 	if err := mgm.Coll(project).Create(project); err != nil {
-		errCh <- errors.InternalError.WithMessage(err.Error())
-		return
+		return errors.InternalError.WithMessage(err.Error())
 	}
 	if err := kubernetes.Client.K8sClient.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},
 	}); err != nil {
-		errCh <- errors.KubernetesError.WithMessage(err.Error())
-		return
+		return errors.KubernetesError.WithMessage(err.Error())
 	}
-	projectCh <- project
-	return
+	return errors.Created
 }
 
-func (p *Project) Update(_ context.Context, project *model.Project) *model.Project {
+func (p *projectRepository) Update(_ context.Context, project *model.Project) errors.Error {
 	if err := mgm.Coll(project).Update(project); err != nil {
-		panic(errors.InternalError.WithMessage(err.Error()))
+		return errors.InternalError.WithMessage(err.Error())
 	}
-	return project
+	return errors.NoContent
 }
 
-func (p *Project) Delete(ctx context.Context, project *model.Project) {
+func (p *projectRepository) Delete(ctx context.Context, project *model.Project) errors.Error {
 	if err := mgm.Coll(project).Delete(project); err != nil {
-		panic(errors.InternalError.WithMessage(err.Error()))
+		return errors.InternalError.WithMessage(err.Error())
 	}
 	if err := kubernetes.Client.K8sClient.Delete(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},
 	}); err != nil {
-		panic(errors.KubernetesError.WithMessage(err.Error()))
+		return errors.KubernetesError.WithMessage(err.Error())
 	}
+	return errors.NoContent
 }

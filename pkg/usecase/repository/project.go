@@ -8,9 +8,9 @@ import (
 )
 
 type Project interface {
-	Find(context.Context, option.Option) *model.Project
-	FindAll(context.Context, option.Option) []*model.Project
-	Create(context.Context, chan *model.Project, chan errors.Error)
-	Update(context.Context, *model.Project) *model.Project
-	Delete(context.Context, *model.Project)
+	Find(context.Context, option.Option) (*model.Project, errors.Error)
+	FindAll(context.Context, option.Option) (*[]model.Project, errors.Error)
+	Create(context.Context, *model.Project) errors.Error
+	Update(context.Context, *model.Project) errors.Error
+	Delete(context.Context, *model.Project) errors.Error
 }

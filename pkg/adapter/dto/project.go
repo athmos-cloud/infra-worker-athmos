@@ -26,6 +26,5 @@ type CreateProjectResponse struct {
 }
 
 type UpdateProjectRequest struct {
-	ID   string `json:"id"`
 	Name string `json:"name"`
 }

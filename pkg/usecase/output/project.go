@@ -8,5 +8,6 @@ import (
 type ProjectPort interface {
 	Render(context.Context, *model.Project)
 	RenderCreate(context.Context, *model.Project)
-	RenderAll(context.Context, []*model.Project)
+	RenderUpdate(context.Context, *model.Project)
+	RenderAll(context.Context, *[]model.Project)
 }
