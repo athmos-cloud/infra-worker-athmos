@@ -2,7 +2,7 @@ package presenter
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"

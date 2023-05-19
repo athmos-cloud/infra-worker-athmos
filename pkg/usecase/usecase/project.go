@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	arepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -37,6 +37,7 @@ func (pu *projectUseCase) Get(ctx context.Context, project *model.Project) error
 		return err
 	}
 	*project = *foundProject
+
 	return errors.OK
 }
 
@@ -46,8 +47,12 @@ func (pu *projectUseCase) List(ctx context.Context, projects *[]model.Project) e
 			Owner: ctx.Value(share.OwnerIDKey).(string),
 		},
 	})
+	if !err.IsOk() {
+		return err
+	}
 	*projects = *foundProjects
-	return err
+
+	return errors.OK
 }
 
 func (pu *projectUseCase) Create(ctx context.Context, project *model.Project) errors.Error {
@@ -60,6 +65,7 @@ func (pu *projectUseCase) Update(ctx context.Context, project *model.Project) er
 		return err
 	}
 	project.Name = ctx.Value(share.RequestContextKey).(dto.UpdateProjectRequest).Name
+
 	return pu.repo.Update(ctx, project)
 }
 
@@ -68,5 +74,6 @@ func (pu *projectUseCase) Delete(ctx context.Context, project *model.Project) er
 	if !err.IsOk() {
 		return err
 	}
+
 	return pu.repo.Delete(ctx, project)
 }

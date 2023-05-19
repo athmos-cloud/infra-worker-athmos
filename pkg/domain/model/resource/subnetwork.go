@@ -1,20 +1,18 @@
 package resource
 
 import (
-	identifier2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/identifier"
+	identifier2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Subnetwork struct {
-	mgm.DefaultModel `bson:",inline"`
-	Metadata         metadata.Metadata      `bson:"metadata"`
-	Identifier       identifier2.Subnetwork `bson:"hierarchyLocation"`
-	Region           string                 `bson:"region" plugin:"region"`
-	IPCIDRRange      string                 `bson:"ipCidrRange" plugin:"ipCidrRange"`
-	VMs              VMCollection           `bson:"vmList"`
+	Metadata    metadata.Metadata      `bson:"metadata"`
+	Identifier  identifier2.Subnetwork `bson:"hierarchyLocation"`
+	Region      string                 `bson:"region" plugin:"region"`
+	IPCIDRRange string                 `bson:"ipCidrRange" plugin:"ipCidrRange"`
+	VMs         VMCollection           `bson:"vmList"`
 }
 
 func NewSubnetwork(payload NewResourcePayload) Subnetwork {

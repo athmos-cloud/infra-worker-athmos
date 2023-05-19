@@ -2,7 +2,7 @@ package repository
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	_ "github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/mongo"
@@ -77,7 +77,7 @@ func (p *projectRepository) Create(ctx context.Context, project *model.Project) 
 	if err := mgm.Coll(project).Create(project); err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
-	if err := kubernetes.Client.K8sClient.Create(ctx, &corev1.Namespace{
+	if err := kubernetes.Client().K8sClient.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},
@@ -98,7 +98,7 @@ func (p *projectRepository) Delete(ctx context.Context, project *model.Project) 
 	if err := mgm.Coll(project).Delete(project); err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
-	if err := kubernetes.Client.K8sClient.Delete(ctx, &corev1.Namespace{
+	if err := kubernetes.Client().K8sClient.Delete(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},

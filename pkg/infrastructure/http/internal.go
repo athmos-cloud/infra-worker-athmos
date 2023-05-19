@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (server *Server) WithInternalController() *Server {
+func (server *Server) WithInternalRouter() *Server {
 	server.Engine.GET("/ready", func(c *gin.Context) {
 		err := errors.OK
 		c.JSON(err.Code, gin.H{

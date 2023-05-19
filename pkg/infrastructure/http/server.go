@@ -10,19 +10,22 @@ import (
 type Server struct {
 	*gin.Engine
 	ProjectController controller.Project
+	SecretController  controller.Secret
 }
 
 func New(
-	projectService controller.Project,
+	projectController controller.Project,
+	secretController controller.Secret,
 ) *Server {
 	return &Server{
 		Engine:            gin.Default(),
-		ProjectController: projectService,
+		ProjectController: projectController,
+		SecretController:  secretController,
 	}
 }
 
 func (server *Server) Start() {
-	server.WithProjectRouter().WithInternalController()
+	server.WithProjectRouter().WithInternalRouter().WithSecretRouter()
 	err := server.Engine.Run(fmt.Sprintf(":%d", config.Current.Http.Port))
 	if err != nil {
 		panic(err)

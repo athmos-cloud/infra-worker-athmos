@@ -1,19 +1,17 @@
 package resource
 
 import (
-	identifier2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/identifier"
+	identifier2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type Network struct {
-	mgm.DefaultModel `bson:",inline"`
-	Metadata         metadata.Metadata    `bson:"metadata"`
-	Identifier       identifier2.Network  `bson:"identifier"`
-	Subnetworks      SubnetworkCollection `bson:"subnetworks"`
-	Firewalls        FirewallCollection   `bson:"firewalls"`
+	Metadata    metadata.Metadata    `bson:"metadata"`
+	Identifier  identifier2.Network  `bson:"identifier"`
+	Subnetworks SubnetworkCollection `bson:"subnetworks"`
+	Firewalls   FirewallCollection   `bson:"firewalls"`
 }
 
 func NewNetwork(payload NewResourcePayload) Network {

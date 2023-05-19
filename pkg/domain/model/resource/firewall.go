@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
@@ -10,11 +10,10 @@ import (
 )
 
 type Firewall struct {
-	mgm.DefaultModel `bson:",inline"`
-	Metadata         metadata.Metadata   `bson:"metadata"`
-	Identifier       identifier.Firewall `bson:"identifier"`
-	Allow            RuleList            `bson:"allow" plugin:"allow" yaml:"allow"`
-	Deny             RuleList            `bson:"deny" plugin:"deny" yaml:"deny"`
+	Metadata   metadata.Metadata   `bson:"metadata"`
+	Identifier identifier.Firewall `bson:"identifier"`
+	Allow      RuleList            `bson:"allow" plugin:"allow" yaml:"allow"`
+	Deny       RuleList            `bson:"deny" plugin:"deny" yaml:"deny"`
 }
 
 func NewFirewall(payload NewResourcePayload) Firewall {

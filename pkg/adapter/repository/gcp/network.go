@@ -43,7 +43,7 @@ func (nr *networkRepository) Create(ctx context.Context, network *resource.Netwo
 			},
 		},
 	}
-	if err := kubernetes.Client.K8sClient.Create(ctx, &gcpNetwork); err != nil {
+	if err := kubernetes.Client().K8sClient.Create(ctx, &gcpNetwork); err != nil {
 		panic(errors.KubernetesError.WithMessage(err.Error()))
 	}
 	return network

@@ -1,21 +1,19 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
-	"github.com/kamva/mgm/v3"
 )
 
 type VM struct {
-	mgm.DefaultModel `bson:",inline"`
-	Metadata         metadata.Metadata `bson:"metadata"`
-	Identifier       identifier.VM     `bson:"identifier" plugin:"identifier"`
-	PublicIP         bool              `bson:"publicIP" plugin:"publicIP"`
-	Zone             string            `bson:"zone" plugin:"zone"`
-	MachineType      string            `bson:"machineType" plugin:"machineType"`
-	Auths            VMAuthList        `bson:"auths" plugin:"auths"`
-	Disks            DiskList          `bson:"disk" plugin:"disks" yaml:"disk"`
-	OS               OS                `bson:"os" plugin:"os"`
+	Metadata    metadata.Metadata `bson:"metadata"`
+	Identifier  identifier.VM     `bson:"identifier" plugin:"identifier"`
+	PublicIP    bool              `bson:"publicIP" plugin:"publicIP"`
+	Zone        string            `bson:"zone" plugin:"zone"`
+	MachineType string            `bson:"machineType" plugin:"machineType"`
+	Auths       VMAuthList        `bson:"auths" plugin:"auths"`
+	Disks       DiskList          `bson:"disk" plugin:"disks" yaml:"disk"`
+	OS          OS                `bson:"os" plugin:"os"`
 }
 
 type VMCollection map[string]VM

@@ -1,5 +1,10 @@
 package dto
 
+type GetSecretRequest struct {
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+}
+
 type GetProjectResponse struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`

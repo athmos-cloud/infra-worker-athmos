@@ -8,7 +8,7 @@ import (
 func main() {
 	registry := registry2.NewRegistry()
 	ctrl := registry.NewAppController()
-	server := http.New(ctrl.Project)
+	server := http.New(ctrl.Project, ctrl.Secret)
 	//server := http.New(&projectService, &pluginService, &resourceService, &secretService)
 	//rabbitmq.Queue.SetServices(&resourceService)
 	//go rabbitmq.Queue.StartConsumer(ctx)

@@ -2,8 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/auth"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"github.com/kamva/mgm/v3"
@@ -12,20 +11,18 @@ import (
 
 type Project struct {
 	mgm.DefaultModel `bson:",inline"`
-	Name             string                      `bson:"name"`
-	Namespace        string                      `bson:"namespace"`
-	OwnerID          string                      `bson:"owner_id"`
-	Resources        resource.ProviderCollection `bson:"providers"`
-	Authentications  auth.List                   `bson:"authentications"`
+	Name             string      `bson:"name"`
+	Namespace        string      `bson:"namespace"`
+	OwnerID          string      `bson:"owner_id"`
+	Secrets          secret.List `bson:"secrets"`
 }
 
 func NewProject(name string, ownerID string) *Project {
 	return &Project{
-		Name:            name,
-		Namespace:       namespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
-		OwnerID:         ownerID,
-		Resources:       make(resource.ProviderCollection),
-		Authentications: make(auth.List),
+		Name:      name,
+		Namespace: namespaceFormat(fmt.Sprintf("%s-%s", name, utils.RandomString(5))),
+		OwnerID:   ownerID,
+		Secrets:   make(secret.List),
 	}
 }
 

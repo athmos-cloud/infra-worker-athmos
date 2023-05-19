@@ -2,9 +2,9 @@ package controller
 
 import (
 	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"

@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/kamva/mgm/v3"
