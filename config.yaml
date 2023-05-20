@@ -1,7 +1,7 @@
 tmpDir: "/tmp/worker"
 test:
   credentials:
-    gcp: "/etc/credentials/gcp.json"
+    gcp: "/etc/credentials/resource.json"
 http:
   port: 8081
 kubernetes:

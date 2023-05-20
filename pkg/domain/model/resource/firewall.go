@@ -3,41 +3,16 @@ package resource
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"github.com/kamva/mgm/v3"
-	"reflect"
 )
 
 type Firewall struct {
-	Metadata   metadata.Metadata   `bson:"metadata"`
-	Identifier identifier.Firewall `bson:"identifier"`
-	Allow      RuleList            `bson:"allow" plugin:"allow" yaml:"allow"`
-	Deny       RuleList            `bson:"deny" plugin:"deny" yaml:"deny"`
-}
-
-func NewFirewall(payload NewResourcePayload) Firewall {
-	payload.Validate()
-	if reflect.TypeOf(payload.ParentIdentifier) != reflect.TypeOf(identifier.Network{}) {
-		panic(errors.InvalidArgument.WithMessage("ID type must be network ID"))
-	}
-	parentID := payload.ParentIdentifier.(identifier.Network)
-	id := identifier.Firewall{
-		ProviderID: parentID.ProviderID,
-		VPCID:      parentID.VPCID,
-		NetworkID:  parentID.NetworkID,
-		FirewallID: formatResourceName(payload.Name),
-	}
-	return Firewall{
-		Metadata: metadata.New(metadata.CreateMetadataRequest{
-			Name:         id.FirewallID,
-			NotMonitored: !payload.Managed,
-			Tags:         payload.Tags,
-		}),
-		Identifier: id,
-		Allow:      make(RuleList, 0),
-		Deny:       make(RuleList, 0),
-	}
+	Metadata       metadata.Metadata   `json:"metadata"`
+	IdentifierID   identifier.Firewall `json:"identifierID"`
+	IdentifierName identifier.Firewall `json:"identifierName"`
+	Allow          RuleList            `json:"allow"`
+	Deny           RuleList            `json:"deny"`
 }
 
 type FirewallCollection map[string]Firewall
@@ -55,9 +30,9 @@ func (collection *FirewallCollection) Equals(other FirewallCollection) bool {
 }
 
 type Rule struct {
-	mgm.DefaultModel `bson:",inline"`
-	Protocol         string   `bson:"protocol" plugin:"protocol" yaml:"protocol"`
-	Ports            []string `bson:"ports" plugin:"ports" yaml:"ports"`
+	mgm.DefaultModel
+	Protocol string
+	Ports    []string
 }
 
 func (rule *Rule) Equals(other Rule) bool {
@@ -86,7 +61,6 @@ func (list RuleList) Equals(other RuleList) bool {
 
 func (firewall *Firewall) Equals(other Firewall) bool {
 	return firewall.Metadata.Equals(other.Metadata) &&
-		firewall.Identifier.Equals(other.Identifier) &&
 		firewall.Allow.Equals(other.Allow) &&
 		firewall.Deny.Equals(other.Deny)
 }

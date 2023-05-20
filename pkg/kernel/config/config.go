@@ -36,7 +36,7 @@ type Test struct {
 }
 
 type CredentialsTest struct {
-	GCP string `mapstructure:"gcp"`
+	GCP string `mapstructure:"resource"`
 }
 
 type Kubernetes struct {

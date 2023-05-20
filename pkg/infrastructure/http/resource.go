@@ -11,12 +11,12 @@ package http
 //		resp := server.ResourceService.GetResource(c, resource.GetResourceRequest{
 //			ProjectID: c.Param("projectId"),
 //			ResourceID: identifier.FromPayload(identifier.IdPayload{
-//				ProviderID: c.Param("providerID"),
-//				VPCID:      c.Query("vpcID"),
-//				NetworkID:  c.Query("networkID"),
-//				SubnetID:   c.Query("subnetID"),
-//				VMID:       c.Query("vmID"),
-//				FirewallID: c.Query("firewallID"),
+//				Provider: c.Param("providerID"),
+//				VPC:      c.Query("vpcID"),
+//				Network:  c.Query("networkID"),
+//				Subnet:   c.Query("subnetID"),
+//				VM:       c.Query("vmID"),
+//				Firewall: c.Query("firewallID"),
 //			}),
 //		})
 //

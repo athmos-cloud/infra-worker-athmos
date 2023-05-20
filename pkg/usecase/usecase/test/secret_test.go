@@ -58,7 +58,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 		errGet := su.Get(ctx, gotSecret)
 		assert.True(t, errGet.IsOk())
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().K8sClient.Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
 			Name:      gotSecret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)
@@ -115,7 +115,7 @@ func Test_secretUseCase_Delete(t *testing.T) {
 		errGet := su.Delete(ctx)
 		assert.Equal(t, errors.NotFound.Code, errGet.Code)
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().K8sClient.Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
 			Name:      secret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)
@@ -211,7 +211,7 @@ func Test_secretUseCase_List(t *testing.T) {
 	t.Run("List secrets", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 
-		// Create a first secret
+		// CreateNetwork a first secret
 		ctx = ctx.WithValue(share.RequestContextKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
@@ -222,7 +222,7 @@ func Test_secretUseCase_List(t *testing.T) {
 		errCreate := su.Create(ctx, secret1)
 		assert.True(t, errCreate.IsOk())
 
-		// Create a second secret
+		// CreateNetwork a second secret
 		ctx = ctx.WithValue(share.RequestContextKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-2",
@@ -263,7 +263,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 	t.Run("Update existing secret", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 
-		// Create a secret
+		// CreateNetwork a secret
 		ctx = ctx.WithValue(share.RequestContextKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
@@ -274,7 +274,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 		errCreate := su.Create(ctx, secret)
 		assert.True(t, errCreate.IsOk())
 
-		// Update the secret
+		// UpdateNetwork the secret
 		ctx = ctx.WithValue(share.RequestContextKey, dto.UpdateSecretRequest{
 			Name:        "test-secret-1",
 			Description: "A test secret 1 updated",
@@ -285,7 +285,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 		assert.True(t, errUpdate.IsOk())
 		assert.Equal(t, "A test secret 1 updated", secret.Description)
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().K8sClient.Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
 			Name:      secret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)

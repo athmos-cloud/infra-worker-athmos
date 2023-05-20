@@ -3,53 +3,38 @@ package resource
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 )
 
 type VM struct {
-	Metadata    metadata.Metadata `bson:"metadata"`
-	Identifier  identifier.VM     `bson:"identifier" plugin:"identifier"`
-	PublicIP    bool              `bson:"publicIP" plugin:"publicIP"`
-	Zone        string            `bson:"zone" plugin:"zone"`
-	MachineType string            `bson:"machineType" plugin:"machineType"`
-	Auths       VMAuthList        `bson:"auths" plugin:"auths"`
-	Disks       DiskList          `bson:"disk" plugin:"disks" yaml:"disk"`
-	OS          OS                `bson:"os" plugin:"os"`
+	Metadata       metadata.Metadata `json:"metadata"`
+	IdentifierID   identifier.VM     `json:"identifierID"`
+	IdentifierName identifier.VM     `json:"identifierName"`
+	PublicIP       bool              `json:"publicIP,omitempty"`
+	Zone           string            `json:"zone"`
+	MachineType    string            `json:"machineType"`
+	Auths          VMAuthList        `json:"auths,omitempty"`
+	Disks          DiskList          `json:"disks"`
+	OS             OS                `json:"os"`
 }
 
 type VMCollection map[string]VM
 
 type Disk struct {
-	Type string `bson:"type" plugin:"type"`
-	//Mode       types2.DiskMode `bson:"mode" plugin:"diskMode"`
-	SizeGib    int  `bson:"sizeGib" plugin:"sizeGib"`
-	AutoDelete bool `bson:"autoDelete" plugin:"autoDelete"`
+	Type       string         `json:"type"`
+	Mode       types.DiskMode `json:"mode"`
+	SizeGib    int            `json:"sizeGib"`
+	AutoDelete bool           `json:"autoDelete"`
 }
 
-type OS struct {
-	Type    string `bson:"type" plugin:"osType"`
-	Version string `bson:"version" plugin:"version"`
-}
-
-func NewVM(payload NewResourcePayload) VM {
-	payload.Validate()
-	parentID := payload.ParentIdentifier.(identifier.Subnetwork)
-	id := identifier.VM{
-		ProviderID: parentID.ProviderID,
-		VPCID:      parentID.ProviderID,
-		NetworkID:  parentID.NetworkID,
-		SubnetID:   parentID.SubnetworkID,
-		VMID:       formatResourceName(payload.Name),
-	}
-	return VM{
-		Metadata: metadata.New(metadata.CreateMetadataRequest{
-			Name:         id.VMID,
-			NotMonitored: !payload.Managed,
-			Tags:         payload.Tags,
-		}),
-		Identifier: id,
-		Auths:      make(VMAuthList, 0),
-		Disks:      make(DiskList, 0),
-	}
+func (vm *VM) Equals(other VM) bool {
+	return vm.Metadata.Equals(other.Metadata) &&
+		vm.IdentifierID.Equals(&other.IdentifierID) &&
+		vm.Zone == other.Zone &&
+		vm.MachineType == other.MachineType &&
+		vm.Auths.Equals(other.Auths) &&
+		vm.Disks.Equals(other.Disks) &&
+		vm.OS.Equals(other.OS)
 }
 
 func (collection *VMCollection) Equals(other VMCollection) bool {
@@ -83,8 +68,8 @@ func (diskList *DiskList) Equals(other DiskList) bool {
 }
 
 type VMAuth struct {
-	Username     string `bson:"username" plugin:"username"`
-	SSHPublicKey string `bson:"sshPublicKey" plugin:"sshPublicKey"`
+	Username     string
+	SSHPublicKey string
 }
 
 func (auth *VMAuth) Equals(other VMAuth) bool {
@@ -105,16 +90,11 @@ func (authList *VMAuthList) Equals(other VMAuthList) bool {
 	return true
 }
 
-func (os *OS) Equals(other OS) bool {
-	return os.Type == other.Type && os.Version == other.Version
+type OS struct {
+	Type    string `json:"type"`
+	Version string `json:"version"`
 }
 
-func (vm *VM) Equals(other VM) bool {
-	return vm.Metadata.Equals(other.Metadata) &&
-		vm.Identifier.Equals(other.Identifier) &&
-		vm.Zone == other.Zone &&
-		vm.MachineType == other.MachineType &&
-		vm.Auths.Equals(other.Auths) &&
-		vm.Disks.Equals(other.Disks) &&
-		vm.OS.Equals(other.OS)
+func (os *OS) Equals(other OS) bool {
+	return os.Type == other.Type && os.Version == other.Version
 }

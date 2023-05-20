@@ -4,6 +4,11 @@ import (
 	"github.com/kamva/mgm/v3"
 )
 
+const (
+	NameLabelKey        = "name.secret"
+	DescriptionLabelKey = "description.secret"
+)
+
 type Secret struct {
 	mgm.DefaultModel `bson:",inline"`
 	Name             string     `bson:"name"`

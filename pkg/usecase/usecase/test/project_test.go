@@ -34,7 +34,7 @@ func Test_projectUseCase_Create(t *testing.T) {
 		assert.False(t, proj.ID.IsZero())
 		// Check if namespace has been created
 		ns := &corev1.Namespace{}
-		errKube := kubernetes.Client().K8sClient.Get(ctx, types.NamespacedName{Name: proj.Namespace}, ns)
+		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{Name: proj.Namespace}, ns)
 		assert.Nil(t, errKube)
 	})
 	t.Run("Should return Conflict error when create a project if already exists", func(t *testing.T) {
