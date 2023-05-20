@@ -6,8 +6,7 @@ import (
 )
 
 type GetNetworkRequest struct {
-	ProjectID  string             `json:"projectID"`
-	Identifier identifier.Network `json:"identifier"`
+	IdentifierID identifier.Network `json:"identifierID"`
 }
 
 type GetNetworkResponse struct {
@@ -15,37 +14,32 @@ type GetNetworkResponse struct {
 	Payload   resource.Network `json:"payload"`
 }
 
-type GetAllNetworksRequest struct {
-	ProjectID string        `json:"projectID"`
+type ListNetworksRequest struct {
 	ParentID  identifier.ID `json:"parentID"`
 	Recursive bool          `json:"recursive"`
 }
 
-type GetAllNetworkResponse struct {
-	ProjectID string                     `json:"projectID"`
-	Payload   resource.NetworkCollection `json:"payload"`
+type ListNetworkResponse struct {
+	Payload resource.NetworkCollection `json:"payload"`
 }
 
 type CreateNetworkRequest struct {
-	ProjectID      string `json:"projectID"`
-	Name           string `json:"name"`
-	SecretAuthName string `json:"secretAuthName"`
+	ParentID       identifier.ID `json:"parentID"`
+	Name           string        `json:"name"`
+	SecretAuthName string        `json:"secretAuthName"`
 }
 
 type CreateNetworkResponse struct {
-	ProjectID string           `json:"projectID"`
-	Payload   resource.Network `json:"payload"`
+	Payload resource.Network `json:"payload"`
 }
 
 type UpdateNetworkRequest struct {
-	ProjectID      string             `json:"projectID"`
-	Identifier     identifier.Network `json:"identifier"`
+	IdentifierID   identifier.Network `json:"identifierID"`
 	Name           string             `json:"name"`
 	SecretAuthName string             `json:"secretAuthName"`
 }
 
 type DeleteNetworkRequest struct {
-	ProjectID  string             `json:"projectID"`
-	Identifier identifier.Network `json:"identifier"`
-	Cascade    bool               `json:"cascade"`
+	IdentifierID identifier.Network `json:"identifierID"`
+	Cascade      bool               `json:"cascade"`
 }

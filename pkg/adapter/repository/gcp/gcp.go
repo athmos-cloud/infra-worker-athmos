@@ -7,6 +7,6 @@ import (
 
 type gcpRepository struct{}
 
-func NewRepository() resourceRepo.ProviderResource {
+func NewRepository() resourceRepo.Resource {
 	return &gcpRepository{}
 }

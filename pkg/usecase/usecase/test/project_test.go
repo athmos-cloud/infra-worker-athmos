@@ -1,12 +1,12 @@
 package test
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	repository2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +61,7 @@ func Test_projectUseCase_Delete(t *testing.T) {
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
 		err := pu.Create(ctx, proj)
 		assert.True(t, err.IsOk())
-		ctx = ctx.WithValue(share.ProjectIDKey, proj.ID.Hex())
+		ctx = ctx.WithValue(context.ProjectIDKey, proj.ID.Hex())
 		err = pu.Delete(ctx, proj)
 		assert.Equal(t, err.Code, errors.NoContent.Code)
 	})
@@ -69,7 +69,7 @@ func Test_projectUseCase_Delete(t *testing.T) {
 		ctx := NewContext()
 		proj := model.NewProject("test-2", "1")
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
-		ctx = ctx.WithValue(share.ProjectIDKey, primitive.NewObjectID().Hex())
+		ctx = ctx.WithValue(context.ProjectIDKey, primitive.NewObjectID().Hex())
 		err := pu.Delete(ctx, proj)
 		assert.Equal(t, err.Code, errors.NotFound.Code)
 	})
@@ -88,7 +88,7 @@ func Test_projectUseCase_Get(t *testing.T) {
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
 		err := pu.Create(ctx, proj)
 		assert.True(t, err.IsOk())
-		ctx = ctx.WithValue(share.ProjectIDKey, proj.ID)
+		ctx = ctx.WithValue(context.ProjectIDKey, proj.ID)
 		errGet := pu.Get(ctx, proj)
 		assert.True(t, errGet.IsOk())
 	})
@@ -96,7 +96,7 @@ func Test_projectUseCase_Get(t *testing.T) {
 		ctx := NewContext()
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
 		proj := &model.Project{}
-		ctx = ctx.WithValue(share.ProjectIDKey, primitive.NewObjectID().Hex())
+		ctx = ctx.WithValue(context.ProjectIDKey, primitive.NewObjectID().Hex())
 		errGet := pu.Get(ctx, proj)
 		assert.Equal(t, errGet.Code, errors.NotFound.Code)
 	})
@@ -119,7 +119,7 @@ func Test_projectUseCase_List(t *testing.T) {
 		err2 := pu.Create(ctx, proj2)
 		assert.True(t, err2.IsOk())
 		res := &[]model.Project{}
-		ctx = ctx.WithValue(share.OwnerIDKey, "1")
+		ctx = ctx.WithValue(context.OwnerIDKey, "1")
 		errList := pu.List(ctx, res)
 		assert.True(t, errList.IsOk())
 		assert.Equal(t, len(*res), 2)
@@ -129,7 +129,7 @@ func Test_projectUseCase_List(t *testing.T) {
 		ctx := NewContext()
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
 		res := &[]model.Project{}
-		ctx = ctx.WithValue(share.OwnerIDKey, "1")
+		ctx = ctx.WithValue(context.OwnerIDKey, "1")
 		errList := pu.List(ctx, res)
 		assert.True(t, errList.IsOk())
 		assert.Equal(t, len(*res), 0)
@@ -149,8 +149,8 @@ func Test_projectUseCase_Update(t *testing.T) {
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
 		err := pu.Create(ctx, proj)
 		assert.True(t, err.IsOk())
-		ctx = ctx.WithValue(share.ProjectIDKey, proj.ID.Hex())
-		ctx = ctx.WithValue(share.RequestContextKey, dto.UpdateProjectRequest{Name: "test-2"})
+		ctx = ctx.WithValue(context.ProjectIDKey, proj.ID.Hex())
+		ctx = ctx.WithValue(context.RequestKey, dto.UpdateProjectRequest{Name: "test-2"})
 		err = pu.Update(ctx, proj)
 		assert.True(t, err.IsOk())
 		projGet := &model.Project{}
@@ -162,7 +162,7 @@ func Test_projectUseCase_Update(t *testing.T) {
 		ctx := NewContext()
 		proj := model.NewProject("test-1", "1")
 		pu := usecase.NewProjectUseCase(repository2.NewProjectRepository())
-		ctx = ctx.WithValue(share.ProjectIDKey, primitive.NewObjectID().Hex())
+		ctx = ctx.WithValue(context.ProjectIDKey, primitive.NewObjectID().Hex())
 		err := pu.Update(ctx, proj)
 		assert.Equal(t, err.Code, errors.NotFound.Code)
 	})

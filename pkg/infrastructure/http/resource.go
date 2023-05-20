@@ -14,7 +14,7 @@ package http
 //				Provider: c.Param("providerID"),
 //				VPC:      c.Query("vpcID"),
 //				Network:  c.Query("networkID"),
-//				Subnet:   c.Query("subnetID"),
+//				Subnetwork:   c.Query("subnetID"),
 //				VM:       c.Query("vmID"),
 //				Firewall: c.Query("firewallID"),
 //			}),

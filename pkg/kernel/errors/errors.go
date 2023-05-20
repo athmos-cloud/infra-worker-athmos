@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	context2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 	"reflect"
 	"strconv"
 )
@@ -91,9 +91,9 @@ func (e *Error) IsNotFound() bool {
 func RaiseError(ctx context.Context, err any) {
 	if reflect.TypeOf(err) == reflect.TypeOf(Error{}) {
 		errorRaised := err.(Error)
-		ctx = context.WithValue(ctx, share.ErrorContextKey, errorRaised)
+		ctx = context.WithValue(ctx, context2.ErrorKey, errorRaised)
 	} else {
-		ctx = context.WithValue(ctx, share.ErrorContextKey, InternalError.WithMessage(err.(string)))
+		ctx = context.WithValue(ctx, context2.ErrorKey, InternalError.WithMessage(err.(string)))
 	}
 	ctx.Done()
 }

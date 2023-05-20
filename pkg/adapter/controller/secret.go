@@ -29,7 +29,7 @@ func NewSecretController(secretUseCase usecase.Secret, secretPort output.SecretP
 }
 
 func (s *secretController) ListProjectSecret(ctx context.Context) {
-	if err := validator.ListProjectByOwner(ctx); !err.IsOk() {
+	if err := validator.ListProjectSecret(ctx); !err.IsOk() {
 		raiseError(ctx, err)
 	}
 	secrets := &[]secret.Secret{}
@@ -41,7 +41,7 @@ func (s *secretController) ListProjectSecret(ctx context.Context) {
 }
 
 func (s *secretController) GetSecret(ctx context.Context) {
-	if err := validator.GetProject(ctx); !err.IsOk() {
+	if err := validator.GetSecret(ctx); !err.IsOk() {
 		raiseError(ctx, err)
 	}
 	secretAuth := &secret.Secret{}

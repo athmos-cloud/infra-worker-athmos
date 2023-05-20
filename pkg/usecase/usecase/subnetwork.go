@@ -8,18 +8,22 @@ import (
 )
 
 type Subnetwork interface {
-	List(ctx context.Context, subnetworks *[]resource.Subnetwork) errors.Error
-	Get(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error
-	Create(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error
-	Update(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error
-	Delete(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error
+	List(context.Context, *resource.SubnetworkCollection) errors.Error
+	Get(context.Context, *resource.Subnetwork) errors.Error
+	Create(context.Context, *resource.Subnetwork) errors.Error
+	Update(context.Context, *resource.Subnetwork) errors.Error
+	Delete(context.Context, *resource.Subnetwork) errors.Error
 }
 
 type subnetworkUseCase struct {
 	gcpRepo gcpRepo.Subnetwork
 }
 
-func (suc *subnetworkUseCase) List(ctx context.Context, subnetworks *[]resource.Subnetwork) errors.Error {
+func NewSubnetworkUseCase(gcpRepo gcpRepo.Subnetwork) Subnetwork {
+	return &subnetworkUseCase{gcpRepo: gcpRepo}
+}
+
+func (suc *subnetworkUseCase) List(ctx context.Context, subnetworks *resource.SubnetworkCollection) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -42,8 +46,4 @@ func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *resource.S
 func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
 	//TODO implement me
 	panic("implement me")
-}
-
-func NewSubnetworkUseCase(gcpRepo gcpRepo.Subnetwork) Subnetwork {
-	return &subnetworkUseCase{gcpRepo: gcpRepo}
 }

@@ -6,7 +6,6 @@ import (
 )
 
 type GetProviderRequest struct {
-	ProjectID  string              `json:"projectID"`
 	Identifier identifier.Provider `json:"identifier"`
 }
 
@@ -15,18 +14,16 @@ type GetProviderResponse struct {
 	Payload   resource.Provider `json:"payload"`
 }
 
-type GetAllProvidersRequest struct {
-	ProjectID string `json:"projectID"`
-	Recursive bool   `json:"recursive"`
+type ListProvidersRequest struct {
+	Recursive bool `json:"recursive"`
 }
 
-type GetAllProvidersResponse struct {
+type ListProvidersResponse struct {
 	ProjectID string                      `json:"projectID"`
 	Payload   resource.ProviderCollection `json:"payload"`
 }
 
 type CreateProviderRequest struct {
-	ProjectID      string `json:"projectID"`
 	Name           string `json:"name"`
 	SecretAuthName string `json:"secretAuthName"`
 }
@@ -37,14 +34,12 @@ type CreateProviderResponse struct {
 }
 
 type UpdateProviderRequest struct {
-	ProjectID      string              `json:"projectID"`
-	Identifier     identifier.Provider `json:"identifier"`
+	IdentifierID   identifier.Provider `json:"identifierID"`
 	Name           string              `json:"name"`
 	SecretAuthName string              `json:"secretAuthName"`
 }
 
 type DeleteProviderRequest struct {
-	ProjectID  string              `json:"projectID"`
-	Identifier identifier.Provider `json:"identifier"`
-	Cascade    bool                `json:"cascade"`
+	IdentifierID identifier.Provider `json:"identifierID"`
+	Cascade      bool                `json:"cascade"`
 }

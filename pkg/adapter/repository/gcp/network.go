@@ -11,7 +11,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/samber/lo"
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
@@ -110,7 +109,7 @@ func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *resource.Ne
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        network.IdentifierID.Network,
 			Namespace:   network.Metadata.Namespace,
-			Labels:      lo.Assign(crossplane.GetBaseLabels(ctx.Value(share.ProjectIDKey).(string)), network.IdentifierID.ToLabels()),
+			Labels:      lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), network.IdentifierID.ToLabels()),
 			Annotations: crossplane.GetAnnotations(network.Metadata.Managed, network.IdentifierName.Network),
 		},
 		Spec: v1beta1.NetworkSpec{

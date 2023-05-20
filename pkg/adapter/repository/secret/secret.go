@@ -7,7 +7,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	"github.com/kamva/mgm/v3"
 	"reflect"
@@ -67,7 +66,7 @@ func (s *secretRepository) FindAll(_ context.Context, opt option.Option) (*[]sec
 }
 
 func (s *secretRepository) Create(ctx context.Context, secretAuth *secret.Secret) errors.Error {
-	project, err := s.getProjectByID(ctx.Value(share.ProjectIDKey).(string))
+	project, err := s.getProjectByID(ctx.Value(context.ProjectIDKey).(string))
 	if !err.IsOk() {
 		return err
 	}
@@ -84,7 +83,7 @@ func (s *secretRepository) Create(ctx context.Context, secretAuth *secret.Secret
 }
 
 func (s *secretRepository) Update(ctx context.Context, secretAuth *secret.Secret) errors.Error {
-	project, err := s.getProjectByID(ctx.Value(share.ProjectIDKey).(string))
+	project, err := s.getProjectByID(ctx.Value(context.ProjectIDKey).(string))
 	if !err.IsOk() {
 		return err
 	}
@@ -101,7 +100,7 @@ func (s *secretRepository) Update(ctx context.Context, secretAuth *secret.Secret
 }
 
 func (s *secretRepository) Delete(ctx context.Context, secretAuth *secret.Secret) errors.Error {
-	project, err := s.getProjectByID(ctx.Value(share.ProjectIDKey).(string))
+	project, err := s.getProjectByID(ctx.Value(context.ProjectIDKey).(string))
 	if !err.IsOk() {
 		return err
 	}

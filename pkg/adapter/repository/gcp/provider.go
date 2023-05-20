@@ -11,7 +11,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/share"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/samber/lo"
 	"github.com/upbound/provider-gcp/apis/v1beta1"
@@ -103,7 +102,7 @@ func (gcp *gcpRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*re
 
 func (gcp *gcpRepository) toGCPProvider(ctx context.Context, provider *resource.Provider) *v1beta1.ProviderConfig {
 	labels := lo.Assign(
-		crossplane.GetBaseLabels(ctx.Value(share.ProjectIDKey).(string)),
+		crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)),
 		provider.IdentifierID.ToLabels(),
 		provider.IdentifierName.GetLabelName(),
 		map[string]string{

@@ -1,6 +1,6 @@
 package resource
 
-type ProviderResource interface {
+type Resource interface {
 	Provider
 	VPC
 	Network
