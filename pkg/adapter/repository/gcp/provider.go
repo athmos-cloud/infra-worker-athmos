@@ -3,7 +3,6 @@ package gcp
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -11,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	resource3 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/samber/lo"
 	"github.com/upbound/provider-gcp/apis/v1beta1"
@@ -21,10 +21,10 @@ import (
 )
 
 func (gcp *gcpRepository) FindProvider(ctx context.Context, opt option.Option) (*resource.Provider, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(repository.FindResourceOption{}).String()).Validate() {
-		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(repository.FindResourceOption{}).String(), opt.Get()))
+	if !opt.SetType(reflect.TypeOf(resource3.FindResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resource3.FindResourceOption{}).String(), opt.Get()))
 	}
-	req := opt.Get().(repository.FindResourceOption)
+	req := opt.Get().(resource3.FindResourceOption)
 	gcpProvider := &v1beta1.ProviderConfig{}
 	if err := kubernetes.Client().Get(ctx, types.NamespacedName{Name: req.Name}, gcpProvider); err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -52,6 +52,7 @@ func (gcp *gcpRepository) CreateProvider(ctx context.Context, provider *resource
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s", provider.IdentifierID.Provider))
 	}
+
 	return errors.Created
 }
 
@@ -63,6 +64,7 @@ func (gcp *gcpRepository) UpdateProvider(ctx context.Context, provider *resource
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
 	}
+
 	return errors.NoContent
 }
 
@@ -74,6 +76,7 @@ func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
 	}
+
 	return errors.NoContent
 }
 

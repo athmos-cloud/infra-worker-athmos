@@ -24,9 +24,10 @@ type ListNetworkResponse struct {
 }
 
 type CreateNetworkRequest struct {
-	ParentID       identifier.ID `json:"parentID"`
-	Name           string        `json:"name"`
-	SecretAuthName string        `json:"secretAuthName"`
+	ParentID identifier.ID     `json:"parentID"`
+	Name     string            `json:"name"`
+	Managed  bool              `json:"managed"`
+	Tags     map[string]string `json:"tags"`
 }
 
 type CreateNetworkResponse struct {

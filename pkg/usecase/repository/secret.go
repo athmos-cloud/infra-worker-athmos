@@ -20,3 +20,31 @@ type KubernetesSecret interface {
 	Update(context.Context, option.Option) errors.Error
 	Delete(context.Context, option.Option) errors.Error
 }
+
+type CreateKubernetesSecretRequest struct {
+	ProjectID   string
+	SecretName  string
+	SecretKey   string
+	SecretValue []byte
+}
+
+type UpdateKubernetesSecretRequest struct {
+	ProjectID   string
+	SecretName  string
+	SecretKey   string
+	SecretValue []byte
+}
+
+type DeleteKubernetesSecretRequest struct {
+	ProjectID  string
+	SecretName string
+}
+
+type GetSecretByProjectIdAndName struct {
+	ProjectId string
+	Name      string
+}
+
+type GetSecretInProject struct {
+	ProjectId string
+}

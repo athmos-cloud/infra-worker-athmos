@@ -14,3 +14,11 @@ type Project interface {
 	Update(context.Context, *model.Project) errors.Error
 	Delete(context.Context, *model.Project) errors.Error
 }
+
+type FindProjectByIDRequest struct {
+	ID string
+}
+
+type FindAllProjectByOwnerRequest struct {
+	Owner string
+}

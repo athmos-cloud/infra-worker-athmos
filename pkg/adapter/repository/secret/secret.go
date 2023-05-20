@@ -18,22 +18,13 @@ func NewSecretRepository() repository.Secret {
 	return &secretRepository{}
 }
 
-type GetSecretByProjectIdAndName struct {
-	ProjectId string
-	Name      string
-}
-
-type GetSecretInProject struct {
-	ProjectId string
-}
-
 func (s *secretRepository) Find(_ context.Context, opt option.Option) (*secret.Secret, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(GetSecretByProjectIdAndName{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.GetSecretByProjectIdAndName{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected GetSecretByProjectIdAndName option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	request := opt.Value.(GetSecretByProjectIdAndName)
+	request := opt.Value.(repository.GetSecretByProjectIdAndName)
 	project, err := s.getProjectByID(request.ProjectId)
 	if !err.IsOk() {
 		return nil, err
@@ -48,12 +39,12 @@ func (s *secretRepository) Find(_ context.Context, opt option.Option) (*secret.S
 }
 
 func (s *secretRepository) FindAll(_ context.Context, opt option.Option) (*[]secret.Secret, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(GetSecretInProject{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.GetSecretInProject{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected GetSecretInProject option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	request := opt.Value.(GetSecretInProject)
+	request := opt.Value.(repository.GetSecretInProject)
 	project, err := s.getProjectByID(request.ProjectId)
 	if !err.IsOk() {
 		return nil, err

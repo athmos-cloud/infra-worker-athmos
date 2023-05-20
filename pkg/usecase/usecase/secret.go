@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	arepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -36,7 +35,7 @@ func NewSecretUseCase(secretRepo repository.Secret, kubernetesRepo repository.Ku
 func (suc *secretUseCase) Get(ctx context.Context, secretAuth *secret.Secret) errors.Error {
 	req := ctx.Value(context.RequestKey).(dto.GetSecretRequest)
 	foundSecret, err := suc.secretRepo.Find(ctx, option.Option{
-		Value: arepo.GetSecretByProjectIdAndName{
+		Value: repository.GetSecretByProjectIdAndName{
 			ProjectId: req.ProjectID,
 			Name:      req.Name,
 		},
@@ -50,7 +49,7 @@ func (suc *secretUseCase) Get(ctx context.Context, secretAuth *secret.Secret) er
 
 func (suc *secretUseCase) List(ctx context.Context, secretAuths *[]secret.Secret) errors.Error {
 	foundSecrets, err := suc.secretRepo.FindAll(ctx, option.Option{
-		Value: arepo.GetSecretInProject{
+		Value: repository.GetSecretInProject{
 			ProjectId: ctx.Value(context.ProjectIDKey).(string),
 		},
 	})
@@ -65,7 +64,7 @@ func (suc *secretUseCase) Create(ctx context.Context, secretAuth *secret.Secret)
 	req := ctx.Value(context.RequestKey).(dto.CreateSecretRequest)
 	secretName := fmt.Sprintf("%s-%s", req.Name, utils.RandomString(5))
 	createdSecret, err := suc.kubernetesSecretRepo.Create(ctx, option.Option{
-		Value: arepo.CreateKubernetesSecretRequest{
+		Value: repository.CreateKubernetesSecretRequest{
 			ProjectID:   req.ProjectID,
 			SecretName:  secretName,
 			SecretKey:   defaultSecretKey,
@@ -86,7 +85,7 @@ func (suc *secretUseCase) Update(ctx context.Context, secretAuth *secret.Secret)
 	req := ctx.Value(context.RequestKey).(dto.UpdateSecretRequest)
 	projectID := ctx.Value(context.ProjectIDKey).(string)
 	curSecret, err := suc.secretRepo.Find(ctx, option.Option{
-		Value: arepo.GetSecretByProjectIdAndName{
+		Value: repository.GetSecretByProjectIdAndName{
 			ProjectId: projectID,
 			Name:      req.Name,
 		},
@@ -96,7 +95,7 @@ func (suc *secretUseCase) Update(ctx context.Context, secretAuth *secret.Secret)
 	}
 	if req.Value != nil {
 		if errKube := suc.kubernetesSecretRepo.Update(ctx, option.Option{
-			Value: arepo.UpdateKubernetesSecretRequest{
+			Value: repository.UpdateKubernetesSecretRequest{
 				ProjectID:   ctx.Value(context.ProjectIDKey).(string),
 				SecretName:  curSecret.Kubernetes.SecretName,
 				SecretKey:   defaultSecretKey,
@@ -121,7 +120,7 @@ func (suc *secretUseCase) Delete(ctx context.Context) errors.Error {
 	req := ctx.Value(context.RequestKey).(dto.DeleteSecretRequest)
 	projectID := ctx.Value(context.ProjectIDKey).(string)
 	if err := suc.kubernetesSecretRepo.Delete(ctx, option.Option{
-		Value: arepo.DeleteKubernetesSecretRequest{
+		Value: repository.DeleteKubernetesSecretRequest{
 			ProjectID:  projectID,
 			SecretName: req.Name,
 		},
@@ -129,7 +128,7 @@ func (suc *secretUseCase) Delete(ctx context.Context) errors.Error {
 		return err
 	}
 	curSecret, err := suc.secretRepo.Find(ctx, option.Option{
-		Value: arepo.GetSecretByProjectIdAndName{
+		Value: repository.GetSecretByProjectIdAndName{
 			ProjectId: projectID,
 			Name:      req.Name,
 		},

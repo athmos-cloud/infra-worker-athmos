@@ -23,32 +23,13 @@ func NewKubernetesRepository() repository.KubernetesSecret {
 	return &kubernetesRepository{}
 }
 
-type CreateKubernetesSecretRequest struct {
-	ProjectID   string
-	SecretName  string
-	SecretKey   string
-	SecretValue []byte
-}
-
-type UpdateKubernetesSecretRequest struct {
-	ProjectID   string
-	SecretName  string
-	SecretKey   string
-	SecretValue []byte
-}
-
-type DeleteKubernetesSecretRequest struct {
-	ProjectID  string
-	SecretName string
-}
-
 func (k *kubernetesRepository) Create(ctx context.Context, opt option.Option) (*secret.Kubernetes, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(CreateKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.CreateKubernetesSecretRequest{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected CreateKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(CreateKubernetesSecretRequest)
+	req := opt.Value.(repository.CreateKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return nil, err
@@ -71,12 +52,12 @@ func (k *kubernetesRepository) Create(ctx context.Context, opt option.Option) (*
 }
 
 func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) errors.Error {
-	if !opt.SetType(reflect.TypeOf(UpdateKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.UpdateKubernetesSecretRequest{}).String()).Validate() {
 		return errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected UpdateKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(UpdateKubernetesSecretRequest)
+	req := opt.Value.(repository.UpdateKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return err
@@ -99,12 +80,12 @@ func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) er
 }
 
 func (k *kubernetesRepository) Delete(ctx context.Context, opt option.Option) errors.Error {
-	if !opt.SetType(reflect.TypeOf(DeleteKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.DeleteKubernetesSecretRequest{}).String()).Validate() {
 		return errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected DeleteKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(DeleteKubernetesSecretRequest)
+	req := opt.Value.(repository.DeleteKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return err

@@ -4,7 +4,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	gcpRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	repository "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 )
 
 type Subnetwork interface {
@@ -16,11 +16,13 @@ type Subnetwork interface {
 }
 
 type subnetworkUseCase struct {
-	gcpRepo gcpRepo.Subnetwork
+	gcpRepo   repository.Resource
+	awsRepo   repository.Resource
+	azureRepo repository.Resource
 }
 
-func NewSubnetworkUseCase(gcpRepo gcpRepo.Subnetwork) Subnetwork {
-	return &subnetworkUseCase{gcpRepo: gcpRepo}
+func NewSubnetworkUseCase(gcpRepo repository.Resource, awsRepo repository.Resource, azureRepo repository.Resource) Network {
+	return &networkUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (suc *subnetworkUseCase) List(ctx context.Context, subnetworks *resource.SubnetworkCollection) errors.Error {

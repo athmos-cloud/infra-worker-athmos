@@ -27,21 +27,13 @@ func NewProjectRepository() repository.Project {
 	return &projectRepository{}
 }
 
-type FindByIDRequest struct {
-	ID string
-}
-
-type FindAllByOwnerRequest struct {
-	Owner string
-}
-
 func (p *projectRepository) Find(_ context.Context, opt option.Option) (*model.Project, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(FindByIDRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.FindProjectByIDRequest{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf(
-			"expected FindByIDRequest option, got %s",
+			"expected FindProjectByIDRequest option, got %s",
 			reflect.TypeOf(opt.Value).String()))
 	}
-	request := opt.Value.(FindByIDRequest)
+	request := opt.Value.(repository.FindProjectByIDRequest)
 	project := &model.Project{}
 	err := mgm.Coll(project).FindByID(request.ID, project)
 	if err != nil {
@@ -52,12 +44,12 @@ func (p *projectRepository) Find(_ context.Context, opt option.Option) (*model.P
 }
 
 func (p *projectRepository) FindAll(_ context.Context, opt option.Option) (*[]model.Project, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(FindAllByOwnerRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(repository.FindAllProjectByOwnerRequest{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
-			fmt.Sprintf("expected FindAllByOwnerRequest option, got %s", reflect.TypeOf(opt.Value).String()),
+			fmt.Sprintf("expected FindAllProjectByOwnerRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	request := opt.Value.(FindAllByOwnerRequest)
+	request := opt.Value.(repository.FindAllProjectByOwnerRequest)
 	projects := &[]model.Project{}
 	if err := mgm.Coll(&model.Project{}).SimpleFind(projects, bson.M{OwnerIDDocumentKey: request.Owner}); err != nil {
 		return nil, errors.InternalError.WithMessage(err.Error())

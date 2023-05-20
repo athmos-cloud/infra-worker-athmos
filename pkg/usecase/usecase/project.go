@@ -3,7 +3,6 @@ package usecase
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	arepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -28,7 +27,7 @@ type projectUseCase struct {
 
 func (pu *projectUseCase) Get(ctx context.Context, project *model.Project) errors.Error {
 	foundProject, err := pu.repo.Find(ctx, option.Option{
-		Value: arepo.FindByIDRequest{
+		Value: repository.FindProjectByIDRequest{
 			ID: ctx.Value(context.ProjectIDKey).(string),
 		},
 	})
@@ -42,7 +41,7 @@ func (pu *projectUseCase) Get(ctx context.Context, project *model.Project) error
 
 func (pu *projectUseCase) List(ctx context.Context, projects *[]model.Project) errors.Error {
 	foundProjects, err := pu.repo.FindAll(ctx, option.Option{
-		Value: arepo.FindAllByOwnerRequest{
+		Value: repository.FindAllProjectByOwnerRequest{
 			Owner: ctx.Value(context.OwnerIDKey).(string),
 		},
 	})
@@ -59,7 +58,7 @@ func (pu *projectUseCase) Create(ctx context.Context, project *model.Project) er
 }
 
 func (pu *projectUseCase) Update(ctx context.Context, project *model.Project) errors.Error {
-	project, err := pu.repo.Find(ctx, option.Option{Value: arepo.FindByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	project, err := pu.repo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !err.IsOk() {
 		return err
 	}
@@ -69,7 +68,7 @@ func (pu *projectUseCase) Update(ctx context.Context, project *model.Project) er
 }
 
 func (pu *projectUseCase) Delete(ctx context.Context, project *model.Project) errors.Error {
-	project, err := pu.repo.Find(ctx, option.Option{Value: arepo.FindByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	project, err := pu.repo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !err.IsOk() {
 		return err
 	}

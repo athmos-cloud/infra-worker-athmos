@@ -14,11 +14,11 @@ type Provider interface {
 }
 
 type providerController struct {
-	networkUseCase usecase.Provider
+	providerUseCase usecase.Provider
 }
 
 func NewProviderController(networkUseCase usecase.Provider) Provider {
-	return &providerController{networkUseCase: networkUseCase}
+	return &providerController{providerUseCase: networkUseCase}
 }
 
 func (pc *providerController) GetProvider(ctx context.Context) {

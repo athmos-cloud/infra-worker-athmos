@@ -16,3 +16,24 @@ type Provider struct {
 }
 
 type ProviderCollection map[string]Provider
+
+func (provider *Provider) Equals(other Provider) bool {
+	return provider.Metadata.Equals(other.Metadata) &&
+		provider.IdentifierID.Equals(&other.IdentifierID) &&
+		provider.IdentifierName.Equals(&other.IdentifierName) &&
+		provider.Auth.Equals(other.Auth) &&
+		provider.VPCs.Equals(other.VPCs) &&
+		provider.Networks.Equals(other.Networks)
+}
+
+func (collection *ProviderCollection) Equals(other ProviderCollection) bool {
+	if len(*collection) != len(other) {
+		return false
+	}
+	for key, value := range *collection {
+		if !value.Equals(other[key]) {
+			return false
+		}
+	}
+	return true
+}

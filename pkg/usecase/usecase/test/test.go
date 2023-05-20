@@ -9,7 +9,6 @@ import (
 	"github.com/orlangure/gnomock/preset/mongo"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 )
@@ -52,13 +51,7 @@ func InitKubernetes(t *testing.T) *gnomock.Container {
 	require.NoError(t, err)
 	k8sCli, err := client.New(kubeConfig, client.Options{})
 	require.NoError(t, err)
-	dynamicCli, err := dynamic.NewForConfig(kubeConfig)
-	require.NoError(t, err)
-	cli := &kubernetes.Kubernetes{
-		DynamicClient: dynamicCli,
-		K8sClient:     k8sCli,
-	}
-	kubernetes.SetClient(cli)
+	kubernetes.SetClient(k8sCli)
 	require.NoError(t, err)
 
 	return c
