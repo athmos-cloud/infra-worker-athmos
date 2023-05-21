@@ -10,6 +10,7 @@ import (
 type VM interface {
 	FindVM(context.Context, option.Option) (*resource.VM, errors.Error)
 	FindAllVMs(context.Context, option.Option) (*resource.VMCollection, errors.Error)
+	FindAllRecursiveVMs(context.Context, option.Option) (*resource.VMCollection, errors.Error)
 	CreateVM(context.Context, *resource.VM) errors.Error
 	UpdateVM(context.Context, *resource.VM) errors.Error
 	DeleteVM(context.Context, *resource.VM) errors.Error

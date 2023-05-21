@@ -96,9 +96,11 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider
 		},
 		IdentifierID: identifier.Provider{
 			Provider: idFromName(req.Name),
+			VPC:      req.VPC,
 		},
 		IdentifierName: identifier.Provider{
 			Provider: req.Name,
+			VPC:      req.VPC,
 		},
 		Auth: *secret,
 	}

@@ -12,6 +12,11 @@ func (gcp *gcpRepository) FindVPC(ctx context.Context, opt option.Option) (*reso
 	panic("implement me")
 }
 
+func (gcp *gcpRepository) FindAllRecursiveVPCs(ctx context.Context, opt option.Option) (*resource.VPCCollection, errors.Error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) FindAllVPCs(ctx context.Context, opt option.Option) (*resource.VPCCollection, errors.Error) {
 	//TODO implement me
 	panic("implement me")
@@ -28,6 +33,11 @@ func (gcp *gcpRepository) UpdateVPC(ctx context.Context, vpc *resource.VPC) erro
 }
 
 func (gcp *gcpRepository) DeleteVPC(ctx context.Context, vpc *resource.VPC) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (gcp *gcpRepository) DeleteVPCCascade(ctx context.Context, vpc *resource.VPC) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }

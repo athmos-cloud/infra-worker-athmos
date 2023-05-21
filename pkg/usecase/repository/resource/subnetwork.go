@@ -10,7 +10,9 @@ import (
 type Subnetwork interface {
 	FindSubnetwork(context.Context, option.Option) (*resource.Subnetwork, errors.Error)
 	FindAllSubnetworks(context.Context, option.Option) (*resource.SubnetworkCollection, errors.Error)
+	FindAllRecursiveSubnetworks(context.Context, option.Option) (*resource.SubnetworkCollection, errors.Error)
 	CreateSubnetwork(context.Context, *resource.Subnetwork) errors.Error
 	UpdateSubnetwork(context.Context, *resource.Subnetwork) errors.Error
 	DeleteSubnetwork(context.Context, *resource.Subnetwork) errors.Error
+	DeleteSubnetworkCascade(context.Context, *resource.Subnetwork) errors.Error
 }

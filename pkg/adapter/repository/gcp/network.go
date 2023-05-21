@@ -43,6 +43,11 @@ func (gcp *gcpRepository) FindNetwork(ctx context.Context, opt option.Option) (*
 	return mod, errors.OK
 }
 
+func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option) (*resource.NetworkCollection, errors.Error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option) (*resource.NetworkCollection, errors.Error) {
 	//TODO implement me
 	panic("implement me")
@@ -81,12 +86,17 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *resource.N
 	return errors.NoContent
 }
 
+func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *resource.Network) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) toModelNetwork(network *v1beta1.Network) (*resource.Network, errors.Error) {
 	id := identifier.Network{}
 	if err := id.FromLabels(network.Labels); !err.IsOk() {
 		return nil, err
 	}
-	name, ok := network.Annotations[crossplane.ExternalNameAnnotation]
+	name, ok := network.Annotations[crossplane.ExternalNameAnnotationKey]
 	if !ok {
 		return nil, errors.InternalError.WithMessage("cannot find external name annotation")
 	}

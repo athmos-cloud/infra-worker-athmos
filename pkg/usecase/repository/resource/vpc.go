@@ -10,7 +10,9 @@ import (
 type VPC interface {
 	FindVPC(context.Context, option.Option) (*resource.VPC, errors.Error)
 	FindAllVPCs(context.Context, option.Option) (*resource.VPCCollection, errors.Error)
+	FindAllRecursiveVPCs(context.Context, option.Option) (*resource.VPCCollection, errors.Error)
 	CreateVPC(context.Context, *resource.VPC) errors.Error
 	UpdateVPC(context.Context, *resource.VPC) errors.Error
 	DeleteVPC(context.Context, *resource.VPC) errors.Error
+	DeleteVPCCascade(context.Context, *resource.VPC) errors.Error
 }

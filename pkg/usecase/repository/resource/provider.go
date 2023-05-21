@@ -14,4 +14,5 @@ type Provider interface {
 	CreateProvider(context.Context, *resource.Provider) errors.Error
 	UpdateProvider(context.Context, *resource.Provider) errors.Error
 	DeleteProvider(context.Context, *resource.Provider) errors.Error
+	DeleteProviderCascade(context.Context, *resource.Provider) errors.Error
 }

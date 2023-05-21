@@ -44,6 +44,11 @@ func (gcp *gcpRepository) FindAllProviders(ctx context.Context, opt option.Optio
 	panic("implement me")
 }
 
+func (gcp *gcpRepository) FindAllRecursiveProviders(ctx context.Context, opt option.Option) (*resource.ProviderCollection, errors.Error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) CreateProvider(ctx context.Context, provider *resource.Provider) errors.Error {
 	gcpProvider := gcp.toGCPProvider(ctx, provider)
 	if err := kubernetes.Client().Create(ctx, gcpProvider); err != nil {
@@ -78,6 +83,11 @@ func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource
 	}
 
 	return errors.NoContent
+}
+
+func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *resource.Provider) errors.Error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (gcp *gcpRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*resource.Provider, errors.Error) {

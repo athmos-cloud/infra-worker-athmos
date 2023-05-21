@@ -26,6 +26,7 @@ type ListProvidersResponse struct {
 
 type CreateProviderRequest struct {
 	Name           string `json:"name"`
+	VPC            string `json:"vpc,omitempty"`
 	SecretAuthName string `json:"secretAuthName"`
 }
 

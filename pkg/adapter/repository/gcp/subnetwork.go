@@ -45,6 +45,11 @@ func (gcp *gcpRepository) FindAllSubnetworks(ctx context.Context, opt option.Opt
 	panic("implement me")
 }
 
+func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt option.Option) (*resource.SubnetworkCollection, errors.Error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
 	gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
 	if err := kubernetes.Client().Create(ctx, gcpSubnetwork); err != nil {
@@ -78,6 +83,11 @@ func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *reso
 	return errors.NoContent
 }
 
+func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (gcp *gcpRepository) toModelSubnetwork(subnet *v1beta1.Subnetwork) (*resource.Subnetwork, errors.Error) {
 	id := identifier.Subnetwork{}
 	if err := id.FromLabels(subnet.Labels); !err.IsOk() {
@@ -90,9 +100,10 @@ func (gcp *gcpRepository) toModelSubnetwork(subnet *v1beta1.Subnetwork) (*resour
 		},
 		IdentifierID: id,
 		IdentifierName: identifier.Subnetwork{
-			Network:  *subnet.Spec.ForProvider.Network,
-			VPC:      *subnet.Spec.ForProvider.Project,
-			Provider: subnet.Spec.ResourceSpec.ProviderConfigReference.Name,
+			Network:    *subnet.Spec.ForProvider.Network,
+			VPC:        *subnet.Spec.ForProvider.Project,
+			Provider:   subnet.Spec.ResourceSpec.ProviderConfigReference.Name,
+			Subnetwork: subnet.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey],
 		},
 		Region:      *subnet.Spec.ForProvider.Region,
 		IPCIDRRange: *subnet.Spec.ForProvider.IPCidrRange,
