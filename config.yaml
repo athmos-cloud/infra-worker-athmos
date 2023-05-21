@@ -1,40 +1,11 @@
 tmpDir: "/tmp/worker"
 test:
   credentials:
-    gcp: "/etc/credentials/gcp.json"
+    gcp: "/etc/credentials/resource.json"
 http:
   port: 8081
 kubernetes:
   configPath: "/root/.kube/config"
-  helm:
-    debug: true
-plugins:
-  location: "/etc/athmos/plugins"
-  #location: "/tmp/athmos/plugins"
-  crossplane:
-    registry:
-      address: "http://chart-museum:8080"
-      username: "athmos"
-      password: "athmos"
-    gcp:
-      firewall:
-        chart: "gcp-firewall"
-        version: "0.1.0"
-      network:
-        chart: "gcp-net"
-        version: "0.1.0"
-      provider:
-        chart: "gcp-provider"
-        version: "0.1.0"
-      subnet:
-        chart: "gcp-subnet"
-        version: "0.1.0"
-      vm:
-        chart: "gcp-vm"
-        version: "0.1.0"
-      vpc:
-        chart: "gcp-vpc"
-        version: "0.1.0"
 queue:
   uri: "amqp://user:password@rabbitmq:5672/"
   exchange: "to-gateway-api"
@@ -46,11 +17,3 @@ mongo:
   password: "password"
   database: "plugin-db"
   projectCollection: "projects"
-postgres:
-  address: "postgres"
-  port: 5432
-  username: "postgres"
-  password: "password"
-  database: "plugin-db"
-
-

@@ -60,3 +60,12 @@ func IntSliceEquals(a []int, b []int) bool {
 	}
 	return true
 }
+
+func MapSafeInsert(m *map[string]interface{}, key string, value interface{}) {
+	curMap := *m
+	if curMap == nil {
+		curMap = make(map[string]interface{})
+	}
+	curMap[key] = value
+	*m = curMap
+}

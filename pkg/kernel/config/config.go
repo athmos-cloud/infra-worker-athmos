@@ -17,17 +17,15 @@ type Config struct {
 	RedirectionURL string     `mapstructure:"redirectionURL" env:"REDIRECTION_URL"`
 	Test           Test       `mapstructure:"test" `
 	Http           Http       `mapstructure:"http" `
-	Queue          Queue      `mapstructure:"queue" `
+	Queue          Queue      `mapstructure:"rabbitmq" `
 	Kubernetes     Kubernetes `mapstructure:"kubernetes" `
-	Plugins        Plugins    `mapstructure:"plugins" `
 	Mongo          Mongo      `mapstructure:"mongo" `
-	Postgres       Postgres   `mapstructure:"postgres" `
 }
 
 type Queue struct {
 	URI      string `mapstructure:"uri"`
 	Exchange string `mapstructure:"exchange"`
-	Queue    string `mapstructure:"queue"`
+	Queue    string `mapstructure:"rabbitmq"`
 }
 
 type Http struct {
@@ -38,46 +36,11 @@ type Test struct {
 }
 
 type CredentialsTest struct {
-	GCP string `mapstructure:"gcp"`
+	GCP string `mapstructure:"resource"`
 }
 
 type Kubernetes struct {
 	ConfigPath string `mapstructure:"configPath" env:"KUBECONFIG_PATH"`
-	Helm       Helm   `mapstructure:"helm" `
-}
-
-type Helm struct {
-	Debug bool `mapstructure:"debug" env:"DEBUG" `
-}
-
-type Plugins struct {
-	Location   string            `mapstructure:"location" env:"PLUGINS_LOCATION"`
-	Crossplane CrossplanePlugins `mapstructure:"crossplane" `
-}
-
-type CrossplanePlugins struct {
-	Registry ArtifactRegistry `mapstructure:"registry"`
-	GCP      ProviderPlugins  `mapstructure:"gcp"`
-}
-
-type ArtifactRegistry struct {
-	Address  string `mapstructure:"address"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-}
-
-type ProviderPlugins struct {
-	Firewall ProviderPluginItem `mapstructure:"firewall"`
-	Network  ProviderPluginItem `mapstructure:"network"`
-	Provider ProviderPluginItem `mapstructure:"provider"`
-	Subnet   ProviderPluginItem `mapstructure:"subnetwork"`
-	VM       ProviderPluginItem `mapstructure:"vm"`
-	VPC      ProviderPluginItem `mapstructure:"vpc"`
-}
-
-type ProviderPluginItem struct {
-	Chart   string `mapstructure:"chart"`
-	Version string `mapstructure:"version"`
 }
 
 type Mongo struct {
@@ -87,15 +50,6 @@ type Mongo struct {
 	Password          string `mapstructure:"password"`
 	Database          string `mapstructure:"database"`
 	ProjectCollection string `mapstructure:"projectCollection"`
-}
-
-type Postgres struct {
-	Address  string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
-	SSLMode  string `mapstructure:"ssl_mode"`
 }
 
 func init() {
