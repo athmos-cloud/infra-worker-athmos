@@ -3,12 +3,12 @@ package identifier
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 const (
-	providerIdentifierKey   = "identifier.provider"
-	vpcIdentifierKey        = "identifier.vpc"
-	networkIdentifierKey    = "identifier.network"
-	subnetworkIdentifierKey = "identifier.subnetwork"
-	vmIdentifierKey         = "identifier.vm"
-	firewallIdentifierKey   = "identifier.firewall"
+	ProviderIdentifierKey   = "identifier.provider"
+	VpcIdentifierKey        = "identifier.vpc"
+	NetworkIdentifierKey    = "identifier.network"
+	SubnetworkIdentifierKey = "identifier.subnetwork"
+	VMIdentifierKey         = "identifier.vm"
+	FirewallIdentifierKey   = "identifier.firewall"
 )
 
 type ID interface {

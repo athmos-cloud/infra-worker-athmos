@@ -10,7 +10,7 @@ import (
 type Provider interface {
 	FindProvider(context.Context, option.Option) (*resource.Provider, errors.Error)
 	FindAllProviders(context.Context, option.Option) (*resource.ProviderCollection, errors.Error)
-	FindAllRecursiveProviders(context.Context, option.Option) (*resource.ProviderCollection, errors.Error)
+	FindProviderStack(context.Context, option.Option) (*resource.Provider, errors.Error)
 	CreateProvider(context.Context, *resource.Provider) errors.Error
 	UpdateProvider(context.Context, *resource.Provider) errors.Error
 	DeleteProvider(context.Context, *resource.Provider) errors.Error

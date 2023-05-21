@@ -4,13 +4,14 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	errorCtrl "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
-	resource2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
+	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 )
 
 type Provider interface {
 	GetProvider(context.Context)
+	GetStack(context.Context)
 	ListProviders(context.Context)
 	CreateProvider(context.Context)
 	UpdateProvider(context.Context)
@@ -18,17 +19,19 @@ type Provider interface {
 }
 
 type providerController struct {
-	providerUseCase resource2.Provider
+	providerUseCase usecase.Provider
 	providerOutput  output.ProviderPort
 }
 
-func NewProviderController(networkUseCase resource2.Provider, providerOutput output.ProviderPort) Provider {
+func NewProviderController(networkUseCase usecase.Provider, providerOutput output.ProviderPort) Provider {
 	return &providerController{providerUseCase: networkUseCase, providerOutput: providerOutput}
 }
 
 func (pc *providerController) GetProvider(ctx context.Context) {
-	resourceValidator.GetProvider(ctx)
-	provider := &resource.Provider{}
+	if err := resourceValidator.GetProvider(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	provider := &model.Provider{}
 	if err := pc.providerUseCase.Get(ctx, provider); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
@@ -36,9 +39,23 @@ func (pc *providerController) GetProvider(ctx context.Context) {
 	}
 }
 
+func (pc *providerController) GetStack(ctx context.Context) {
+	if err := resourceValidator.Stack(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	stack := &model.Provider{}
+	if err := pc.providerUseCase.GetRecursively(ctx, stack); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.Render(ctx, stack)
+	}
+}
+
 func (pc *providerController) ListProviders(ctx context.Context) {
-	resourceValidator.ListProviders(ctx)
-	providers := &resource.ProviderCollection{}
+	if err := resourceValidator.ListProviders(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	providers := &model.ProviderCollection{}
 	if err := pc.providerUseCase.List(ctx, providers); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
@@ -47,8 +64,10 @@ func (pc *providerController) ListProviders(ctx context.Context) {
 }
 
 func (pc *providerController) CreateProvider(ctx context.Context) {
-	resourceValidator.CreateProvider(ctx)
-	provider := &resource.Provider{}
+	if err := resourceValidator.CreateProvider(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	provider := &model.Provider{}
 	if err := pc.providerUseCase.Create(ctx, provider); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
@@ -57,8 +76,10 @@ func (pc *providerController) CreateProvider(ctx context.Context) {
 }
 
 func (pc *providerController) UpdateProvider(ctx context.Context) {
-	resourceValidator.UpdateProvider(ctx)
-	provider := &resource.Provider{}
+	if err := resourceValidator.UpdateProvider(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	provider := &model.Provider{}
 	if err := pc.providerUseCase.Update(ctx, provider); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
@@ -67,8 +88,10 @@ func (pc *providerController) UpdateProvider(ctx context.Context) {
 }
 
 func (pc *providerController) DeleteProvider(ctx context.Context) {
-	resourceValidator.DeleteProvider(ctx)
-	provider := &resource.Provider{}
+	if err := resourceValidator.DeleteProvider(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	provider := &model.Provider{}
 	if err := pc.providerUseCase.Delete(ctx, provider); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {

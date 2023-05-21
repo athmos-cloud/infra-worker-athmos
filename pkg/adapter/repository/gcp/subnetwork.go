@@ -45,7 +45,7 @@ func (gcp *gcpRepository) FindAllSubnetworks(ctx context.Context, opt option.Opt
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt option.Option) (*resource.SubnetworkCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt option.Option, ch *resourceRepo.SubnetworkChannel) {
 	//TODO implement me
 	panic("implement me")
 }

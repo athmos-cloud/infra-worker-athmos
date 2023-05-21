@@ -25,27 +25,27 @@ func (id *Firewall) Equals(other ID) bool {
 
 func (id *Firewall) ToLabels() map[string]string {
 	return map[string]string{
-		firewallIdentifierKey: id.Firewall,
-		providerIdentifierKey: id.Provider,
-		vpcIdentifierKey:      id.VPC,
-		networkIdentifierKey:  id.Network,
+		FirewallIdentifierKey: id.Firewall,
+		ProviderIdentifierKey: id.Provider,
+		VpcIdentifierKey:      id.VPC,
+		NetworkIdentifierKey:  id.Network,
 	}
 }
 
 func (id *Firewall) FromLabels(labels map[string]string) errors.Error {
-	firewallID, ok := labels[firewallIdentifierKey]
+	firewallID, ok := labels[FirewallIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing firewall identifier for firewall ID: %v", labels))
 	}
-	providerID, ok := labels[providerIdentifierKey]
+	providerID, ok := labels[ProviderIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing provider identifier for firewall ID: %v", labels))
 	}
-	vpcID, ok := labels[vpcIdentifierKey]
+	vpcID, ok := labels[VpcIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing vpc identifier for firewall ID: %v", labels))
 	}
-	networkID, ok := labels[networkIdentifierKey]
+	networkID, ok := labels[NetworkIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing network identifier for firewall ID: %v", labels))
 	}

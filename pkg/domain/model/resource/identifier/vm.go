@@ -24,32 +24,32 @@ func (id *VM) Equals(other ID) bool {
 
 func (id *VM) ToLabels() map[string]string {
 	return map[string]string{
-		vmIdentifierKey:         id.VM,
-		providerIdentifierKey:   id.Provider,
-		vpcIdentifierKey:        id.VPC,
-		networkIdentifierKey:    id.Network,
-		subnetworkIdentifierKey: id.Subnetwork,
+		VMIdentifierKey:         id.VM,
+		ProviderIdentifierKey:   id.Provider,
+		VpcIdentifierKey:        id.VPC,
+		NetworkIdentifierKey:    id.Network,
+		SubnetworkIdentifierKey: id.Subnetwork,
 	}
 }
 
 func (id *VM) FromLabels(labels map[string]string) errors.Error {
-	vmID, ok := labels[vmIdentifierKey]
+	vmID, ok := labels[VMIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing vm identifier")
 	}
-	providerID, ok := labels[providerIdentifierKey]
+	providerID, ok := labels[ProviderIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}
-	vpcID, ok := labels[vpcIdentifierKey]
+	vpcID, ok := labels[VpcIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing vpc identifier")
 	}
-	networkID, ok := labels[networkIdentifierKey]
+	networkID, ok := labels[NetworkIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing network identifier")
 	}
-	subnetworkID, ok := labels[subnetworkIdentifierKey]
+	subnetworkID, ok := labels[SubnetworkIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing subnetwork identifier")
 	}

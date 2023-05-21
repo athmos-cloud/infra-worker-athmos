@@ -15,13 +15,16 @@ type GetProviderResponse struct {
 }
 
 type ListProvidersRequest struct {
-	ProviderID identifier.Provider `json:"identifierID"`
-	Recursive  bool                `json:"recursive" default:"false"`
+	Recursive bool `json:"recursive" default:"false"`
 }
 
 type ListProvidersResponse struct {
 	ProjectID string                      `json:"projectID"`
 	Payload   resource.ProviderCollection `json:"payload"`
+}
+
+type GetProviderStackRequest struct {
+	ProviderID string `json:"providerID"`
 }
 
 type CreateProviderRequest struct {

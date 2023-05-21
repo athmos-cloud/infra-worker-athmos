@@ -44,7 +44,7 @@ func (gcp *gcpRepository) FindAllFirewalls(ctx context.Context, opt option.Optio
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option) (*resource.FirewallCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option, ch *resourceRepo.FirewallChannel) {
 	//TODO implement me
 	panic("implement me")
 }

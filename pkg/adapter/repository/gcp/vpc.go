@@ -5,6 +5,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
+	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 )
 
 func (gcp *gcpRepository) FindVPC(ctx context.Context, opt option.Option) (*resource.VPC, errors.Error) {
@@ -12,7 +13,7 @@ func (gcp *gcpRepository) FindVPC(ctx context.Context, opt option.Option) (*reso
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) FindAllRecursiveVPCs(ctx context.Context, opt option.Option) (*resource.VPCCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveVPCs(ctx context.Context, opt option.Option, ch *resourceRepo.VPCChannel) {
 	//TODO implement me
 	panic("implement me")
 }

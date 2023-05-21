@@ -9,6 +9,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -16,8 +17,11 @@ import (
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 var (
@@ -48,9 +52,90 @@ func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option) (*resource.NetworkCollection, errors.Error) {
-	//TODO implement me
-	panic("implement me")
+func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*resource.NetworkCollection, errors.Error) {
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpNetworkList := &v1beta1.NetworkList{}
+	kubeOptions := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().List(ctx, gcpNetworkList, kubeOptions); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks in namespace %s", req.Namespace))
+	}
+	modNetworks, err := gcp.toModelNetworkCollection(gcpNetworkList)
+	if !err.IsOk() {
+		return nil, err
+	}
+	wg := &sync.WaitGroup{}
+
+	subnetChannels := make([]resourceRepo.SubnetworkChannel, 0)
+	subnetCollection := resource.SubnetworkCollection{}
+	for _, network := range *modNetworks {
+		subnetOpt := resourceRepo.FindAllResourceOption{
+			Namespace: req.Namespace,
+			Labels: map[string]string{
+				identifier.ProviderLabelKey:     network.IdentifierID.Provider,
+				identifier.NetworkIdentifierKey: network.IdentifierName.Network,
+			},
+		}
+		ch := &resourceRepo.SubnetworkChannel{
+			WaitGroup:    wg,
+			Channel:      make(chan *resource.Subnetwork),
+			ErrorChannel: make(chan errors.Error),
+		}
+		subnetChannels = append(subnetChannels, *ch)
+		wg.Add(1)
+		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: subnetOpt}, ch)
+		select {
+		case subnetwork := <-ch.Channel:
+			subnetCollection[subnetwork.IdentifierName.Subnetwork] = *subnetwork
+		case errCh := <-ch.ErrorChannel:
+			logger.Error.Println("error while listing subnetworks", errCh)
+		}
+	}
+
+	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
+	firewallCollections := resource.FirewallCollection{}
+	for _, network := range *modNetworks {
+		subnetOpt := resourceRepo.FindAllResourceOption{
+			Namespace: req.Namespace,
+			Labels: map[string]string{
+				identifier.ProviderLabelKey:     network.IdentifierID.Provider,
+				identifier.NetworkIdentifierKey: network.IdentifierName.Network,
+			},
+		}
+		ch := &resourceRepo.FirewallChannel{
+			WaitGroup:    wg,
+			Channel:      make(chan *resource.Firewall),
+			ErrorChannel: make(chan errors.Error),
+		}
+		firewallChannels = append(firewallChannels, *ch)
+		wg.Add(1)
+		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: subnetOpt}, ch)
+		select {
+		case firewall := <-ch.Channel:
+			firewallCollections[firewall.IdentifierName.Firewall] = *firewall
+		case errCh := <-ch.ErrorChannel:
+			logger.Error.Println("error while listing firewalls", errCh)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		for _, ch := range subnetChannels {
+			close(ch.Channel)
+			close(ch.ErrorChannel)
+		}
+		for _, ch := range firewallChannels {
+			close(ch.Channel)
+			close(ch.ErrorChannel)
+		}
+	}()
+
+	return nil, errors.OK
 }
 
 func (gcp *gcpRepository) CreateNetwork(ctx context.Context, network *resource.Network) errors.Error {
@@ -135,4 +220,16 @@ func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *resource.Ne
 			},
 		},
 	}
+}
+
+func (gcp *gcpRepository) toModelNetworkCollection(list *v1beta1.NetworkList) (*resource.NetworkCollection, errors.Error) {
+	res := resource.NetworkCollection{}
+	for _, item := range list.Items {
+		network, err := gcp.toModelNetwork(&item)
+		if !err.IsOk() {
+			return &res, err
+		}
+		res[network.IdentifierName.Network] = *network
+	}
+	return &res, errors.OK
 }

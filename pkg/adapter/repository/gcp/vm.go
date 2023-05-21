@@ -42,7 +42,7 @@ func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*resou
 	return mod, errors.OK
 }
 
-func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Option) (*resource.VMCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Option, ch *resourceRepo.VMChannel) {
 	//TODO implement me
 	panic("implement me")
 }

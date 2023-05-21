@@ -3,12 +3,14 @@ package identifier
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 const (
-	ProviderLabelKey = "name.provider"
+	ProviderLabelKey  = "name.provider"
+	ProjectIDLabelKey = "athmos/project-id"
 )
 
 type Provider struct {
-	Provider string `json:"id"`
-	VPC      string `json:"vpc,omitempty"`
+	ProjectID string `json:"projectID"`
+	Provider  string `json:"id"`
+	VPC       string `json:"vpc,omitempty"`
 }
 
 func (provider *Provider) Equals(other ID) bool {
@@ -21,12 +23,12 @@ func (provider *Provider) Equals(other ID) bool {
 
 func (provider *Provider) ToLabels() map[string]string {
 	return map[string]string{
-		providerIdentifierKey: provider.Provider,
+		ProviderIdentifierKey: provider.Provider,
 	}
 }
 
 func (provider *Provider) FromLabels(labels map[string]string) errors.Error {
-	providerID, ok := labels[providerIdentifierKey]
+	providerID, ok := labels[ProviderIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}
@@ -38,6 +40,7 @@ func (provider *Provider) FromLabels(labels map[string]string) errors.Error {
 
 func (provider *Provider) GetLabelName() map[string]string {
 	return map[string]string{
-		ProviderLabelKey: provider.Provider,
+		ProjectIDLabelKey: provider.ProjectID,
+		ProviderLabelKey:  provider.Provider,
 	}
 }

@@ -20,22 +20,22 @@ func (id *Network) Equals(other ID) bool {
 
 func (id *Network) ToLabels() map[string]string {
 	return map[string]string{
-		networkIdentifierKey:  id.Network,
-		providerIdentifierKey: id.Provider,
-		vpcIdentifierKey:      id.VPC,
+		NetworkIdentifierKey:  id.Network,
+		ProviderIdentifierKey: id.Provider,
+		VpcIdentifierKey:      id.VPC,
 	}
 }
 
 func (id *Network) FromLabels(labels map[string]string) errors.Error {
-	networkID, ok := labels[networkIdentifierKey]
+	networkID, ok := labels[NetworkIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing network identifier")
 	}
-	providerID, ok := labels[providerIdentifierKey]
+	providerID, ok := labels[ProviderIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}
-	vpcID, ok := labels[vpcIdentifierKey]
+	vpcID, ok := labels[VpcIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing vpc identifier")
 	}

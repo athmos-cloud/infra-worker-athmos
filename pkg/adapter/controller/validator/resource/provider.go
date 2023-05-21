@@ -15,8 +15,18 @@ func GetProvider(ctx context.Context) errors.Error {
 }
 
 func ListProviders(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.ListProvidersRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.ListProvidersRequest{}, ctx.Value(context.RequestKey)))
+	if _, ok := ctx.Value(context.ProjectIDKey).(string); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %s to be set, got %v", context.ProjectIDKey, ctx.Value(context.ProjectIDKey)))
+	}
+	return errors.OK
+}
+
+func Stack(ctx context.Context) errors.Error {
+	if _, ok := ctx.Value(context.ProjectIDKey).(string); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %s to be set, got %v", context.ProjectIDKey, ctx.Value(context.ProjectIDKey)))
+	}
+	if _, ok := ctx.Value(context.RequestKey).(string); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.GetProviderStackRequest{}, ctx.Value(context.RequestKey)))
 	}
 	return errors.OK
 }

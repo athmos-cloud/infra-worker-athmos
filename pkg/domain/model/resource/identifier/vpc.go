@@ -18,17 +18,17 @@ func (id *VPC) Equals(other ID) bool {
 
 func (id *VPC) ToLabels() map[string]string {
 	return map[string]string{
-		vpcIdentifierKey:      id.VPC,
-		providerIdentifierKey: id.Provider,
+		VpcIdentifierKey:      id.VPC,
+		ProviderIdentifierKey: id.Provider,
 	}
 }
 
 func (id *VPC) FromLabels(labels map[string]string) errors.Error {
-	vpcID, ok := labels[vpcIdentifierKey]
+	vpcID, ok := labels[VpcIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing vpc identifier")
 	}
-	providerID, ok := labels[providerIdentifierKey]
+	providerID, ok := labels[ProviderIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}

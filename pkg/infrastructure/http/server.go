@@ -9,18 +9,21 @@ import (
 
 type Server struct {
 	*gin.Engine
-	ProjectController controller.Project
-	SecretController  controller.Secret
+	ProjectController  controller.Project
+	SecretController   controller.Secret
+	ResourceController controller.Resource
 }
 
 func New(
 	projectController controller.Project,
 	secretController controller.Secret,
+	resourceController controller.Resource,
 ) *Server {
 	return &Server{
-		Engine:            gin.Default(),
-		ProjectController: projectController,
-		SecretController:  secretController,
+		Engine:             gin.Default(),
+		ProjectController:  projectController,
+		SecretController:   secretController,
+		ResourceController: resourceController,
 	}
 }
 

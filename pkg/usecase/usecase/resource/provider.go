@@ -18,6 +18,7 @@ import (
 type Provider interface {
 	List(context.Context, *model.ProviderCollection) errors.Error
 	Get(context.Context, *model.Provider) errors.Error
+	GetRecursively(context.Context, *model.Provider) errors.Error
 	Create(context.Context, *model.Provider) errors.Error
 	Update(context.Context, *model.Provider) errors.Error
 	Delete(context.Context, *model.Provider) errors.Error
@@ -48,8 +49,38 @@ func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 }
 
 func (puc *providerUseCase) List(ctx context.Context, providers *model.ProviderCollection) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	repo := puc.getRepo(ctx)
+	if repo == nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
+	}
+
+	providersList := model.ProviderCollection{}
+	searchOption := option.Option{Value: resourceRepo.FindAllResourceOption{Labels: map[string]string{identifier.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}}}
+
+	merge := func(m1 model.ProviderCollection, m2 model.ProviderCollection) model.ProviderCollection {
+		for k, v := range m2 {
+			m1[k] = v
+		}
+		return m1
+	}
+	gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
+	if !err.IsOk() {
+		return err
+	}
+	providersList = merge(providersList, *gcpProviders)
+
+	*providers = providersList
+	return errors.OK
+}
+
+func (puc *providerUseCase) GetRecursively(ctx context.Context, providers *model.Provider) errors.Error {
+	repo := puc.getRepo(ctx)
+	if repo == nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
+	}
+	_ = ctx.Value(context.RequestKey).(dto.GetProviderStackRequest)
+
+	return errors.OK
 }
 
 func (puc *providerUseCase) Get(ctx context.Context, provider *model.Provider) errors.Error {
