@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
 type Provider interface {
@@ -57,6 +58,8 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *resource.Provider
 		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetProviderRequest)
+	defaults.SetDefaults(&req)
+
 	project, err := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !err.IsOk() {
 		return err
@@ -75,6 +78,8 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resource.Provi
 		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateProviderRequest)
+	defaults.SetDefaults(&req)
+
 	project, errProject := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !errProject.IsOk() {
 		return errProject
@@ -111,6 +116,8 @@ func (puc *providerUseCase) Update(ctx context.Context, provider *resource.Provi
 		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateProviderRequest)
+	defaults.SetDefaults(&req)
+
 	provider, errFind := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider}})
 	if !errFind.IsOk() {
 		return errFind
@@ -138,6 +145,8 @@ func (puc *providerUseCase) Delete(ctx context.Context, provider *resource.Provi
 		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteProviderRequest)
+	defaults.SetDefaults(&req)
+
 	provider, errFind := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider}})
 	if !errFind.IsOk() {
 		return errFind

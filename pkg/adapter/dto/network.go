@@ -16,7 +16,7 @@ type GetNetworkResponse struct {
 
 type ListNetworksRequest struct {
 	ParentID  identifier.ID `json:"parentID"`
-	Recursive bool          `json:"recursive"`
+	Recursive bool          `json:"recursive" default:"false"`
 }
 
 type ListNetworkResponse struct {
@@ -26,21 +26,23 @@ type ListNetworkResponse struct {
 type CreateNetworkRequest struct {
 	ParentID identifier.ID     `json:"parentID"`
 	Name     string            `json:"name"`
-	Managed  bool              `json:"managed"`
+	Managed  bool              `json:"managed" default:"true"`
 	Tags     map[string]string `json:"tags"`
 }
 
 type CreateNetworkResponse struct {
-	Payload resource.Network `json:"payload"`
+	ProjectID string           `json:"projectID"`
+	Payload   resource.Network `json:"payload"`
 }
 
 type UpdateNetworkRequest struct {
-	IdentifierID   identifier.Network `json:"identifierID"`
-	Name           string             `json:"name"`
-	SecretAuthName string             `json:"secretAuthName"`
+	IdentifierID identifier.Network `json:"identifierID"`
+	Name         *string            `json:"name"`
+	Tags         *map[string]string `json:"tags"`
+	Managed      bool               `json:"managed" default:"true"`
 }
 
 type DeleteNetworkRequest struct {
 	IdentifierID identifier.Network `json:"identifierID"`
-	Cascade      bool               `json:"cascade"`
+	Cascade      bool               `json:"cascade" default:"false"`
 }

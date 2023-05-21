@@ -2,46 +2,65 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	errorCtrl "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
+	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 )
 
 type Subnetwork interface {
 	GetSubnetwork(context.Context)
-	ListSubnetworks(context.Context)
 	CreateSubnetwork(context.Context)
 	UpdateSubnetwork(context.Context)
 	DeleteSubnetwork(context.Context)
 }
 
 type subnetworkController struct {
-	networkUseCase usecase.Subnetwork
+	subnetworkUseCase usecase.Subnetwork
+	subnetworkOutput  output.SubnetworkPort
 }
 
-func NewSubnetworkController(networkUseCase usecase.Subnetwork) Subnetwork {
-	return &subnetworkController{networkUseCase: networkUseCase}
+func NewSubnetworkController(networkUseCase usecase.Subnetwork, subnetworkOutput output.SubnetworkPort) Subnetwork {
+	return &subnetworkController{subnetworkUseCase: networkUseCase, subnetworkOutput: subnetworkOutput}
 }
 
 func (sc *subnetworkController) GetSubnetwork(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (sc *subnetworkController) ListSubnetworks(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.GetSubnetwork(ctx)
+	subnetwork := &resource.Subnetwork{}
+	if err := sc.subnetworkUseCase.Get(ctx, subnetwork); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		sc.subnetworkOutput.Render(ctx, subnetwork)
+	}
 }
 
 func (sc *subnetworkController) CreateSubnetwork(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.CreateSubnetwork(ctx)
+	subnetwork := &resource.Subnetwork{}
+	if err := sc.subnetworkUseCase.Create(ctx, subnetwork); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		sc.subnetworkOutput.RenderCreate(ctx, subnetwork)
+	}
 }
 
 func (sc *subnetworkController) UpdateSubnetwork(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.UpdateSubnetwork(ctx)
+	subnetwork := &resource.Subnetwork{}
+	if err := sc.subnetworkUseCase.Update(ctx, subnetwork); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		sc.subnetworkOutput.RenderUpdate(ctx, subnetwork)
+	}
 }
 
 func (sc *subnetworkController) DeleteSubnetwork(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.DeleteSubnetwork(ctx)
+	subnetwork := &resource.Subnetwork{}
+	if err := sc.subnetworkUseCase.Delete(ctx, subnetwork); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		sc.subnetworkOutput.RenderDelete(ctx, subnetwork)
+	}
 }

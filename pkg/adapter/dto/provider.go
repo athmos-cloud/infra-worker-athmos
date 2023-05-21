@@ -15,7 +15,8 @@ type GetProviderResponse struct {
 }
 
 type ListProvidersRequest struct {
-	Recursive bool `json:"recursive"`
+	ProviderID identifier.Provider `json:"identifierID"`
+	Recursive  bool                `json:"recursive" default:"false"`
 }
 
 type ListProvidersResponse struct {
@@ -41,5 +42,5 @@ type UpdateProviderRequest struct {
 
 type DeleteProviderRequest struct {
 	IdentifierID identifier.Provider `json:"identifierID"`
-	Cascade      bool                `json:"cascade"`
+	Cascade      bool                `json:"cascade" default:"false"`
 }

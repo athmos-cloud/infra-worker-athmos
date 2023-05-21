@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	error2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	resourceCtrls "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -37,7 +38,7 @@ func NewResourceController(
 
 func (rc *resourceController) GetResource(ctx context.Context) {
 	if err := validator.Resource(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
@@ -47,29 +48,25 @@ func (rc *resourceController) GetResource(ctx context.Context) {
 	case types.SubnetworkResource:
 		rc.subnetworkController.GetSubnetwork(ctx)
 	default:
-		raiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("getting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
+		error2.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("getting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
 }
 
 func (rc *resourceController) ListResources(ctx context.Context) {
 	if err := validator.Resource(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
 		rc.providerController.ListProviders(ctx)
-	case types.NetworkResource:
-		rc.networkController.ListNetworks(ctx)
-	case types.SubnetworkResource:
-		rc.subnetworkController.ListSubnetworks(ctx)
 	default:
-		raiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("listing %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
+		error2.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("listing %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
 }
 
 func (rc *resourceController) CreateResource(ctx context.Context) {
 	if err := validator.Resource(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
@@ -79,13 +76,13 @@ func (rc *resourceController) CreateResource(ctx context.Context) {
 	case types.SubnetworkResource:
 		rc.subnetworkController.CreateSubnetwork(ctx)
 	default:
-		raiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("creating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
+		error2.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("creating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
 }
 
 func (rc *resourceController) UpdateResource(ctx context.Context) {
 	if err := validator.Resource(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
@@ -95,13 +92,13 @@ func (rc *resourceController) UpdateResource(ctx context.Context) {
 	case types.SubnetworkResource:
 		rc.subnetworkController.UpdateSubnetwork(ctx)
 	default:
-		raiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("updating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
+		error2.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("updating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
 }
 
 func (rc *resourceController) DeleteResource(ctx context.Context) {
 	if err := validator.Resource(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
@@ -111,6 +108,6 @@ func (rc *resourceController) DeleteResource(ctx context.Context) {
 	case types.SubnetworkResource:
 		rc.subnetworkController.DeleteSubnetwork(ctx)
 	default:
-		raiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("deleting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
+		error2.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("deleting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
 }

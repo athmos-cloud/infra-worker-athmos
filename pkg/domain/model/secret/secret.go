@@ -1,6 +1,7 @@
 package secret
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/kamva/mgm/v3"
 )
 
@@ -11,9 +12,10 @@ const (
 
 type Secret struct {
 	mgm.DefaultModel `bson:",inline"`
-	Name             string     `bson:"name"`
-	Description      string     `bson:"description,omitempty"`
-	Kubernetes       Kubernetes `bson:"secretAuth,omitempty" plugin:"secret"`
+	Name             string         `bson:"name"`
+	Description      string         `bson:"description,omitempty"`
+	ProviderType     types.Provider `bson:"providerType"`
+	Kubernetes       Kubernetes     `bson:"secretAuth,omitempty"`
 }
 
 type List map[string]Secret

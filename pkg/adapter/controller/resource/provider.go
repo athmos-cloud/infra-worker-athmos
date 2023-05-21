@@ -2,6 +2,10 @@ package resource
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	errorCtrl "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
+	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 )
 
@@ -15,33 +19,59 @@ type Provider interface {
 
 type providerController struct {
 	providerUseCase usecase.Provider
+	providerOutput  output.ProviderPort
 }
 
-func NewProviderController(networkUseCase usecase.Provider) Provider {
-	return &providerController{providerUseCase: networkUseCase}
+func NewProviderController(networkUseCase usecase.Provider, providerOutput output.ProviderPort) Provider {
+	return &providerController{providerUseCase: networkUseCase, providerOutput: providerOutput}
 }
 
 func (pc *providerController) GetProvider(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.GetProvider(ctx)
+	provider := &resource.Provider{}
+	if err := pc.providerUseCase.Get(ctx, provider); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.Render(ctx, provider)
+	}
 }
 
 func (pc *providerController) ListProviders(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.ListProviders(ctx)
+	providers := &resource.ProviderCollection{}
+	if err := pc.providerUseCase.List(ctx, providers); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.RenderAll(ctx, providers)
+	}
 }
 
 func (pc *providerController) CreateProvider(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.CreateProvider(ctx)
+	provider := &resource.Provider{}
+	if err := pc.providerUseCase.Create(ctx, provider); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.RenderCreate(ctx, provider)
+	}
 }
 
 func (pc *providerController) UpdateProvider(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.UpdateProvider(ctx)
+	provider := &resource.Provider{}
+	if err := pc.providerUseCase.Update(ctx, provider); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.RenderUpdate(ctx, provider)
+	}
 }
 
 func (pc *providerController) DeleteProvider(ctx context.Context) {
-	//TODO implement me
-	panic("implement me")
+	resourceValidator.DeleteProvider(ctx)
+	provider := &resource.Provider{}
+	if err := pc.providerUseCase.Delete(ctx, provider); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	} else {
+		pc.providerOutput.RenderDelete(ctx, provider)
+	}
 }

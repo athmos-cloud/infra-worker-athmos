@@ -16,7 +16,8 @@ type Project interface {
 }
 
 type FindProjectByIDRequest struct {
-	ID string
+	ID        string
+	Namespace string
 }
 
 type FindAllProjectByOwnerRequest struct {

@@ -26,6 +26,11 @@ type CreateSecretResponse struct {
 	RedirectionURL string `json:"redirection_url"`
 }
 
+type Response struct {
+	Message string `json:"message"` // You need to grant compute roles
+	Command string `json:"command"` // gcloud auth activate-service-account --key-file=service-account.json
+}
+
 type UpdateSecretRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`

@@ -9,5 +9,5 @@ type NetworkPort interface {
 	Render(context.Context, *model.Network)
 	RenderCreate(context.Context, *model.Network)
 	RenderUpdate(context.Context, *model.Network)
-	RenderAll(context.Context, *[]model.Network)
+	RenderDelete(context.Context, *model.Network)
 }

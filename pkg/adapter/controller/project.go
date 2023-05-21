@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -30,11 +31,11 @@ func NewProjectController(projectUseCase usecase.Project, projectPort output.Pro
 
 func (pc *projectController) ListProjectByOwner(ctx context.Context) {
 	if err := validator.ListProjectByOwner(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	}
 	projects := &[]model.Project{}
 	if err := pc.projectUseCase.List(ctx, projects); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	} else {
 		pc.projectPort.RenderAll(ctx, projects)
 	}
@@ -42,11 +43,11 @@ func (pc *projectController) ListProjectByOwner(ctx context.Context) {
 
 func (pc *projectController) GetProject(ctx context.Context) {
 	if err := validator.GetProject(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	}
 	project := &model.Project{}
 	if err := pc.projectUseCase.Get(ctx, project); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	} else {
 		pc.projectPort.Render(ctx, project)
 	}
@@ -60,7 +61,7 @@ func (pc *projectController) CreateProject(ctx context.Context) {
 	}
 	project := model.NewProject(req.Name, req.Owner)
 	if err := pc.projectUseCase.Create(ctx, project); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	} else {
 		pc.projectPort.RenderCreate(ctx, project)
 	}
@@ -68,11 +69,11 @@ func (pc *projectController) CreateProject(ctx context.Context) {
 
 func (pc *projectController) UpdateProject(ctx context.Context) {
 	if err := validator.UpdateProject(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	}
 	project := &model.Project{}
 	if err := pc.projectUseCase.Update(ctx, project); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	} else {
 		pc.projectPort.RenderUpdate(ctx, project)
 	}
@@ -80,7 +81,7 @@ func (pc *projectController) UpdateProject(ctx context.Context) {
 
 func (pc *projectController) DeleteProject(ctx context.Context) {
 	if err := validator.DeleteProject(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		errorCtrl.RaiseError(ctx, err)
 	}
 	project := &model.Project{}
 	pc.projectUseCase.Delete(ctx, project)

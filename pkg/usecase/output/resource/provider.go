@@ -9,5 +9,6 @@ type ProviderPort interface {
 	Render(context.Context, *model.Provider)
 	RenderCreate(context.Context, *model.Provider)
 	RenderUpdate(context.Context, *model.Provider)
-	RenderAll(context.Context, *[]model.Provider)
+	RenderAll(context.Context, *model.ProviderCollection)
+	RenderDelete(context.Context, *model.Provider)
 }

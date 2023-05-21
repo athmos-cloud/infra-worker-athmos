@@ -16,7 +16,6 @@ import (
 )
 
 type Network interface {
-	List(context.Context, *resource.NetworkCollection) errors.Error
 	Get(context.Context, *resource.Network) errors.Error
 	Create(context.Context, *resource.Network) errors.Error
 	Update(context.Context, *resource.Network) errors.Error
@@ -46,15 +45,10 @@ func (nuc *networkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	return nil
 }
 
-func (nuc *networkUseCase) List(ctx context.Context, subnetworks *resource.NetworkCollection) errors.Error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *resource.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetNetworkRequest)
 	project, errProject := nuc.projectRepo.Find(ctx, option.Option{
@@ -78,7 +72,7 @@ func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *resource.Network
 func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *resource.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateNetworkRequest)
 
@@ -139,12 +133,54 @@ func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *resource.Netw
 
 }
 
-func (nuc *networkUseCase) Update(ctx context.Context, subnetwork *resource.Network) errors.Error {
-	//TODO implement me
-	panic("implement me")
+func (nuc *networkUseCase) Update(ctx context.Context, network *resource.Network) errors.Error {
+	repo := nuc.getRepo(ctx)
+	if repo == nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+	}
+	req := ctx.Value(context.RequestKey).(dto.UpdateNetworkRequest)
+
+	project, err := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	if !err.IsOk() {
+		return err
+	}
+
+	curNetwork, err := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace}})
+	if !err.IsOk() {
+		return err
+	}
+	*network = *curNetwork
+	network.Metadata.Managed = req.Managed
+	if req.Name != nil {
+		network.IdentifierName.Network = *req.Name
+	}
+	if req.Tags != nil {
+		network.Metadata.Tags = *req.Tags
+	}
+
+	return errors.OK
+
 }
 
 func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *resource.Network) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	repo := nuc.getRepo(ctx)
+	if repo == nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+	}
+	req := ctx.Value(context.RequestKey).(dto.DeleteNetworkRequest)
+	project, errProj := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	if !errProj.IsOk() {
+		return errProj
+	}
+	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace}})
+	if !errNet.IsOk() {
+		return errNet
+	}
+	*subnetwork = *foundNetwork
+	errDel := repo.DeleteNetwork(ctx, foundNetwork)
+	if !errDel.IsOk() {
+		return errDel
+	}
+
+	return errors.NoContent
 }

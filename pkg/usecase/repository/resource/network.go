@@ -9,7 +9,7 @@ import (
 
 type Network interface {
 	FindNetwork(context.Context, option.Option) (*resource.Network, errors.Error)
-	FindAllNetworks(context.Context, option.Option) (*resource.NetworkCollection, errors.Error)
+	FindAllRecursiveNetworks(context.Context, option.Option) (*resource.NetworkCollection, errors.Error)
 	CreateNetwork(context.Context, *resource.Network) errors.Error
 	UpdateNetwork(context.Context, *resource.Network) errors.Error
 	DeleteNetwork(context.Context, *resource.Network) errors.Error

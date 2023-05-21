@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	error2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"
@@ -30,11 +31,11 @@ func NewSecretController(secretUseCase usecase.Secret, secretPort output.SecretP
 
 func (s *secretController) ListProjectSecret(ctx context.Context) {
 	if err := validator.ListProjectSecret(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	secrets := &[]secret.Secret{}
 	if err := s.secretUseCase.List(ctx, secrets); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	} else {
 		s.secretPort.RenderAll(ctx, secrets)
 	}
@@ -42,11 +43,11 @@ func (s *secretController) ListProjectSecret(ctx context.Context) {
 
 func (s *secretController) GetSecret(ctx context.Context) {
 	if err := validator.GetSecret(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	secretAuth := &secret.Secret{}
 	if err := s.secretUseCase.Get(ctx, secretAuth); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	} else {
 		s.secretPort.Render(ctx, secretAuth)
 	}
@@ -54,11 +55,11 @@ func (s *secretController) GetSecret(ctx context.Context) {
 
 func (s *secretController) CreateSecret(ctx context.Context) {
 	if err := validator.CreateSecret(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	secretAuth := &secret.Secret{}
 	if err := s.secretUseCase.Create(ctx, secretAuth); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	} else {
 		s.secretPort.Render(ctx, secretAuth)
 	}
@@ -66,11 +67,11 @@ func (s *secretController) CreateSecret(ctx context.Context) {
 
 func (s *secretController) UpdateSecret(ctx context.Context) {
 	if err := validator.UpdateSecret(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	secretAuth := &secret.Secret{}
 	if err := s.secretUseCase.Update(ctx, secretAuth); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	} else {
 		s.secretPort.Render(ctx, secretAuth)
 	}
@@ -78,10 +79,10 @@ func (s *secretController) UpdateSecret(ctx context.Context) {
 
 func (s *secretController) DeleteSecret(ctx context.Context) {
 	if err := validator.DeleteSecret(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	}
 	if err := s.secretUseCase.Delete(ctx); !err.IsOk() {
-		raiseError(ctx, err)
+		error2.RaiseError(ctx, err)
 	} else {
 		s.secretPort.RenderDelete(ctx)
 	}

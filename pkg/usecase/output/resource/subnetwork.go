@@ -9,5 +9,5 @@ type SubnetworkPort interface {
 	Render(context.Context, *model.Subnetwork)
 	RenderCreate(context.Context, *model.Subnetwork)
 	RenderUpdate(context.Context, *model.Subnetwork)
-	RenderAll(context.Context, *[]model.Subnetwork)
+	RenderDelete(context.Context, *model.Subnetwork)
 }

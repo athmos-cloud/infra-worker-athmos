@@ -37,6 +37,7 @@ func Test_projectUseCase_Create(t *testing.T) {
 		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{Name: proj.Namespace}, ns)
 		assert.Nil(t, errKube)
 	})
+
 	t.Run("Should return Conflict error when create a project if already exists", func(t *testing.T) {
 		ctx := NewContext()
 		proj := model.NewProject("test-2", "1")

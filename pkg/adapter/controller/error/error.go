@@ -1,4 +1,4 @@
-package controller
+package errorCtrl
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func raiseError(ctx context.Context, err any) {
+func RaiseError(ctx context.Context, err any) {
 	if reflect.TypeOf(err) == reflect.TypeOf(errors.Error{}) {
 		errs := err.(errors.Error)
 		ctx.JSON(errs.Code, gin.H{"message": errs})
