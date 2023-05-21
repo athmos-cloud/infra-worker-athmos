@@ -1,10 +1,10 @@
-package usecase
+package resourceUc
 
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -16,10 +16,10 @@ import (
 )
 
 type Network interface {
-	Get(context.Context, *resource.Network) errors.Error
-	Create(context.Context, *resource.Network) errors.Error
-	Update(context.Context, *resource.Network) errors.Error
-	Delete(context.Context, *resource.Network) errors.Error
+	Get(context.Context, *model.Network) errors.Error
+	Create(context.Context, *model.Network) errors.Error
+	Update(context.Context, *model.Network) errors.Error
+	Delete(context.Context, *model.Network) errors.Error
 }
 
 type networkUseCase struct {
@@ -37,18 +37,18 @@ func (nuc *networkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return nuc.gcpRepo
-	case types.ProviderAWS:
-		return nuc.awsRepo
-	case types.ProviderAZURE:
-		return nuc.azureRepo
+		//case types.ProviderAWS:
+		//	return nuc.awsRepo
+		//case types.ProviderAZURE:
+		//	return nuc.azureRepo
 	}
 	return nil
 }
 
-func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *resource.Network) errors.Error {
+func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *model.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetNetworkRequest)
 	project, errProject := nuc.projectRepo.Find(ctx, option.Option{
@@ -69,10 +69,10 @@ func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *resource.Network
 	return errors.OK
 }
 
-func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *resource.Network) errors.Error {
+func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *model.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateNetworkRequest)
 
@@ -117,10 +117,10 @@ func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *resource.Netw
 	} else {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("parent id %s not supported", req.ParentID))
 	}
-	network := &resource.Network{
+	network := &model.Network{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   req.Managed,
+			Managed:   *req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID:   id,
@@ -133,10 +133,10 @@ func (nuc *networkUseCase) Create(ctx context.Context, subnetwork *resource.Netw
 
 }
 
-func (nuc *networkUseCase) Update(ctx context.Context, network *resource.Network) errors.Error {
+func (nuc *networkUseCase) Update(ctx context.Context, network *model.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateNetworkRequest)
 
@@ -150,22 +150,25 @@ func (nuc *networkUseCase) Update(ctx context.Context, network *resource.Network
 		return err
 	}
 	*network = *curNetwork
-	network.Metadata.Managed = req.Managed
-	if req.Name != nil {
-		network.IdentifierName.Network = *req.Name
+	if req.Managed != nil {
+		network.Metadata.Managed = *req.Managed
 	}
 	if req.Tags != nil {
 		network.Metadata.Tags = *req.Tags
 	}
 
-	return errors.OK
+	if errUpdate := repo.UpdateNetwork(ctx, network); !errUpdate.IsOk() {
+		return errUpdate
+	}
+
+	return errors.NoContent
 
 }
 
-func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *resource.Network) errors.Error {
+func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteNetworkRequest)
 	project, errProj := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})

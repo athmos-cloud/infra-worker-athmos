@@ -3,11 +3,11 @@ package identifier
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 type VM struct {
-	VM       string `json:"vm"`
-	Provider string `json:"provider"`
-	VPC      string `json:"vpc"`
-	Network  string `json:"network"`
-	Subnet   string `json:"subnet"`
+	VM         string `json:"vm"`
+	Provider   string `json:"provider"`
+	VPC        string `json:"vpc"`
+	Network    string `json:"network"`
+	Subnetwork string `json:"subnetwork"`
 }
 
 func (id *VM) Equals(other ID) bool {
@@ -19,7 +19,7 @@ func (id *VM) Equals(other ID) bool {
 		id.Provider == otherVMID.Provider &&
 		id.VPC == otherVMID.VPC &&
 		id.Network == otherVMID.Network &&
-		id.Subnet == otherVMID.Subnet
+		id.Subnetwork == otherVMID.Subnetwork
 }
 
 func (id *VM) ToLabels() map[string]string {
@@ -28,7 +28,7 @@ func (id *VM) ToLabels() map[string]string {
 		providerIdentifierKey:   id.Provider,
 		vpcIdentifierKey:        id.VPC,
 		networkIdentifierKey:    id.Network,
-		subnetworkIdentifierKey: id.Subnet,
+		subnetworkIdentifierKey: id.Subnetwork,
 	}
 }
 
@@ -54,11 +54,11 @@ func (id *VM) FromLabels(labels map[string]string) errors.Error {
 		return errors.InternalError.WithMessage("missing subnetwork identifier")
 	}
 	*id = VM{
-		VM:       vmID,
-		Provider: providerID,
-		VPC:      vpcID,
-		Network:  networkID,
-		Subnet:   subnetworkID,
+		VM:         vmID,
+		Provider:   providerID,
+		VPC:        vpcID,
+		Network:    networkID,
+		Subnetwork: subnetworkID,
 	}
 	return errors.OK
 }

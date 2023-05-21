@@ -14,13 +14,6 @@ func GetNetwork(ctx context.Context) errors.Error {
 	return errors.OK
 }
 
-func ListNetworks(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.ListNetworksRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.ListNetworksRequest{}, ctx.Value(context.RequestKey)))
-	}
-	return errors.OK
-}
-
 func CreateNetwork(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(dto.CreateNetworkRequest); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.CreateNetworkRequest{}, ctx.Value(context.RequestKey)))

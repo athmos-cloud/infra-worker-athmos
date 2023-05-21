@@ -29,11 +29,11 @@ type Payload struct {
 func FromPayload(payload Payload) ID {
 	if payload.Provider != "" && (payload.VPC != "" || payload.Network != "") && payload.Subnetwork != "" && payload.VM != "" {
 		return &VM{
-			Provider: payload.Provider,
-			VPC:      payload.VPC,
-			Network:  payload.Network,
-			Subnet:   payload.Subnetwork,
-			VM:       payload.VM,
+			Provider:   payload.Provider,
+			VPC:        payload.VPC,
+			Network:    payload.Network,
+			Subnetwork: payload.Subnetwork,
+			VM:         payload.VM,
 		}
 	}
 	if payload.Provider != "" && (payload.VPC != "" || payload.Network != "") && payload.Subnetwork != "" {

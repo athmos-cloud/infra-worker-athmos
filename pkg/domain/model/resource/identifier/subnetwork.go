@@ -3,7 +3,7 @@ package identifier
 import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 
 type Subnetwork struct {
-	Subnetwork string `json:"subnet"`
+	Subnetwork string `json:"subnetwork"`
 	Provider   string `json:"provider"`
 	VPC        string `json:"vpc"`
 	Network    string `json:"network"`

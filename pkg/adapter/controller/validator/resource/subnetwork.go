@@ -21,13 +21,6 @@ func GetSubnetwork(ctx context.Context) errors.Error {
 	return errors.OK
 }
 
-func ListSubnetworks(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.ListSubnetworksRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.ListSubnetworksRequest{}, ctx.Value(context.RequestKey)))
-	}
-	return errors.OK
-}
-
 func UpdateSubnetwork(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(dto.UpdateSubnetworkRequest); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.UpdateSubnetworkRequest{}, ctx.Value(context.RequestKey)))

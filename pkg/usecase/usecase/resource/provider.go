@@ -1,10 +1,10 @@
-package usecase
+package resourceUc
 
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -16,11 +16,11 @@ import (
 )
 
 type Provider interface {
-	List(context.Context, *resource.ProviderCollection) errors.Error
-	Get(context.Context, *resource.Provider) errors.Error
-	Create(context.Context, *resource.Provider) errors.Error
-	Update(context.Context, *resource.Provider) errors.Error
-	Delete(context.Context, *resource.Provider) errors.Error
+	List(context.Context, *model.ProviderCollection) errors.Error
+	Get(context.Context, *model.Provider) errors.Error
+	Create(context.Context, *model.Provider) errors.Error
+	Update(context.Context, *model.Provider) errors.Error
+	Delete(context.Context, *model.Provider) errors.Error
 }
 
 type providerUseCase struct {
@@ -39,23 +39,23 @@ func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return puc.gcpRepo
-	case types.ProviderAWS:
-		return puc.awsRepo
-	case types.ProviderAZURE:
-		return puc.azureRepo
+		//case types.ProviderAWS:
+		//	return puc.awsRepo
+		//case types.ProviderAZURE:
+		//	return puc.azureRepo
 	}
 	return nil
 }
 
-func (puc *providerUseCase) List(ctx context.Context, providers *resource.ProviderCollection) errors.Error {
+func (puc *providerUseCase) List(ctx context.Context, providers *model.ProviderCollection) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (puc *providerUseCase) Get(ctx context.Context, provider *resource.Provider) errors.Error {
+func (puc *providerUseCase) Get(ctx context.Context, provider *model.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetProviderRequest)
 	defaults.SetDefaults(&req)
@@ -72,10 +72,10 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *resource.Provider
 	return errors.OK
 }
 
-func (puc *providerUseCase) Create(ctx context.Context, provider *resource.Provider) errors.Error {
+func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateProviderRequest)
 	defaults.SetDefaults(&req)
@@ -89,7 +89,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resource.Provi
 	if !errSecret.IsOk() {
 		return errSecret
 	}
-	providerToCreate := &resource.Provider{
+	providerToCreate := &model.Provider{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
 			Managed:   true,
@@ -107,13 +107,14 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resource.Provi
 		return errCreate
 	}
 	*provider = *providerToCreate
+
 	return errors.Created
 }
 
-func (puc *providerUseCase) Update(ctx context.Context, provider *resource.Provider) errors.Error {
+func (puc *providerUseCase) Update(ctx context.Context, provider *model.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateProviderRequest)
 	defaults.SetDefaults(&req)
@@ -132,17 +133,18 @@ func (puc *providerUseCase) Update(ctx context.Context, provider *resource.Provi
 	if req.Name != "" {
 		provider.IdentifierName.Provider = req.Name
 	}
-	errCreate := repo.UpdateProvider(ctx, provider)
-	if !errCreate.IsOk() {
-		return errCreate
+	errUpdate := repo.UpdateProvider(ctx, provider)
+	if !errUpdate.IsOk() {
+		return errUpdate
 	}
-	return errors.Created
+
+	return errors.NoContent
 }
 
-func (puc *providerUseCase) Delete(ctx context.Context, provider *resource.Provider) errors.Error {
+func (puc *providerUseCase) Delete(ctx context.Context, provider *model.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("provider %s not supported", ctx.Value(context.ProviderTypeKey)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteProviderRequest)
 	defaults.SetDefaults(&req)
@@ -155,5 +157,6 @@ func (puc *providerUseCase) Delete(ctx context.Context, provider *resource.Provi
 	if !errDelete.IsOk() {
 		return errDelete
 	}
-	return errors.Created
+
+	return errors.NoContent
 }

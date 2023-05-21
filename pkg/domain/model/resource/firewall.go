@@ -4,15 +4,14 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
-	"github.com/kamva/mgm/v3"
 )
 
 type Firewall struct {
 	Metadata       metadata.Metadata   `json:"metadata"`
 	IdentifierID   identifier.Firewall `json:"identifierID"`
 	IdentifierName identifier.Firewall `json:"identifierName"`
-	Allow          RuleList            `json:"allow"`
-	Deny           RuleList            `json:"deny"`
+	Allow          FirewallRuleList    `json:"allow"`
+	Deny           FirewallRuleList    `json:"deny"`
 }
 
 type FirewallCollection map[string]Firewall
@@ -29,19 +28,18 @@ func (collection *FirewallCollection) Equals(other FirewallCollection) bool {
 	return true
 }
 
-type Rule struct {
-	mgm.DefaultModel
+type FirewallRule struct {
 	Protocol string
 	Ports    []string
 }
 
-func (rule *Rule) Equals(other Rule) bool {
+func (rule *FirewallRule) Equals(other FirewallRule) bool {
 	return rule.Protocol == other.Protocol && utils.SliceEquals(rule.Ports, other.Ports)
 }
 
-type RuleList []Rule
+type FirewallRuleList []FirewallRule
 
-func (list RuleList) Equals(other RuleList) bool {
+func (list FirewallRuleList) Equals(other FirewallRuleList) bool {
 	if len(list) != len(other) {
 		return false
 	}

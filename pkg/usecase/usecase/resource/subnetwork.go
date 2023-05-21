@@ -1,10 +1,10 @@
-package usecase
+package resourceUc
 
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -16,10 +16,10 @@ import (
 )
 
 type Subnetwork interface {
-	Get(context.Context, *resource.Subnetwork) errors.Error
-	Create(context.Context, *resource.Subnetwork) errors.Error
-	Update(context.Context, *resource.Subnetwork) errors.Error
-	Delete(context.Context, *resource.Subnetwork) errors.Error
+	Get(context.Context, *model.Subnetwork) errors.Error
+	Create(context.Context, *model.Subnetwork) errors.Error
+	Update(context.Context, *model.Subnetwork) errors.Error
+	Delete(context.Context, *model.Subnetwork) errors.Error
 }
 
 type subnetworkUseCase struct {
@@ -37,18 +37,18 @@ func (suc *subnetworkUseCase) getRepo(ctx context.Context) resourceRepo.Resource
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return suc.gcpRepo
-	case types.ProviderAWS:
-		return suc.awsRepo
-	case types.ProviderAZURE:
-		return suc.azureRepo
+		//case types.ProviderAWS:
+		//	return suc.awsRepo
+		//case types.ProviderAZURE:
+		//	return suc.azureRepo
 	}
 	return nil
 }
 
-func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *model.Subnetwork) errors.Error {
 	repo := suc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("subne %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s subnetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetSubnetworkRequest)
 	defaults.SetDefaults(&req)
@@ -67,13 +67,14 @@ func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *resource.Subn
 		return err
 	}
 	*subnetwork = *foundNetwork
+
 	return errors.OK
 }
 
-func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subnetwork) errors.Error {
 	repo := suc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s subnetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateSubnetworkRequest)
 	defaults.SetDefaults(&req)
@@ -90,10 +91,10 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *resource.S
 		return errNet
 	}
 
-	toCreateSubnet := &resource.Subnetwork{
+	toCreateSubnet := &model.Subnetwork{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   req.Managed,
+			Managed:   *req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID: identifier.Subnetwork{
@@ -116,13 +117,14 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *resource.S
 		return errSubnet
 	}
 	*subnetwork = *toCreateSubnet
+
 	return errors.Created
 }
 
-func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *model.Subnetwork) errors.Error {
 	repo := suc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s subnetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateSubnetworkRequest)
 	defaults.SetDefaults(&req)
@@ -134,21 +136,35 @@ func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *resource.S
 	if !errProject.IsOk() {
 		return errProject
 	}
-	foundNetwork, err := repo.FindSubnetwork(ctx, option.Option{
+	foundSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err
 	}
-	*subnetwork = *foundNetwork
 
-	return errors.OK
+	*subnetwork = *foundSubnetwork
+	if req.Tags != nil {
+		subnetwork.Metadata.Tags = *req.Tags
+	}
+	if req.Region != nil {
+		subnetwork.Region = *req.Region
+	}
+	if req.IPCIDRRange != nil {
+		subnetwork.IPCIDRRange = *req.IPCIDRRange
+	}
+
+	if errUpdate := repo.UpdateSubnetwork(ctx, subnetwork); !errUpdate.IsOk() {
+		return errUpdate
+	}
+
+	return errors.NoContent
 }
 
-func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subnetwork) errors.Error {
 	repo := suc.getRepo(ctx)
 	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("%s subnetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteSubnetworkRequest)
 	defaults.SetDefaults(&req)
@@ -172,5 +188,5 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *resource.S
 		return delErr
 	}
 
-	return errors.OK
+	return errors.NoContent
 }

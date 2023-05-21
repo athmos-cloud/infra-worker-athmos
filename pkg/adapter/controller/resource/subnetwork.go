@@ -6,7 +6,7 @@ import (
 	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
+	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 )
 
 type Subnetwork interface {

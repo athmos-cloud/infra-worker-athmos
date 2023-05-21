@@ -10,7 +10,7 @@ import (
 type Firewall interface {
 	FindFirewall(context.Context, option.Option) (*resource.Firewall, errors.Error)
 	FindAllRecursiveFirewalls(context.Context, option.Option) (*resource.FirewallCollection, errors.Error)
-	CreateFirewall(context.Context, *resource.Provider) errors.Error
-	UpdateFirewall(context.Context, *resource.Provider) errors.Error
+	CreateFirewall(context.Context, *resource.Firewall) errors.Error
+	UpdateFirewall(context.Context, *resource.Firewall) errors.Error
 	DeleteFirewall(context.Context, *resource.Firewall) errors.Error
 }

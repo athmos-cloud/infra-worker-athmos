@@ -6,7 +6,7 @@ import (
 	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
+	resource2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 )
 
 type Provider interface {
@@ -18,11 +18,11 @@ type Provider interface {
 }
 
 type providerController struct {
-	providerUseCase usecase.Provider
+	providerUseCase resource2.Provider
 	providerOutput  output.ProviderPort
 }
 
-func NewProviderController(networkUseCase usecase.Provider, providerOutput output.ProviderPort) Provider {
+func NewProviderController(networkUseCase resource2.Provider, providerOutput output.ProviderPort) Provider {
 	return &providerController{providerUseCase: networkUseCase, providerOutput: providerOutput}
 }
 

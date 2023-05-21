@@ -6,7 +6,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
+	resource2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 )
 
 type Network interface {
@@ -17,11 +17,11 @@ type Network interface {
 }
 
 type networkController struct {
-	networkUseCase usecase.Network
+	networkUseCase resource2.Network
 	networkOutput  output.NetworkPort
 }
 
-func NewNetworkController(networkUseCase usecase.Network, networkOutput output.NetworkPort) Network {
+func NewNetworkController(networkUseCase resource2.Network, networkOutput output.NetworkPort) Network {
 	return &networkController{networkUseCase: networkUseCase, networkOutput: networkOutput}
 }
 

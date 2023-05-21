@@ -17,12 +17,12 @@ func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) CreateFirewall(ctx context.Context, provider *resource.Provider) errors.Error {
+func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (gcp *gcpRepository) UpdateFirewall(ctx context.Context, provider *resource.Provider) errors.Error {
+func (gcp *gcpRepository) UpdateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	//TODO implement me
 	panic("implement me")
 }
