@@ -29,8 +29,8 @@ type subnetworkUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewSubnetworkUseCase(gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Network {
-	return &networkUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewSubnetworkUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Subnetwork {
+	return &subnetworkUseCase{projectRepo: projectRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (suc *subnetworkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {

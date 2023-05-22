@@ -1,14 +1,17 @@
 package dto
 
-import "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+)
 
 type GetSubnetworkRequest struct {
 	IdentifierID identifier.Subnetwork `json:"identifierID"`
 }
 
 type GetSubnetworkResponse struct {
-	ProjectID string                `json:"projectID"`
-	Payload   identifier.Subnetwork `json:"payload"`
+	ProjectID string              `json:"projectID"`
+	Payload   resource.Subnetwork `json:"payload"`
 }
 
 type CreateSubnetworkRequest struct {
@@ -21,8 +24,8 @@ type CreateSubnetworkRequest struct {
 }
 
 type CreateSubnetworkResponse struct {
-	ProjectID string                `json:"projectID"`
-	Payload   identifier.Subnetwork `json:"payload"`
+	ProjectID string              `json:"projectID"`
+	Payload   resource.Subnetwork `json:"payload"`
 }
 
 type UpdateSubnetworkRequest struct {

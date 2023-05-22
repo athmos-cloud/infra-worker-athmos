@@ -29,8 +29,8 @@ type firewallUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewFirewallUseCase(gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Firewall {
-	return &firewallUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewFirewallUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Firewall {
+	return &firewallUseCase{projectRepo: projectRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (fuc *firewallUseCase) getRepo(ctx context.Context) resourceRepo.Resource {

@@ -2,16 +2,23 @@ package main
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/http"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/rabbitmq"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
 	registry2 "github.com/athmos-cloud/infra-worker-athmos/pkg/registry"
 )
 
 func main() {
 	registry := registry2.NewRegistry()
 	ctrl := registry.NewAppController()
-	server := http.New(ctrl.Project, ctrl.Secret)
-	//server := http.New(&projectService, &pluginService, &resourceService, &secretService)
-	//rabbitmq.Queue.SetServices(&resourceService)
-	//go rabbitmq.Queue.StartConsumer(ctx)
-	//defer rabbitmq.Close()
+	server := http.New(ctrl.Project, ctrl.Secret, ctrl.Resource)
+	ctx := rabbitmq.NewContext()
+	rabbitMQ := rabbitmq.New(
+		config.Current.Queue.URI,
+		config.Current.Queue.Queue,
+		config.Current.Queue.Exchange,
+		ctrl.Resource,
+	)
+	go rabbitMQ.StartConsumer(ctx)
+	defer rabbitMQ.Close()
 	server.Start()
 }

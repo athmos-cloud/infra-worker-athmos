@@ -29,8 +29,8 @@ type networkUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewNetworkUseCase(gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Network {
-	return &networkUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewNetworkUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Network {
+	return &networkUseCase{projectRepo: projectRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (nuc *networkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
@@ -45,7 +45,7 @@ func (nuc *networkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	return nil
 }
 
-func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *model.Network) errors.Error {
+func (nuc *networkUseCase) Get(ctx context.Context, network *model.Network) errors.Error {
 	repo := nuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -65,7 +65,7 @@ func (nuc *networkUseCase) Get(ctx context.Context, subnetwork *model.Network) e
 	if !err.IsOk() {
 		return err
 	}
-	*subnetwork = *foundNetwork
+	*network = *foundNetwork
 	return errors.OK
 }
 

@@ -32,8 +32,8 @@ type providerUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewProviderUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
-	return &providerUseCase{projectRepo: projectRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewProviderUseCase(projectRepo repository.Project, secretRepo repository.Secret, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
+	return &providerUseCase{projectRepo: projectRepo, secretRepo: secretRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {

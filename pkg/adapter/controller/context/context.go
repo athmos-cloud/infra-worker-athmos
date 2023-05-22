@@ -4,7 +4,8 @@ import "context"
 
 const (
 	RequestKey      = "request"
-	ErrorKey        = "error"
+	ResponseKey     = "response"
+	ResponseCodeKey = "response_code"
 	ProjectIDKey    = "project_id"
 	OwnerIDKey      = "owner_id"
 	ProviderTypeKey = "provider_type"
@@ -14,5 +15,5 @@ const (
 type Context interface {
 	context.Context
 	JSON(int, any)
-	BindJSON(any) error
+	Set(string, any)
 }
