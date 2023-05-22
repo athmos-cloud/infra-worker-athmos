@@ -72,9 +72,7 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 	wg := &sync.WaitGroup{}
 
 	subnetChannels := make([]resourceRepo.SubnetworkChannel, 0)
-	subnetCollection := resource.SubnetworkCollection{}
 	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
-	firewallCollections := resource.FirewallCollection{}
 
 	for _, network := range *modNetworks {
 		subnetOpt := resourceRepo.FindAllResourceOption{
@@ -86,12 +84,12 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		}
 		chFirewall := &resourceRepo.FirewallChannel{
 			WaitGroup:    wg,
-			Channel:      make(chan *resource.Firewall),
+			Channel:      make(chan *resource.FirewallCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		chSubnet := &resourceRepo.SubnetworkChannel{
 			WaitGroup:    wg,
-			Channel:      make(chan *resource.Subnetwork),
+			Channel:      make(chan *resource.SubnetworkCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		subnetChannels = append(subnetChannels, *chSubnet)
@@ -102,12 +100,12 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: subnetOpt}, chSubnet)
 
 		select {
-		case firewall := <-chFirewall.Channel:
-			firewallCollections[firewall.IdentifierName.Firewall] = *firewall
+		case firewalls := <-chFirewall.Channel:
+			network.Firewalls = *firewalls
 		case errChFirewall := <-chFirewall.ErrorChannel:
 			logger.Error.Println("error while listing firewalls", errChFirewall)
-		case subnetwork := <-chSubnet.Channel:
-			subnetCollection[subnetwork.IdentifierName.Subnetwork] = *subnetwork
+		case subnetworks := <-chSubnet.Channel:
+			network.Subnetworks = *subnetworks
 		case errCh := <-chSubnet.ErrorChannel:
 			logger.Error.Println("error while listing subnetworks", errCh)
 		}

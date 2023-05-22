@@ -16,8 +16,11 @@ import (
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 func (gcp *gcpRepository) FindSubnetwork(ctx context.Context, opt option.Option) (*resource.Subnetwork, errors.Error) {
@@ -41,13 +44,62 @@ func (gcp *gcpRepository) FindSubnetwork(ctx context.Context, opt option.Option)
 }
 
 func (gcp *gcpRepository) FindAllSubnetworks(ctx context.Context, opt option.Option) (*resource.SubnetworkCollection, errors.Error) {
-	//TODO implement me
 	panic("implement me")
 }
 
 func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt option.Option, ch *resourceRepo.SubnetworkChannel) {
-	//TODO implement me
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		ch.ErrorChannel <- errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+		return
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpSubnetworkList := &v1beta1.SubnetworkList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().List(ctx, gcpSubnetworkList, listOpt); err != nil {
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetworks in namespace %s", req.Namespace))
+		return
+	}
+	subnetworkCollection, err := gcp.toModelSubnetworkCollection(gcpSubnetworkList)
+	if !err.IsOk() {
+		ch.ErrorChannel <- err
+		return
+	}
+	wg := &sync.WaitGroup{}
+	vmChannels := make([]*resourceRepo.VMChannel, 0)
+	for _, subnet := range *subnetworkCollection {
+		wg.Add(1)
+		optVM := option.Option{}
+		vmCh := &resourceRepo.VMChannel{
+			WaitGroup:    ch.WaitGroup,
+			Channel:      make(chan *resource.VMCollection),
+			ErrorChannel: make(chan errors.Error),
+		}
+		vmChannels = append(vmChannels, vmCh)
+		go gcp.FindAllRecursiveVMs(ctx, optVM, vmCh)
+		select {
+		case errCh := <-vmCh.ErrorChannel:
+			ch.ErrorChannel <- errCh
+		case vms := <-vmCh.Channel:
+			subnet.VMs = *vms
+		}
+	}
+
+	subnetworks, err := gcp.toModelSubnetworkCollection(gcpSubnetworkList)
+	go func() {
+		wg.Wait()
+		for _, c := range vmChannels {
+			close(c.Channel)
+			close(c.ErrorChannel)
+		}
+	}()
+	if !err.IsOk() {
+		ch.ErrorChannel <- err
+	} else {
+		ch.Channel <- subnetworks
+	}
 }
 
 func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
@@ -133,4 +185,16 @@ func (gcp *gcpRepository) toGCPSubnetwork(ctx context.Context, subnet *resource.
 			},
 		},
 	}
+}
+
+func (gcp *gcpRepository) toModelSubnetworkCollection(subnetworkList *v1beta1.SubnetworkList) (*resource.SubnetworkCollection, errors.Error) {
+	var items resource.SubnetworkCollection
+	for _, item := range subnetworkList.Items {
+		subnet, err := gcp.toModelSubnetwork(&item)
+		if !err.IsOk() {
+			return nil, err
+		}
+		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *subnet
+	}
+	return &items, errors.OK
 }

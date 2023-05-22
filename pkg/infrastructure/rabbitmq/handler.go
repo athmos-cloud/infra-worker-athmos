@@ -46,8 +46,10 @@ func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
 			Payload:   ctx.Value(context.ResponseKey),
 		}
 		rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)
+	} else {
+		rq.handleError(ctx)
 	}
-	rq.handleError(ctx)
+	clearContext(ctx)
 }
 
 func (rq *RabbitMQ) handleError(ctx context.Context) {

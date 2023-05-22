@@ -14,8 +14,10 @@ import (
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
 
@@ -43,8 +45,25 @@ func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*resou
 }
 
 func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Option, ch *resourceRepo.VMChannel) {
-	//TODO implement me
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		ch.ErrorChannel <- errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+		return
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpVMList := &v1beta1.InstanceList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().List(ctx, gcpVMList, listOpt); err != nil {
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm in namespace %s", req.Namespace))
+		return
+	}
+	if firewalls, err := gcp.toModelVMCollection(gcpVMList); !err.IsOk() {
+		ch.ErrorChannel <- err
+	} else {
+		ch.Channel <- firewalls
+	}
 }
 
 func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*resource.VMCollection, errors.Error) {
@@ -125,4 +144,16 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1.Instance {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (gcp *gcpRepository) toModelVMCollection(firewallList *v1beta1.InstanceList) (*resource.VMCollection, errors.Error) {
+	var items resource.VMCollection
+	for _, item := range firewallList.Items {
+		vm, err := gcp.toModelVM(&item)
+		if !err.IsOk() {
+			return nil, err
+		}
+		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *vm
+	}
+	return &items, errors.OK
 }

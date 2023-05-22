@@ -10,7 +10,7 @@ import (
 
 type NetworkChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *resource.Network
+	Channel      chan *resource.NetworkCollection
 	ErrorChannel chan errors.Error
 }
 

@@ -16,8 +16,10 @@ import (
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (gcp *gcpRepository) FindFirewall(ctx context.Context, opt option.Option) (*resource.Firewall, errors.Error) {
@@ -45,8 +47,25 @@ func (gcp *gcpRepository) FindAllFirewalls(ctx context.Context, opt option.Optio
 }
 
 func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option, ch *resourceRepo.FirewallChannel) {
-	//TODO implement me
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		ch.ErrorChannel <- errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+		return
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpFirewallList := &v1beta1.FirewallList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().List(ctx, gcpFirewallList, listOpt); err != nil {
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list firewalls in namespace %s", req.Namespace))
+		return
+	}
+	if firewalls, err := gcp.toModelFirewallCollection(gcpFirewallList); !err.IsOk() {
+		ch.ErrorChannel <- err
+	} else {
+		ch.Channel <- firewalls
+	}
 }
 
 func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
@@ -168,4 +187,16 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.
 		},
 	}
 
+}
+
+func (gcp *gcpRepository) toModelFirewallCollection(firewallList *v1beta1.FirewallList) (*resource.FirewallCollection, errors.Error) {
+	var items resource.FirewallCollection
+	for _, item := range firewallList.Items {
+		firewall, err := gcp.toModelFirewall(&item)
+		if !err.IsOk() {
+			return nil, err
+		}
+		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *firewall
+	}
+	return &items, errors.OK
 }
