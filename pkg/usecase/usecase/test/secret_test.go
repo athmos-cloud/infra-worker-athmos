@@ -33,14 +33,14 @@ func Test_secretUseCase_Create(t *testing.T) {
 	curProject := model.NewProject("test", "test")
 	ctx := NewContext()
 	err := pu.Create(ctx, curProject)
-	ctx = ctx.WithValue(context.ProjectIDKey, curProject.ID.Hex())
+	ctx.Set(context.ProjectIDKey, curProject.ID.Hex())
 	require.True(t, err.IsOk())
 
 	t.Run("Should successfully create a secret", func(t *testing.T) {
 		secretData := "test"
 		secretName := "test-secret"
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: "A test secret",
@@ -49,7 +49,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
 		assert.True(t, errCreate.IsOk())
-		ctx = ctx.WithValue(context.RequestKey, dto.GetSecretRequest{
+		ctx.Set(context.RequestKey, dto.GetSecretRequest{
 			ProjectID: curProject.ID.Hex(),
 			Name:      secretName,
 		})
@@ -70,7 +70,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 		secretData := "test"
 		secretName := "test-secret-2"
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: "A test secret",
@@ -95,13 +95,13 @@ func Test_secretUseCase_Delete(t *testing.T) {
 	ctx := NewContext()
 	err := pu.Create(ctx, curProject)
 	require.True(t, err.IsOk())
-	ctx = ctx.WithValue(context.ProjectIDKey, curProject.ID.Hex())
+	ctx.Set(context.ProjectIDKey, curProject.ID.Hex())
 
 	t.Run("Should successfully delete a secret", func(t *testing.T) {
 		secretName := "test-secret"
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 		secret := &secretModel.Secret{}
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: "A test secret",
@@ -109,7 +109,7 @@ func Test_secretUseCase_Delete(t *testing.T) {
 		})
 		errCreate := su.Create(ctx, secret)
 		assert.True(t, errCreate.IsOk())
-		ctx = ctx.WithValue(context.RequestKey, dto.DeleteSecretRequest{
+		ctx.Set(context.RequestKey, dto.DeleteSecretRequest{
 			Name: secret.Kubernetes.SecretName,
 		})
 		errGet := su.Delete(ctx)
@@ -126,7 +126,7 @@ func Test_secretUseCase_Delete(t *testing.T) {
 	t.Run("Should fail to delete a secret when a secret with same name already exists in project", func(t *testing.T) {
 		secretName := "test-secret"
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
-		ctx = ctx.WithValue(context.RequestKey, dto.DeleteSecretRequest{
+		ctx.Set(context.RequestKey, dto.DeleteSecretRequest{
 			Name: secretName,
 		})
 		errGet := su.Delete(ctx)
@@ -146,14 +146,14 @@ func Test_secretUseCase_Get(t *testing.T) {
 	ctx := NewContext()
 	err := pu.Create(ctx, curProject)
 	require.True(t, err.IsOk())
-	ctx = ctx.WithValue(context.ProjectIDKey, curProject.ID.Hex())
+	ctx.Set(context.ProjectIDKey, curProject.ID.Hex())
 
 	t.Run("Get existing secret", func(t *testing.T) {
 		secretData := "test"
 		secretName := "test-secret"
 		description := "A test secret"
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: description,
@@ -162,7 +162,7 @@ func Test_secretUseCase_Get(t *testing.T) {
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
 		assert.True(t, errCreate.IsOk())
-		ctx = ctx.WithValue(context.RequestKey, dto.GetSecretRequest{
+		ctx.Set(context.RequestKey, dto.GetSecretRequest{
 			ProjectID: curProject.ID.Hex(),
 			Name:      secretName,
 		})
@@ -175,7 +175,7 @@ func Test_secretUseCase_Get(t *testing.T) {
 
 	t.Run("Get non-existing secret should return NotFound error", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
-		ctx = ctx.WithValue(context.RequestKey, dto.GetSecretRequest{
+		ctx.Set(context.RequestKey, dto.GetSecretRequest{
 			ProjectID: curProject.ID.Hex(),
 			Name:      "non-existing-secret",
 		})
@@ -198,7 +198,7 @@ func Test_secretUseCase_List(t *testing.T) {
 	ctx := NewContext()
 	err := pu.Create(ctx, curProject)
 	require.True(t, err.IsOk())
-	ctx = ctx.WithValue(context.ProjectIDKey, curProject.ID.Hex())
+	ctx.Set(context.ProjectIDKey, curProject.ID.Hex())
 
 	t.Run("List secrets in a project without secrets", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
@@ -212,7 +212,7 @@ func Test_secretUseCase_List(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 
 		// CreateNetwork a first secret
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
 			Description: "A test secret 1",
@@ -223,7 +223,7 @@ func Test_secretUseCase_List(t *testing.T) {
 		assert.True(t, errCreate.IsOk())
 
 		// CreateNetwork a second secret
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-2",
 			Description: "A test secret 2",
@@ -258,13 +258,13 @@ func Test_secretUseCase_Update(t *testing.T) {
 	ctx := NewContext()
 	err := pu.Create(ctx, curProject)
 	require.True(t, err.IsOk())
-	ctx = ctx.WithValue(context.ProjectIDKey, curProject.ID.Hex())
+	ctx.Set(context.ProjectIDKey, curProject.ID.Hex())
 
 	t.Run("Update existing secret", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 
 		// CreateNetwork a secret
-		ctx = ctx.WithValue(context.RequestKey, dto.CreateSecretRequest{
+		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
 			Description: "A test secret 1",
@@ -275,7 +275,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 		assert.True(t, errCreate.IsOk())
 
 		// UpdateNetwork the secret
-		ctx = ctx.WithValue(context.RequestKey, dto.UpdateSecretRequest{
+		ctx.Set(context.RequestKey, dto.UpdateSecretRequest{
 			Name:        "test-secret-1",
 			Description: "A test secret 1 updated",
 			Value:       []byte("test1-updated"),
@@ -297,7 +297,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 	t.Run("Update non-existing secret should return NotFound error", func(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 		secret := &secretModel.Secret{}
-		ctx = ctx.WithValue(context.RequestKey, dto.UpdateSecretRequest{
+		ctx.Set(context.RequestKey, dto.UpdateSecretRequest{
 			Name:        "this-secret-does-not-exist",
 			Description: "A secret that does not exist",
 			Value:       []byte("secret-value"),

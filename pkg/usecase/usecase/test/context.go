@@ -1,26 +1,23 @@
 package test
 
-import "context"
+import (
+	goContext "context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+)
 
 type Context struct {
-	context.Context
+	goContext.Context
 }
 
-func NewContext() Context {
-	return Context{context.Background()}
+func NewContext() context.Context {
+	return Context{goContext.Background()}
 }
 
-func (c Context) WithValue(key, val any) Context {
-	c.Context = context.WithValue(c.Context, key, val)
-	return c
+func (c Context) Set(key string, val any) {
+	c.Context = goContext.WithValue(c.Context, key, val)
 }
 
 func (c Context) JSON(i int, a any) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (c Context) BindJSON(a any) error {
 	//TODO implement me
 	panic("implement me")
 }
