@@ -18,10 +18,9 @@ import (
 )
 
 func Test_projectUseCase_Create(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	t.Run("Should successfully create a project and namespace", func(t *testing.T) {
@@ -34,7 +33,7 @@ func Test_projectUseCase_Create(t *testing.T) {
 		assert.False(t, proj.ID.IsZero())
 		// Check if namespace has been created
 		ns := &corev1.Namespace{}
-		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{Name: proj.Namespace}, ns)
+		errKube := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: proj.Namespace}, ns)
 		assert.Nil(t, errKube)
 	})
 
@@ -50,10 +49,9 @@ func Test_projectUseCase_Create(t *testing.T) {
 }
 
 func Test_projectUseCase_Delete(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	t.Run("Should successfully delete a project and namespace", func(t *testing.T) {
@@ -77,10 +75,9 @@ func Test_projectUseCase_Delete(t *testing.T) {
 }
 
 func Test_projectUseCase_Get(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	t.Run("Should successfully get a project", func(t *testing.T) {
@@ -104,10 +101,9 @@ func Test_projectUseCase_Get(t *testing.T) {
 }
 
 func Test_projectUseCase_List(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	t.Run("Should successfully list a project", func(t *testing.T) {
@@ -138,10 +134,9 @@ func Test_projectUseCase_List(t *testing.T) {
 }
 
 func Test_projectUseCase_Update(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	t.Run("Should successfully update an existing project", func(t *testing.T) {

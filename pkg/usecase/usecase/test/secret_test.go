@@ -24,10 +24,9 @@ const (
 )
 
 func Test_secretUseCase_Create(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 	pu := usecase.NewProjectUseCase(repository.NewProjectRepository())
 	curProject := model.NewProject("test", "test")
@@ -58,7 +57,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 		errGet := su.Get(ctx, gotSecret)
 		assert.True(t, errGet.IsOk())
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Client.Get(ctx, types.NamespacedName{
 			Name:      gotSecret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)
@@ -85,10 +84,9 @@ func Test_secretUseCase_Create(t *testing.T) {
 }
 
 func Test_secretUseCase_Delete(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 	pu := usecase.NewProjectUseCase(repository.NewProjectRepository())
 	curProject := model.NewProject("test", "test")
@@ -115,7 +113,7 @@ func Test_secretUseCase_Delete(t *testing.T) {
 		errGet := su.Delete(ctx)
 		assert.Equal(t, errors.NotFound.Code, errGet.Code)
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Client.Get(ctx, types.NamespacedName{
 			Name:      secret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)
@@ -135,10 +133,9 @@ func Test_secretUseCase_Delete(t *testing.T) {
 }
 
 func Test_secretUseCase_Get(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	pu := usecase.NewProjectUseCase(repository.NewProjectRepository())
@@ -187,10 +184,9 @@ func Test_secretUseCase_Get(t *testing.T) {
 }
 
 func Test_secretUseCase_List(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	pu := usecase.NewProjectUseCase(repository.NewProjectRepository())
@@ -247,10 +243,9 @@ func Test_secretUseCase_List(t *testing.T) {
 }
 
 func Test_secretUseCase_Update(t *testing.T) {
-	mongoC, kubeC := Init(t)
+	mongoC := Init(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		require.NoError(t, gnomock.Stop(kubeC))
 	}()
 
 	pu := usecase.NewProjectUseCase(repository.NewProjectRepository())
@@ -285,7 +280,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 		assert.True(t, errUpdate.IsOk())
 		assert.Equal(t, "A test secret 1 updated", secret.Description)
 		kubeSecret := &corev1.Secret{}
-		errKube := kubernetes.Client().Get(ctx, types.NamespacedName{
+		errKube := kubernetes.Client().Client.Get(ctx, types.NamespacedName{
 			Name:      secret.Kubernetes.SecretName,
 			Namespace: curProject.Namespace,
 		}, kubeSecret)

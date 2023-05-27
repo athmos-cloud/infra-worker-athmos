@@ -2,8 +2,15 @@ module github.com/athmos-cloud/infra-worker-athmos
 
 go 1.19
 
+replace (
+	k8s.io/api => k8s.io/api v0.26.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.26.4
+	k8s.io/client-go => k8s.io/client-go v0.26.4
+	oras.land/oras-go => oras.land/oras-go v1.2.3
+)
+
+
 require (
-	github.com/crossplane/crossplane v1.10.0
 	github.com/crossplane/crossplane-runtime v0.20.0-rc.0.0.20230406155702-4e1673b7141f
 	github.com/gin-gonic/gin v1.9.0
 	github.com/kamva/mgm/v3 v3.5.0
