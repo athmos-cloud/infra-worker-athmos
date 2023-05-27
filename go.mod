@@ -9,7 +9,6 @@ replace (
 	oras.land/oras-go => oras.land/oras-go v1.2.3
 )
 
-
 require (
 	github.com/crossplane/crossplane-runtime v0.20.0-rc.0.0.20230406155702-4e1673b7141f
 	github.com/gin-gonic/gin v1.9.0
@@ -23,9 +22,10 @@ require (
 	github.com/upbound/provider-gcp v0.32.0
 	go.mongodb.org/mongo-driver v1.11.4
 	gopkg.in/mcuadros/go-defaults.v1 v1.1.0
-	helm.sh/helm/v3 v3.11.2
-	k8s.io/api v0.26.5
-	k8s.io/apimachinery v0.26.5
+	k8s.io/api v0.27.2
+	k8s.io/apimachinery v0.27.2
+	k8s.io/client-go v0.27.2
+	k8s.io/kube-aggregator v0.26.4
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
@@ -127,11 +127,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/locker v1.0.1 // indirect
-	github.com/moby/spdystream v0.2.0 // indirect
-	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
@@ -203,14 +199,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.3 // indirect
-	k8s.io/apiserver v0.26.3 // indirect
-	k8s.io/cli-runtime v0.26.3 // indirect
-	k8s.io/client-go v0.26.5 // indirect
-	k8s.io/component-base v0.26.3 // indirect
+	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
-	k8s.io/kubectl v0.26.0 // indirect
-	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
+	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
+	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 	oras.land/oras-go v1.2.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

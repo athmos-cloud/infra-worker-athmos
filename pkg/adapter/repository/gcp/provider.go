@@ -160,15 +160,13 @@ func (gcp *gcpRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*re
 		},
 	}, errors.OK
 }
-
 func (gcp *gcpRepository) toGCPProvider(ctx context.Context, provider *resource.Provider) *v1beta1.ProviderConfig {
 	resLabels := lo.Assign(
 		crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)),
 		provider.IdentifierID.ToLabels(),
 		provider.IdentifierName.GetLabelName(),
 		map[string]string{
-			secret.NameLabelKey:        provider.Auth.Name,
-			secret.DescriptionLabelKey: provider.Auth.Description,
+			secret.NameLabelKey: provider.Auth.Name,
 		},
 	)
 	return &v1beta1.ProviderConfig{
