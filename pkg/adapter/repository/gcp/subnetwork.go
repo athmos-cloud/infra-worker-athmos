@@ -44,7 +44,23 @@ func (gcp *gcpRepository) FindSubnetwork(ctx context.Context, opt option.Option)
 }
 
 func (gcp *gcpRepository) FindAllSubnetworks(ctx context.Context, opt option.Option) (*resource.SubnetworkCollection, errors.Error) {
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpSubnetworkList := &v1beta1.SubnetworkList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpSubnetworkList, listOpt); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetworks in namespace %s", req.Namespace))
+	}
+	subnetworkCollection, err := gcp.toModelSubnetworkCollection(gcpSubnetworkList)
+	if !err.IsOk() {
+		return nil, err
+	}
+	return subnetworkCollection, errors.OK
 }
 
 func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt option.Option, ch *resourceRepo.SubnetworkChannel) {
