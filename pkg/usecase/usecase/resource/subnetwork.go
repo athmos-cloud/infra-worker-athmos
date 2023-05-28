@@ -113,7 +113,7 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 		IPCIDRRange: req.IPCIDRRange,
 	}
 
-	if errSubnet := repo.CreateSubnetwork(ctx, subnetwork); !errSubnet.IsOk() {
+	if errSubnet := repo.CreateSubnetwork(ctx, toCreateSubnet); !errSubnet.IsOk() {
 		return errSubnet
 	}
 	*subnetwork = *toCreateSubnet
@@ -137,7 +137,7 @@ func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *model.Subn
 		return errProject
 	}
 	foundSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err
