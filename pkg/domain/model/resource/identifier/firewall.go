@@ -60,10 +60,10 @@ func (id *Firewall) IDFromLabels(labels map[string]string) errors.Error {
 
 func (id *Firewall) ToNameLabels() map[string]string {
 	return map[string]string{
-		FirewallNameKey:       id.Firewall,
-		ProviderIdentifierKey: id.Provider,
-		VpcIdentifierKey:      id.VPC,
-		NetworkIdentifierKey:  id.Network,
+		FirewallNameKey: id.Firewall,
+		ProviderNameKey: id.Provider,
+		VpcNameKey:      id.VPC,
+		NetworkNameKey:  id.Network,
 	}
 }
 
@@ -72,15 +72,15 @@ func (id *Firewall) NameFromLabels(labels map[string]string) errors.Error {
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing firewall identifier for firewall ID: %v", labels))
 	}
-	provider, ok := labels[ProviderIdentifierKey]
+	provider, ok := labels[ProviderNameKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing provider identifier for firewall ID: %v", labels))
 	}
-	vpc, ok := labels[VpcIdentifierKey]
+	vpc, ok := labels[VpcNameKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing vpc identifier for firewall ID: %v", labels))
 	}
-	network, ok := labels[NetworkIdentifierKey]
+	network, ok := labels[NetworkNameKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing network identifier for firewall ID: %v", labels))
 	}

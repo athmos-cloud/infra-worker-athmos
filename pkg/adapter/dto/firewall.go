@@ -19,7 +19,7 @@ type CreateFirewallRequest struct {
 	Name       string                    `json:"name"`
 	AllowRules resource.FirewallRuleList `json:"allowRules,omitempty"`
 	DenyRules  resource.FirewallRuleList `json:"denyRules,omitempty"`
-	Managed    *bool                     `json:"managed" default:"true"`
+	Managed    bool                      `json:"managed" default:"true"`
 	Tags       map[string]string         `json:"tags"`
 }
 
@@ -39,5 +39,4 @@ type UpdateFirewallRequest struct {
 
 type DeleteFirewallRequest struct {
 	IdentifierID identifier.Firewall `json:"identifierID"`
-	Cascade      *bool               `json:"cascade" default:"false"`
 }
