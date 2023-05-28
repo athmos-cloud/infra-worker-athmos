@@ -181,6 +181,12 @@ func (gcp *gcpRepository) UpdateNetwork(ctx context.Context, network *resource.N
 }
 
 func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *resource.Network) errors.Error {
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
+	if subnets, err := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else if len(*subnets) > 0 {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("can't delete network %s without cascade option", network.IdentifierName.Network))
+	}
 	gcpSubnetwork := gcp.toGCPNetwork(ctx, network)
 	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -203,7 +209,6 @@ func (gcp *gcpRepository) NetworkExists(ctx context.Context, opt option.Option) 
 	req := opt.Get().(resourceRepo.ResourceExistsOption)
 	gcpNetwork := &v1beta1.NetworkList{}
 	kubeOptions := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpNetwork, kubeOptions); err != nil {
