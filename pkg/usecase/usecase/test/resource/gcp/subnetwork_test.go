@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 )
 
@@ -55,12 +56,12 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 
 	t.Run("Create a valid subnetwork", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 		region := "europe-west1"
 		ipCIDR := "10.0.0.1/26"
 		req := dto.CreateSubnetworkRequest{
 			ParentID:    parentID,
-			Name:        netName,
+			Name:        subnetName,
 			Region:      region,
 			IPCIDRRange: ipCIDR,
 			Managed:     false,
@@ -83,11 +84,11 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 			"name.provider":                "test",
 			"name.vpc":                     "test",
 			"name.network":                 "test-net",
-			"name.subnetwork":              netName,
+			"name.subnetwork":              subnetName,
 		}
 		wantSpec := v1beta1.SubnetworkSpec{
 			ResourceSpec: v1.ResourceSpec{
-				DeletionPolicy: "Orphan",
+				DeletionPolicy: "Delete",
 				ProviderConfigReference: &v1.Reference{
 					Name: subnet.IdentifierID.Provider,
 				},
@@ -112,29 +113,74 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		}
 		assertSubnetworkEqual(t, wantNet, gotNet)
 	})
-	t.Run("Create a subnetwork with a non-existing secret should fail", func(t *testing.T) {
-		t.Skip("TODO")
-	})
-	t.Run("Create a subnetwork with an already existing name should fail", func(t *testing.T) {
-		t.Skip("TODO")
+
+	t.Run("Create a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
+		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		region := "europe-west1"
+		ipCIDR := "10.0.0.1/26"
+		req := dto.CreateSubnetworkRequest{
+			ParentID:    parentID,
+			Name:        subnetName,
+			Region:      region,
+			IPCIDRRange: ipCIDR,
+			Managed:     false,
+		}
+		ctx.Set(context.RequestKey, req)
+		subnet := &resource.Subnetwork{}
+		err := suc.Create(ctx, subnet)
+		require.Equal(t, errors.Created.Code, err.Code)
+		err = suc.Create(ctx, subnet)
+		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
 
 func Test_subnetworkUseCase_Delete(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, _, _ := initSubnetwork(t)
+	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clear(ctx)
 	}()
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		region := "europe-west1"
+		ipCIDR := "10.0.0.1/26"
+		req := dto.CreateSubnetworkRequest{
+			ParentID:    parentID,
+			Name:        subnetName,
+			Region:      region,
+			IPCIDRRange: ipCIDR,
+			Managed:     false,
+		}
+		ctx.Set(context.RequestKey, req)
+		subnet := &resource.Subnetwork{}
+		err := suc.Create(ctx, subnet)
+		assert.Equal(t, errors.Created.Code, err.Code)
+		delReq := dto.DeleteSubnetworkRequest{
+			IdentifierID: subnet.IdentifierID,
+		}
+		ctx.Set(context.RequestKey, delReq)
+		err = suc.Delete(ctx, subnet)
+		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
-		t.Skip("TODO")
+		delReq := dto.DeleteSubnetworkRequest{
+			IdentifierID: identifier.Subnetwork{
+				Provider:   "test",
+				VPC:        "test",
+				Network:    "test",
+				Subnetwork: "this-network-does-not-exist",
+			},
+		}
+		ctx.Set(context.RequestKey, delReq)
+		subnet := &resource.Subnetwork{}
+		err := suc.Delete(ctx, subnet)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Delete a subnetwork with children should fail", func(t *testing.T) {
-
+		t.Skip("TODO")
 	})
 	t.Run("Delete cascade a subnetwork should succeed", func(t *testing.T) {
 		t.Skip("TODO")
@@ -143,32 +189,110 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 
 func Test_subnetworkUseCase_Get(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, _, _ := initSubnetwork(t)
+	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clear(ctx)
 	}()
 	t.Run("Get a valid subnetwork should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		region := "europe-west1"
+		ipCIDR := "10.0.0.1/26"
+		req := dto.CreateSubnetworkRequest{
+			ParentID:    parentID,
+			Name:        subnetName,
+			Region:      region,
+			IPCIDRRange: ipCIDR,
+			Managed:     false,
+		}
+		ctx.Set(context.RequestKey, req)
+		subnet := &resource.Subnetwork{}
+		err := suc.Create(ctx, subnet)
+		assert.Equal(t, errors.Created.Code, err.Code)
+		getReq := dto.GetSubnetworkRequest{
+			IdentifierID: subnet.IdentifierID,
+		}
+		ctx.Set(context.RequestKey, getReq)
+		err = suc.Get(ctx, subnet)
+		assert.Equal(t, errors.OK.Code, err.Code)
+		assert.Equal(t, subnet.IdentifierID, getReq.IdentifierID)
+		assert.Equal(t, subnet.IPCIDRRange, ipCIDR)
+		assert.Equal(t, subnet.Region, region)
 	})
-	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
-		t.Skip("TODO")
+	t.Run("Get a non-existing subnetwork should fail", func(t *testing.T) {
+		getReq := dto.GetSubnetworkRequest{
+			IdentifierID: identifier.Subnetwork{
+				Provider:   "test",
+				VPC:        "test",
+				Network:    "test",
+				Subnetwork: "this-network-does-not-exist",
+			},
+		}
+		ctx.Set(context.RequestKey, getReq)
+		subnet := &resource.Subnetwork{}
+		err := suc.Get(ctx, subnet)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
-
 }
 
 func Test_subnetworkUseCase_Update(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, _, _ := initSubnetwork(t)
+	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clear(ctx)
 	}()
 	t.Run("Update a valid subnetwork should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		region := "europe-west1"
+		ipCIDR := "10.0.0.1/26"
+		req := dto.CreateSubnetworkRequest{
+			ParentID:    parentID,
+			Name:        subnetName,
+			Region:      region,
+			IPCIDRRange: ipCIDR,
+			Managed:     false,
+		}
+		ctx.Set(context.RequestKey, req)
+		subnet := &resource.Subnetwork{}
+		err := suc.Create(ctx, subnet)
+		assert.Equal(t, errors.Created.Code, err.Code)
+		newRegion := "europe-west2"
+		newIPCIDR := "10.1.0.1/26"
+		updReq := dto.UpdateSubnetworkRequest{
+			IdentifierID: subnet.IdentifierID,
+			Region:       &newRegion,
+			IPCIDRRange:  &newIPCIDR,
+		}
+		ctx.Set(context.RequestKey, updReq)
+		err = suc.Update(ctx, subnet)
+		assert.Equal(t, errors.NoContent.Code, err.Code)
+
+		kubeSubnet := &v1beta1.Subnetwork{}
+		errKube := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: subnet.IdentifierID.Subnetwork, Namespace: subnet.Metadata.Namespace}, kubeSubnet)
+		assert.NoError(t, errKube)
+		assert.Equal(t, newRegion, *kubeSubnet.Spec.ForProvider.Region)
+		assert.Equal(t, newIPCIDR, *kubeSubnet.Spec.ForProvider.IPCidrRange)
 	})
 	t.Run("Update a non-existing subnetwork should fail", func(t *testing.T) {
-		t.Skip("TODO")
+		newRegion := "europe-west2"
+		newIPCIDR := "10.1.0.1/26"
+		updReq := dto.UpdateSubnetworkRequest{
+			IdentifierID: identifier.Subnetwork{
+				Provider:   "test",
+				VPC:        "test",
+				Network:    "test",
+				Subnetwork: "this-network-does-not-exist",
+			},
+			Region:      &newRegion,
+			IPCIDRRange: &newIPCIDR,
+		}
+		ctx.Set(context.RequestKey, updReq)
+		subnet := &resource.Subnetwork{}
+		err := suc.Update(ctx, subnet)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 }
 

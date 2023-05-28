@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
@@ -119,6 +120,13 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 }
 
 func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+	serchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
+	if exists, err := gcp.SubnetworkExists(ctx,
+		option.Option{Value: resourceRepo.ResourceExistsOption{Namespace: subnetwork.Metadata.Namespace, Labels: serchLabels}}); !err.IsOk() {
+		return err
+	} else if exists {
+		return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
+	}
 	gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
 	if err := kubernetes.Client().Client.Create(ctx, gcpSubnetwork); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -130,8 +138,18 @@ func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *reso
 }
 
 func (gcp *gcpRepository) UpdateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
+	existingSubnet := &v1beta1.Subnetwork{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork, Namespace: subnetwork.Metadata.Namespace}, existingSubnet); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", subnetwork.IdentifierID.Subnetwork))
+	}
 	gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
-	if err := kubernetes.Client().Client.Update(ctx, gcpSubnetwork); err != nil {
+	existingSubnet.Spec = gcpSubnetwork.Spec
+	existingSubnet.Labels = gcpSubnetwork.Labels
+
+	if err := kubernetes.Client().Client.Update(ctx, existingSubnet); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
 		}
@@ -154,6 +172,22 @@ func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *reso
 func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (gcp *gcpRepository) SubnetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
+	if !opt.SetType(reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String()).Validate() {
+		return false, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.ResourceExistsOption)
+	gcpSubnetwork := &v1beta1.SubnetworkList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpSubnetwork, listOpt); err != nil {
+		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetworks in namespace %s", req.Namespace))
+	}
+	return len(gcpSubnetwork.Items) > 0, errors.OK
 }
 
 func (gcp *gcpRepository) toModelSubnetwork(subnet *v1beta1.Subnetwork) (*resource.Subnetwork, errors.Error) {
@@ -181,7 +215,7 @@ func (gcp *gcpRepository) toGCPSubnetwork(ctx context.Context, subnet *resource.
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), subnet.IdentifierID.ToIDLabels(), subnet.IdentifierName.ToNameLabels())
 	return &v1beta1.Subnetwork{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        subnet.IdentifierID.Network,
+			Name:        subnet.IdentifierID.Subnetwork,
 			Namespace:   subnet.Metadata.Namespace,
 			Labels:      resLabels,
 			Annotations: crossplane.GetAnnotations(subnet.Metadata.Managed, subnet.IdentifierName.Subnetwork),
@@ -194,8 +228,8 @@ func (gcp *gcpRepository) toGCPSubnetwork(ctx context.Context, subnet *resource.
 				},
 			},
 			ForProvider: v1beta1.SubnetworkParameters_2{
-				Network:     &subnet.IdentifierName.Network,
-				Project:     &subnet.IdentifierName.VPC,
+				Network:     &subnet.IdentifierID.Network,
+				Project:     &subnet.IdentifierID.VPC,
 				Region:      &subnet.Region,
 				IPCidrRange: &subnet.IPCIDRRange,
 			},

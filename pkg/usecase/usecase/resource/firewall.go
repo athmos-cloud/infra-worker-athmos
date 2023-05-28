@@ -92,7 +92,7 @@ func (fuc *firewallUseCase) Create(ctx context.Context, firewall *model.Firewall
 	toCreateFirewall := &model.Firewall{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   *req.Managed,
+			Managed:   req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID: identifier.Firewall{
@@ -134,7 +134,7 @@ func (fuc *firewallUseCase) Update(ctx context.Context, firewall *model.Firewall
 		return errProject
 	}
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err
@@ -178,7 +178,7 @@ func (fuc *firewallUseCase) Delete(ctx context.Context, firewall *model.Firewall
 		return errProject
 	}
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err

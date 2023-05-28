@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
@@ -69,6 +70,15 @@ func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 }
 
 func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
+	searchOpt := resourceRepo.ResourceExistsOption{
+		Namespace: firewall.Metadata.Namespace,
+		Labels:    lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, firewall.IdentifierName.ToNameLabels()),
+	}
+	if exists, err := gcp.FirewallExists(ctx, option.Option{Value: searchOpt}); !err.IsOk() {
+		return err
+	} else if exists {
+		return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+	}
 	gcpFirewall := gcp.toGCPFirewall(ctx, firewall)
 	if err := kubernetes.Client().Client.Create(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -80,8 +90,17 @@ func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource
 }
 
 func (gcp *gcpRepository) UpdateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
+	existingFirewall := &v1beta1.Firewall{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall, Namespace: firewall.Metadata.Namespace}, existingFirewall); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", firewall.IdentifierID.Firewall))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", firewall.IdentifierID.Firewall))
+	}
 	gcpFirewall := gcp.toGCPFirewall(ctx, firewall)
-	if err := kubernetes.Client().Client.Update(ctx, gcpFirewall); err != nil {
+	existingFirewall.Spec = gcpFirewall.Spec
+	existingFirewall.Labels = gcpFirewall.Labels
+	if err := kubernetes.Client().Client.Update(ctx, existingFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
 		}
@@ -101,6 +120,22 @@ func (gcp *gcpRepository) DeleteFirewall(ctx context.Context, firewall *resource
 	return errors.NoContent
 }
 
+func (gcp *gcpRepository) FirewallExists(context context.Context, option option.Option) (bool, errors.Error) {
+	if !option.SetType(reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String()).Validate() {
+		return false, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String(), option.Get()))
+	}
+	req := option.Get().(resourceRepo.ResourceExistsOption)
+	gcpFirewalls := &v1beta1.FirewallList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(context, gcpFirewalls, listOpt); err != nil {
+		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list firewalls in namespace %s", req.Namespace))
+	}
+	return len(gcpFirewalls.Items) > 0, errors.OK
+}
+
 func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource.Firewall, errors.Error) {
 	id := identifier.Firewall{}
 	name := identifier.Firewall{}
@@ -111,24 +146,35 @@ func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 		return nil, err
 	}
 	allow := resource.FirewallRuleList{}
+	mapAllow := make(map[string][]string)
 	for _, a := range firewall.Spec.ForProvider.Allow {
-		rule := resource.FirewallRule{
-			Protocol: *a.Protocol,
-		}
-		var ports []string
+		var portsA []string
 		for _, p := range a.Ports {
-			ports = append(ports, *p)
+			portsA = append(portsA, *p)
+		}
+		mapAllow[*a.Protocol] = append(mapAllow[*a.Protocol], portsA...)
+	}
+	for k, v := range mapAllow {
+		rule := resource.FirewallRule{
+			Protocol: k,
+			Ports:    v,
 		}
 		allow = append(allow, rule)
 	}
+
 	deny := resource.FirewallRuleList{}
-	for _, a := range firewall.Spec.ForProvider.Deny {
-		rule := resource.FirewallRule{
-			Protocol: *a.Protocol,
+	mapDeny := make(map[string][]string)
+	for _, d := range firewall.Spec.ForProvider.Deny {
+		var portsD []string
+		for _, p := range d.Ports {
+			portsD = append(portsD, *p)
 		}
-		var ports []string
-		for _, p := range a.Ports {
-			ports = append(ports, *p)
+		mapDeny[*d.Protocol] = append(mapDeny[*d.Protocol], portsD...)
+	}
+	for k, v := range mapDeny {
+		rule := resource.FirewallRule{
+			Protocol: k,
+			Ports:    v,
 		}
 		deny = append(deny, rule)
 	}
@@ -147,27 +193,19 @@ func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 
 func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.Firewall) *v1beta1.Firewall {
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToIDLabels(), firewall.IdentifierName.ToNameLabels())
-	allow := &[]v1beta1.AllowParameters{}
+	var allow []v1beta1.AllowParameters
 	for _, a := range firewall.Allow {
-		rule := v1beta1.AllowParameters{
-			Protocol: &a.Protocol,
-		}
-		var ports []*string
 		for _, p := range a.Ports {
-			ports = append(ports, &p)
+			curP := p
+			allow = append(allow, v1beta1.AllowParameters{Protocol: &a.Protocol, Ports: []*string{&curP}})
 		}
-		*allow = append(*allow, rule)
 	}
-	deny := &[]v1beta1.DenyParameters{}
-	for _, a := range firewall.Deny {
-		rule := v1beta1.DenyParameters{
-			Protocol: &a.Protocol,
+	var deny []v1beta1.DenyParameters
+	for _, d := range firewall.Deny {
+		for _, p := range d.Ports {
+			curP := p
+			deny = append(deny, v1beta1.DenyParameters{Protocol: &d.Protocol, Ports: []*string{&curP}})
 		}
-		var ports []*string
-		for _, p := range a.Ports {
-			ports = append(ports, &p)
-		}
-		*deny = append(*deny, rule)
 	}
 	return &v1beta1.Firewall{
 		ObjectMeta: metav1.ObjectMeta{
@@ -177,11 +215,17 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.
 			Annotations: crossplane.GetAnnotations(firewall.Metadata.Managed, firewall.IdentifierName.Firewall),
 		},
 		Spec: v1beta1.FirewallSpec{
+			ResourceSpec: v1.ResourceSpec{
+				DeletionPolicy: crossplane.GetDeletionPolicy(firewall.Metadata.Managed),
+				ProviderConfigReference: &v1.Reference{
+					Name: firewall.IdentifierID.Provider,
+				},
+			},
 			ForProvider: v1beta1.FirewallParameters{
-				Network: &firewall.IdentifierName.Network,
-				Project: &firewall.IdentifierName.VPC,
-				Allow:   *allow,
-				Deny:    *deny,
+				Network: &firewall.IdentifierID.Network,
+				Project: &firewall.IdentifierID.VPC,
+				Allow:   allow,
+				Deny:    deny,
 			},
 		},
 	}
