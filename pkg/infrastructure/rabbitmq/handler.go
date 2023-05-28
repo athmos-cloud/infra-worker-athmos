@@ -1,103 +1,63 @@
 package rabbitmq
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/streadway/amqp"
 )
 
-func (queue *RabbitMQ) HandleMessage(ctx context.Context, msg amqp.Delivery, err error) {
+func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err error) {
 	if err != nil {
 		logger.Error.Fatalf("Error occurred in RMQ consumer: %v", err)
 	}
-	message := Message{}
+	message := messageReceived{}
 	err = json.Unmarshal(msg.Body, &message)
 	if err != nil {
 		logger.Error.Printf("Wrong message format: %s", err)
 	}
-	logger.Info.Printf("Message received : %s", message.Verb)
+	ctx.Set(context.ProjectIDKey, message.Data.ProjectID)
+	ctx.Set(context.ProviderTypeKey, message.Data.ProviderType)
+	ctx.Set(context.ResourceTypeKey, message.Data.ResourceType)
+	ctx.Set(context.RequestKey, message.Data.Payload)
+
 	switch message.Verb {
 	case CREATE:
-		svcErr := errors.OK
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Info.Printf("Error occurred in RMQ consumer: %v", r)
-				svcErr = r.(errors.Error)
-				logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
-			}
-		}()
-		resp := queue.ResourceService.CreateResource(ctx, mapToCreateResourceRequest(message.Payload.(map[string]interface{})))
-		if !svcErr.IsOk() {
-			Publish(Event{
-				ProjectID: resp.ProjectID,
-				Code:      svcErr.Code,
-				Type:      CreateError,
-				Payload:   fmt.Sprintf("Error occurred in RMQ consumer: %v", svcErr),
-			})
-			return
-		}
-		Publish(Event{
-			ProjectID: resp.ProjectID,
-			Code:      200,
-			Type:      CreateRequestTreated,
-			Payload:   resp.Resource,
-		})
+		rq.ResourceController.CreateResource(ctx)
+		rq.handleResponse(ctx, eventTypeCreateRequestSent)
 	case UPDATE:
-		var payload resource.UpdateResourceRequest
-		svcErr := errors.NoContent
-		jsonData, errMarshal := json.Marshal(message.Payload)
-		if errMarshal != nil {
-			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
-		}
-		errUnmarshall := json.Unmarshal(jsonData, &payload)
-		if errUnmarshall != nil {
-			return
-		}
-		defer func() {
-			if r := recover(); r != nil {
-				svcErr = r.(errors.Error)
-			}
-		}()
-		queue.ResourceService.UpdateResource(ctx, payload)
-		if !svcErr.IsOk() {
-			Publish(Event{
-				ProjectID: payload.ProjectID,
-				Code:      svcErr.Code,
-				Type:      CreateError,
-				Payload:   fmt.Sprintf("Error occurred in RMQ consumer: %v", svcErr),
-			})
-			return
-		}
+		rq.ResourceController.UpdateResource(ctx)
+		rq.handleResponse(ctx, eventTypeUpdateRequestSent)
 	case DELETE:
-		var payload resource.DeleteResourceRequest
-		svcErr := errors.NoContent
-
-		jsonData, errMarshal := json.Marshal(message.Payload)
-		if errMarshal != nil {
-			logger.Error.Printf("Can't marshall payload : %v", errMarshal)
-		}
-		errUnmarshall := json.Unmarshal(jsonData, &payload)
-		if errUnmarshall != nil {
-			return
-		}
-		defer func() {
-			if r := recover(); r != nil {
-				svcErr = r.(errors.Error)
-			}
-		}()
-		queue.ResourceService.DeleteResource(ctx, payload)
-		if !svcErr.IsOk() {
-			logger.Error.Printf("Error occurred in RMQ consumer: %v", svcErr)
-		}
+		rq.ResourceController.DeleteResource(ctx)
+		rq.handleResponse(ctx, eventTypeDeleteRequestSent)
+	default:
+		return
 	}
 }
 
-func (queue *RabbitMQ) OnError(err errors.Error) {
-	if !err.IsOk() {
-		queue.MessageHandler(config.Current.Queue.Queue, amqp.Delivery{}, err)
+func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
+	code := ctx.Value(context.ResponseKey).(int)
+	if code%100 == 2 {
+		msg := messageSend{
+			ProjectID: ctx.Value(context.ProjectIDKey).(string),
+			Type:      eventType,
+			Code:      ctx.Value(context.ResponseCodeKey).(int),
+			Payload:   ctx.Value(context.ResponseKey),
+		}
+		rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)
+	} else {
+		rq.handleError(ctx)
 	}
+	clearContext(ctx)
+}
+
+func (rq *RabbitMQ) handleError(ctx context.Context) {
+	msg := messageSend{
+		ProjectID: ctx.Value(context.ProjectIDKey).(string),
+		Type:      Error,
+		Code:      ctx.Value(context.ResponseCodeKey).(int),
+		Payload:   ctx.Value(context.ResponseKey),
+	}
+	rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)
 }

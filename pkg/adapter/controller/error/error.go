@@ -11,8 +11,8 @@ import (
 func RaiseError(ctx context.Context, err any) {
 	if reflect.TypeOf(err) == reflect.TypeOf(errors.Error{}) {
 		errs := err.(errors.Error)
-		ctx.JSON(errs.Code, gin.H{"message": errs})
+		ctx.JSON(errs.Code, gin.H{"message": errs.Message})
 	} else {
-		ctx.JSON(500, gin.H{"message": errors.InternalError.WithMessage(fmt.Sprintf("%v", err))})
+		ctx.JSON(500, gin.H{"message": errors.InternalError.WithMessage(fmt.Sprintf("%v", err)).Message})
 	}
 }

@@ -10,7 +10,7 @@ import (
 
 type FirewallChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *resource.Firewall
+	Channel      chan *resource.FirewallCollection
 	ErrorChannel chan errors.Error
 }
 

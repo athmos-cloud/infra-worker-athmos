@@ -23,7 +23,7 @@ func (id *Firewall) Equals(other ID) bool {
 		id.Network == otherFirewallID.Network
 }
 
-func (id *Firewall) ToLabels() map[string]string {
+func (id *Firewall) ToIDLabels() map[string]string {
 	return map[string]string{
 		FirewallIdentifierKey: id.Firewall,
 		ProviderIdentifierKey: id.Provider,
@@ -32,7 +32,7 @@ func (id *Firewall) ToLabels() map[string]string {
 	}
 }
 
-func (id *Firewall) FromLabels(labels map[string]string) errors.Error {
+func (id *Firewall) IDFromLabels(labels map[string]string) errors.Error {
 	firewallID, ok := labels[FirewallIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage(fmt.Sprintf("missing firewall identifier for firewall ID: %v", labels))
@@ -54,6 +54,41 @@ func (id *Firewall) FromLabels(labels map[string]string) errors.Error {
 		Provider: providerID,
 		VPC:      vpcID,
 		Network:  networkID,
+	}
+	return errors.OK
+}
+
+func (id *Firewall) ToNameLabels() map[string]string {
+	return map[string]string{
+		FirewallNameKey:       id.Firewall,
+		ProviderIdentifierKey: id.Provider,
+		VpcIdentifierKey:      id.VPC,
+		NetworkIdentifierKey:  id.Network,
+	}
+}
+
+func (id *Firewall) NameFromLabels(labels map[string]string) errors.Error {
+	firewall, ok := labels[FirewallNameKey]
+	if !ok {
+		return errors.InternalError.WithMessage(fmt.Sprintf("missing firewall identifier for firewall ID: %v", labels))
+	}
+	provider, ok := labels[ProviderIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage(fmt.Sprintf("missing provider identifier for firewall ID: %v", labels))
+	}
+	vpc, ok := labels[VpcIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage(fmt.Sprintf("missing vpc identifier for firewall ID: %v", labels))
+	}
+	network, ok := labels[NetworkIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage(fmt.Sprintf("missing network identifier for firewall ID: %v", labels))
+	}
+	*id = Firewall{
+		Firewall: firewall,
+		Provider: provider,
+		VPC:      vpc,
+		Network:  network,
 	}
 	return errors.OK
 }

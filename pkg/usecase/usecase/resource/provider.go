@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
+	resourceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -16,12 +16,12 @@ import (
 )
 
 type Provider interface {
-	List(context.Context, *model.ProviderCollection) errors.Error
-	Get(context.Context, *model.Provider) errors.Error
-	GetRecursively(context.Context, *model.Provider) errors.Error
-	Create(context.Context, *model.Provider) errors.Error
-	Update(context.Context, *model.Provider) errors.Error
-	Delete(context.Context, *model.Provider) errors.Error
+	List(context.Context, *resourceModel.ProviderCollection) errors.Error
+	Get(context.Context, *resourceModel.Provider) errors.Error
+	GetRecursively(context.Context, *resourceModel.Provider) errors.Error
+	Create(context.Context, *resourceModel.Provider) errors.Error
+	Update(context.Context, *resourceModel.Provider) errors.Error
+	Delete(context.Context, *resourceModel.Provider) errors.Error
 }
 
 type providerUseCase struct {
@@ -32,8 +32,8 @@ type providerUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewProviderUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
-	return &providerUseCase{projectRepo: projectRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewProviderUseCase(projectRepo repository.Project, secretRepo repository.Secret, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
+	return &providerUseCase{projectRepo: projectRepo, secretRepo: secretRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
@@ -48,32 +48,28 @@ func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	return nil
 }
 
-func (puc *providerUseCase) List(ctx context.Context, providers *model.ProviderCollection) errors.Error {
+func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.ProviderCollection) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 
-	providersList := model.ProviderCollection{}
-	searchOption := option.Option{Value: resourceRepo.FindAllResourceOption{Labels: map[string]string{identifier.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}}}
-
-	merge := func(m1 model.ProviderCollection, m2 model.ProviderCollection) model.ProviderCollection {
-		for k, v := range m2 {
-			m1[k] = v
-		}
-		return m1
+	searchOption := option.Option{Value: resourceRepo.FindAllResourceOption{
+		Labels: map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}},
 	}
-	gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
+
+	foundProviders, err := repo.FindAllProviders(ctx, searchOption)
 	if !err.IsOk() {
 		return err
 	}
-	providersList = merge(providersList, *gcpProviders)
-
-	*providers = providersList
+	if len(*foundProviders) == 0 {
+		return errors.NotFound.WithMessage("no providers found")
+	}
+	*providers = *foundProviders
 	return errors.OK
 }
 
-func (puc *providerUseCase) GetRecursively(ctx context.Context, providers *model.Provider) errors.Error {
+func (puc *providerUseCase) GetRecursively(ctx context.Context, providers *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
@@ -83,7 +79,7 @@ func (puc *providerUseCase) GetRecursively(ctx context.Context, providers *model
 	return errors.OK
 }
 
-func (puc *providerUseCase) Get(ctx context.Context, provider *model.Provider) errors.Error {
+func (puc *providerUseCase) Get(ctx context.Context, provider *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
@@ -95,7 +91,7 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *model.Provider) e
 	if !err.IsOk() {
 		return err
 	}
-	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.Identifier.Provider, Namespace: project.Namespace}})
+	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider, Namespace: project.Namespace}})
 	if !err.IsOk() {
 		return err
 	}
@@ -103,7 +99,7 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *model.Provider) e
 	return errors.OK
 }
 
-func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider) errors.Error {
+func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
@@ -111,20 +107,11 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider
 	req := ctx.Value(context.RequestKey).(dto.CreateProviderRequest)
 	defaults.SetDefaults(&req)
 
-	project, errProject := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !errProject.IsOk() {
-		return errProject
-	}
-
 	secret, errSecret := puc.secretRepo.Find(ctx, option.Option{Value: repository.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
 	if !errSecret.IsOk() {
 		return errSecret
 	}
-	providerToCreate := &model.Provider{
-		Metadata: metadata.Metadata{
-			Namespace: project.Namespace,
-			Managed:   true,
-		},
+	providerToCreate := &resourceModel.Provider{
 		IdentifierID: identifier.Provider{
 			Provider: idFromName(req.Name),
 			VPC:      req.VPC,
@@ -133,8 +120,12 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider
 			Provider: req.Name,
 			VPC:      req.VPC,
 		},
-		Auth: *secret,
+		Auth: resourceModel.ProviderAuth{
+			Name:             secret.Name,
+			KubernetesSecret: secret.Kubernetes,
+		},
 	}
+
 	errCreate := repo.CreateProvider(ctx, providerToCreate)
 	if !errCreate.IsOk() {
 		return errCreate
@@ -144,7 +135,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *model.Provider
 	return errors.Created
 }
 
-func (puc *providerUseCase) Update(ctx context.Context, provider *model.Provider) errors.Error {
+func (puc *providerUseCase) Update(ctx context.Context, provider *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
@@ -159,9 +150,12 @@ func (puc *providerUseCase) Update(ctx context.Context, provider *model.Provider
 	if req.SecretAuthName != "" {
 		secret, err := puc.secretRepo.Find(ctx, option.Option{Value: repository.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
 		if !err.IsOk() {
-			return err
+			return errors.BadRequest.WithMessage(fmt.Sprintf("secret %s does not exist", req.SecretAuthName))
 		}
-		provider.Auth = *secret
+		provider.Auth = resourceModel.ProviderAuth{
+			Name:             secret.Name,
+			KubernetesSecret: secret.Kubernetes,
+		}
 	}
 	if req.Name != "" {
 		provider.IdentifierName.Provider = req.Name
@@ -174,7 +168,7 @@ func (puc *providerUseCase) Update(ctx context.Context, provider *model.Provider
 	return errors.NoContent
 }
 
-func (puc *providerUseCase) Delete(ctx context.Context, provider *model.Provider) errors.Error {
+func (puc *providerUseCase) Delete(ctx context.Context, provider *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))

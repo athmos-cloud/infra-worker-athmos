@@ -10,7 +10,7 @@ import (
 
 type NetworkChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *resource.Network
+	Channel      chan *resource.NetworkCollection
 	ErrorChannel chan errors.Error
 }
 
@@ -22,4 +22,5 @@ type Network interface {
 	UpdateNetwork(context.Context, *resource.Network) errors.Error
 	DeleteNetwork(context.Context, *resource.Network) errors.Error
 	DeleteNetworkCascade(context.Context, *resource.Network) errors.Error
+	NetworkExists(context.Context, option.Option) (bool, errors.Error)
 }

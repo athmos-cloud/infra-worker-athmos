@@ -20,7 +20,7 @@ func (id *Subnetwork) Equals(other ID) bool {
 		id.Network == otherSubnetworkID.Network
 }
 
-func (id *Subnetwork) ToLabels() map[string]string {
+func (id *Subnetwork) ToIDLabels() map[string]string {
 	return map[string]string{
 		SubnetworkIdentifierKey: id.Subnetwork,
 		ProviderIdentifierKey:   id.Provider,
@@ -29,7 +29,7 @@ func (id *Subnetwork) ToLabels() map[string]string {
 	}
 }
 
-func (id *Subnetwork) FromLabels(labels map[string]string) errors.Error {
+func (id *Subnetwork) IDFromLabels(labels map[string]string) errors.Error {
 	subnetworkID, ok := labels[SubnetworkIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing subnetwork identifier")
@@ -51,6 +51,38 @@ func (id *Subnetwork) FromLabels(labels map[string]string) errors.Error {
 		Provider:   providerID,
 		VPC:        vpcID,
 		Network:    networkID,
+	}
+	return errors.OK
+}
+
+func (id *Subnetwork) ToNameLabels() map[string]string {
+	return map[string]string{
+		SubnetworkNameKey: id.Subnetwork,
+		ProviderNameKey:   id.Provider,
+		VpcNameKey:        id.VPC,
+		NetworkNameKey:    id.Network,
+	}
+}
+
+func (id *Subnetwork) NameFromLabels(labels map[string]string) errors.Error {
+	subnetworkName, ok := labels[SubnetworkNameKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing subnetwork name")
+	}
+	providerName, ok := labels[ProviderNameKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing provider name")
+	}
+	vpcName, ok := labels[VpcNameKey]
+	networkName, ok := labels[NetworkNameKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing network name")
+	}
+	*id = Subnetwork{
+		Subnetwork: subnetworkName,
+		Provider:   providerName,
+		VPC:        vpcName,
+		Network:    networkName,
 	}
 	return errors.OK
 }

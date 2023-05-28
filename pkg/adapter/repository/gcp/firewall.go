@@ -16,8 +16,10 @@ import (
 	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (gcp *gcpRepository) FindFirewall(ctx context.Context, opt option.Option) (*resource.Firewall, errors.Error) {
@@ -26,7 +28,7 @@ func (gcp *gcpRepository) FindFirewall(ctx context.Context, opt option.Option) (
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	gcpFirewall := &v1beta1.Firewall{}
-	if err := kubernetes.Client().Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, gcpFirewall); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, gcpFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", req.Name, req.Namespace))
 		}
@@ -45,13 +47,30 @@ func (gcp *gcpRepository) FindAllFirewalls(ctx context.Context, opt option.Optio
 }
 
 func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option, ch *resourceRepo.FirewallChannel) {
-	//TODO implement me
-	panic("implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		ch.ErrorChannel <- errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+		return
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpFirewallList := &v1beta1.FirewallList{}
+	listOpt := &client.ListOptions{
+		Namespace:     req.Namespace,
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpFirewallList, listOpt); err != nil {
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list firewalls in namespace %s", req.Namespace))
+		return
+	}
+	if firewalls, err := gcp.toModelFirewallCollection(gcpFirewallList); !err.IsOk() {
+		ch.ErrorChannel <- err
+	} else {
+		ch.Channel <- firewalls
+	}
 }
 
 func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	gcpFirewall := gcp.toGCPFirewall(ctx, firewall)
-	if err := kubernetes.Client().Create(ctx, gcpFirewall); err != nil {
+	if err := kubernetes.Client().Client.Create(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
 		}
@@ -62,7 +81,7 @@ func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource
 
 func (gcp *gcpRepository) UpdateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	gcpFirewall := gcp.toGCPFirewall(ctx, firewall)
-	if err := kubernetes.Client().Update(ctx, gcpFirewall); err != nil {
+	if err := kubernetes.Client().Client.Update(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
 		}
@@ -73,7 +92,7 @@ func (gcp *gcpRepository) UpdateFirewall(ctx context.Context, firewall *resource
 
 func (gcp *gcpRepository) DeleteFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	gcpFirewall := gcp.toGCPFirewall(ctx, firewall)
-	if err := kubernetes.Client().Delete(ctx, gcpFirewall); err != nil {
+	if err := kubernetes.Client().Client.Delete(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
 		}
@@ -84,7 +103,11 @@ func (gcp *gcpRepository) DeleteFirewall(ctx context.Context, firewall *resource
 
 func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource.Firewall, errors.Error) {
 	id := identifier.Firewall{}
-	if err := id.FromLabels(firewall.Labels); !err.IsOk() {
+	name := identifier.Firewall{}
+	if err := id.IDFromLabels(firewall.Labels); !err.IsOk() {
+		return nil, err
+	}
+	if err := name.NameFromLabels(firewall.Labels); !err.IsOk() {
 		return nil, err
 	}
 	allow := resource.FirewallRuleList{}
@@ -115,20 +138,15 @@ func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 			Managed:   firewall.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 			Namespace: firewall.ObjectMeta.Namespace,
 		},
-		IdentifierID: id,
-		IdentifierName: identifier.Firewall{
-			Network:  *firewall.Spec.ForProvider.Network,
-			VPC:      *firewall.Spec.ForProvider.Project,
-			Provider: firewall.Spec.ResourceSpec.ProviderConfigReference.Name,
-			Firewall: firewall.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey],
-		},
-
-		Allow: allow,
-		Deny:  deny,
+		IdentifierID:   id,
+		IdentifierName: name,
+		Allow:          allow,
+		Deny:           deny,
 	}, errors.OK
 }
 
 func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.Firewall) *v1beta1.Firewall {
+	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToIDLabels(), firewall.IdentifierName.ToNameLabels())
 	allow := &[]v1beta1.AllowParameters{}
 	for _, a := range firewall.Allow {
 		rule := v1beta1.AllowParameters{
@@ -155,7 +173,7 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        firewall.IdentifierID.Firewall,
 			Namespace:   firewall.Metadata.Namespace,
-			Labels:      lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToLabels()),
+			Labels:      resLabels,
 			Annotations: crossplane.GetAnnotations(firewall.Metadata.Managed, firewall.IdentifierName.Firewall),
 		},
 		Spec: v1beta1.FirewallSpec{
@@ -168,4 +186,16 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.
 		},
 	}
 
+}
+
+func (gcp *gcpRepository) toModelFirewallCollection(firewallList *v1beta1.FirewallList) (*resource.FirewallCollection, errors.Error) {
+	var items resource.FirewallCollection
+	for _, item := range firewallList.Items {
+		firewall, err := gcp.toModelFirewall(&item)
+		if !err.IsOk() {
+			return nil, err
+		}
+		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *firewall
+	}
+	return &items, errors.OK
 }

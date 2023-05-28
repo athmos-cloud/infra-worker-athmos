@@ -39,3 +39,7 @@ _build-docker:
 restart:
 	@docker-compose restart infra-worker
 .PHONY: restart
+
+del-test-ns:
+	@kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr " " "\n" | grep "^test" | xargs -n 1 kubectl delete namespace
+.PHONY: del-test-ns

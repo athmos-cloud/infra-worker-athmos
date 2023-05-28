@@ -14,7 +14,8 @@ func NewRegistry() Registry {
 
 func (r *registry) NewAppController() controller.AppController {
 	return controller.AppController{
-		Project: r.NewProjectController(),
-		Secret:  r.NewSecretController(),
+		Project:  r.NewProjectController(),
+		Secret:   r.NewSecretController(),
+		Resource: r.NewResourceController(),
 	}
 }

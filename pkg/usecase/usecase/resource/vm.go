@@ -29,7 +29,7 @@ type vmUseCase struct {
 	azureRepo   resourceRepo.Resource
 }
 
-func NewVMUseCase(gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
+func NewVMUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
 	return &vmUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
@@ -93,7 +93,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
 	toCreateVM := &model.VM{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   *req.Managed,
+			Managed:   req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID: identifier.VM{

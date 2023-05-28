@@ -10,7 +10,7 @@ import (
 
 type VPCChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *resource.Network
+	Channel      chan *resource.VPCCollection
 	ErrorChannel chan errors.Error
 }
 

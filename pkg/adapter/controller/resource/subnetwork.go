@@ -21,8 +21,8 @@ type subnetworkController struct {
 	subnetworkOutput  output.SubnetworkPort
 }
 
-func NewSubnetworkController(networkUseCase usecase.Subnetwork, subnetworkOutput output.SubnetworkPort) Subnetwork {
-	return &subnetworkController{subnetworkUseCase: networkUseCase, subnetworkOutput: subnetworkOutput}
+func NewSubnetworkController(subnetworkUseCase usecase.Subnetwork, subnetworkOutput output.SubnetworkPort) Subnetwork {
+	return &subnetworkController{subnetworkUseCase: subnetworkUseCase, subnetworkOutput: subnetworkOutput}
 }
 
 func (sc *subnetworkController) GetSubnetwork(ctx context.Context) {

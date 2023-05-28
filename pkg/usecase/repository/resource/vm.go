@@ -10,7 +10,7 @@ import (
 
 type VMChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *resource.VM
+	Channel      chan *resource.VMCollection
 	ErrorChannel chan errors.Error
 }
 

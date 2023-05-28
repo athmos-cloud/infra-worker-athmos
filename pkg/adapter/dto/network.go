@@ -15,10 +15,11 @@ type GetNetworkResponse struct {
 }
 
 type CreateNetworkRequest struct {
-	ParentID identifier.ID     `json:"parentID"`
-	Name     string            `json:"name"`
-	Managed  *bool             `json:"managed" default:"true"`
-	Tags     map[string]string `json:"tags"`
+	ParentIDProvider *identifier.Provider `json:"parentIDProvider"`
+	ParentIDVPC      *identifier.VPC      `json:"parentIDVPC"`
+	Name             string               `json:"name"`
+	Managed          bool                 `json:"managed" default:"true"`
+	Tags             map[string]string    `json:"tags"`
 }
 
 type CreateNetworkResponse struct {
@@ -34,5 +35,5 @@ type UpdateNetworkRequest struct {
 
 type DeleteNetworkRequest struct {
 	IdentifierID identifier.Network `json:"identifierID"`
-	Cascade      *bool              `json:"cascade" default:"false"`
+	Cascade      bool               `json:"cascade" default:"false"`
 }

@@ -23,8 +23,8 @@ type providerController struct {
 	providerOutput  output.ProviderPort
 }
 
-func NewProviderController(networkUseCase usecase.Provider, providerOutput output.ProviderPort) Provider {
-	return &providerController{providerUseCase: networkUseCase, providerOutput: providerOutput}
+func NewProviderController(providerUseCase usecase.Provider, providerOutput output.ProviderPort) Provider {
+	return &providerController{providerUseCase: providerUseCase, providerOutput: providerOutput}
 }
 
 func (pc *providerController) GetProvider(ctx context.Context) {

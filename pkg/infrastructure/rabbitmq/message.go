@@ -1,10 +1,9 @@
 package rabbitmq
 
-import (
-	"encoding/json"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"github.com/streadway/amqp"
+import "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+
+const (
+	nestPatternValue = "project-event"
 )
 
 type Verb string
@@ -15,27 +14,44 @@ const (
 	DELETE Verb = "delete"
 )
 
-type Message struct {
-	Verb    Verb        `json:"verb"`
-	Payload interface{} `json:"payload"`
+type messageReceived struct {
+	Verb Verb        `json:"verb"`
+	Data dataMessage `json:"payload"`
 }
 
-func Publish(payload Event) {
-	messageBody, _ := json.Marshal(payload)
-	message := amqp.Publishing{
-		ContentType: "application/json",
-		Body:        messageBody,
-	}
-	logger.Info.Printf("Publishing message : %s", messageBody)
-	// Attempt to publish a message to the rabbitmq.
-	if err := Queue.Channel.Publish(
-		"",                            // exchange
-		config.Current.Queue.Exchange, // rabbitmq name
-		false,                         // mandatory
-		false,                         // immediate
-		message,                       // message to publish
-	); err != nil {
-		logger.Error.Printf("Error publishing a message to the rabbitmq: %s", err)
-	}
+type dataMessage struct {
+	ProjectID    string         `json:"project_id"`
+	ProviderType types.Provider `json:"provider_type"`
+	ResourceType types.Resource `json:"resource_type"`
+	Payload      any            `json:"payload"`
+}
+type eventType string
 
+const (
+	eventTypeCreateRequestSent eventType = "CREATE_REQUEST_SENT"
+	eventTypeUpdateRequestSent eventType = "UPDATE_REQUEST_SENT"
+	eventTypeDeleteRequestSent eventType = "DELETE_REQUEST_SENT"
+
+	// Error CreateRequestTreated eventType = "CREATE_REQUEST_TREATED"
+	//ResourceCreated      eventType = "RESOURCE_CREATED"
+	Error eventType = "ERROR"
+)
+
+type messageSend struct {
+	ProjectID string      `json:"project_id"`
+	Code      int         `json:"code"`
+	Type      eventType   `json:"type"`
+	Payload   interface{} `json:"payload"`
+}
+
+type nestMessageWrap struct {
+	Pattern string `json:"pattern"`
+	Data    any    `json:"data"`
+}
+
+func (ms *messageSend) WithNestWrapper() nestMessageWrap {
+	return nestMessageWrap{
+		Pattern: nestPatternValue,
+		Data:    ms,
+	}
 }

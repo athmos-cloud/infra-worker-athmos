@@ -43,7 +43,7 @@ func (k *kubernetesRepository) Create(ctx context.Context, opt option.Option) (*
 			req.SecretKey: req.SecretValue,
 		},
 	}
-	if errKube := kubernetes.Client().Create(ctx, kubeSecret); errKube != nil {
+	if errKube := kubernetes.Client().Client.Create(ctx, kubeSecret); errKube != nil {
 		return nil, errors.KubernetesError.WithMessage(errKube.Error())
 	}
 
@@ -63,7 +63,7 @@ func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) er
 		return err
 	}
 	kubeSecret := &corev1.Secret{}
-	if errKube := kubernetes.Client().Get(ctx,
+	if errKube := kubernetes.Client().Client.Get(ctx,
 		types.NamespacedName{Namespace: ns, Name: req.SecretName},
 		kubeSecret); errKube != nil {
 		if k8serrors.IsNotFound(errKube) {
@@ -73,7 +73,7 @@ func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) er
 	}
 	kubeSecret.Data[req.SecretKey] = req.SecretValue
 
-	if errKube := kubernetes.Client().Update(ctx, kubeSecret); errKube != nil {
+	if errKube := kubernetes.Client().Client.Update(ctx, kubeSecret); errKube != nil {
 		return errors.KubernetesError.WithMessage(errKube.Error())
 	}
 	return errors.NoContent
@@ -96,7 +96,7 @@ func (k *kubernetesRepository) Delete(ctx context.Context, opt option.Option) er
 			Namespace: ns,
 		},
 	}
-	if errKube := kubernetes.Client().Delete(ctx, kubeSecret); errKube != nil {
+	if errKube := kubernetes.Client().Client.Delete(ctx, kubeSecret); errKube != nil {
 		if k8serrors.IsNotFound(errKube) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("Secret with name %s not found in namespace %s", req.SecretName, ns))
 		}

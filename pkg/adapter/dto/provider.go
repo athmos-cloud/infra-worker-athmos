@@ -6,7 +6,7 @@ import (
 )
 
 type GetProviderRequest struct {
-	Identifier identifier.Provider `json:"identifier"`
+	IdentifierID identifier.Provider `json:"identifierID"`
 }
 
 type GetProviderResponse struct {
@@ -46,5 +46,5 @@ type UpdateProviderRequest struct {
 
 type DeleteProviderRequest struct {
 	IdentifierID identifier.Provider `json:"identifierID"`
-	Cascade      *bool               `json:"cascade" default:"false"`
+	Cascade      bool                `json:"cascade" default:"false"`
 }
