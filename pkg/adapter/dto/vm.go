@@ -23,7 +23,7 @@ type CreateVMRequest struct {
 	Auths          resource.VMAuthList   `json:"auths"`
 	Disks          resource.VMDiskList   `json:"disks"`
 	OS             resource.VMOS         `json:"os"`
-	Managed        *bool                 `json:"managed" default:"true"`
+	Managed        bool                  `json:"managed" default:"true"`
 	Tags           map[string]string     `json:"tags"`
 }
 

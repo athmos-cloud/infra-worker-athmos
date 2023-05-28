@@ -3,11 +3,9 @@ package resource
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	repositoryAdapter "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
-	kubernetesRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
@@ -20,10 +18,12 @@ const (
 	ProjectTestOwner      = "test"
 	SecretTestName        = "test"
 	SecretTestDescription = "Some test secret"
+	ProviderIDKey         = "provider_id"
+	NetworkIDKey          = "network_id"
+	SubnetworkIDKey       = "subnetwork_id"
 )
 
 type TestResource struct {
-	KubernetesRepo       *kubernetesRepo.Kubernetes
 	ProjectRepo          repository.Project
 	SecretRepo           repository.Secret
 	KubernetesSecretRepo repository.KubernetesSecret
@@ -55,7 +55,6 @@ func NewTest(ctx context.Context, t *testing.T) *TestResource {
 	ctx.Set(test.TestSecretContextKey, *secretAuth)
 
 	return &TestResource{
-		KubernetesRepo:       kubernetesRepo.NewRepository(kubernetes.Client().Client, kubernetes.Client().DynamicClient),
 		ProjectRepo:          projectRepo,
 		SecretRepo:           secretRepo,
 		KubernetesSecretRepo: kubeSecretRepo,

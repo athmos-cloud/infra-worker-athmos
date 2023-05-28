@@ -93,7 +93,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
 	toCreateVM := &model.VM{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   *req.Managed,
+			Managed:   req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID: identifier.VM{

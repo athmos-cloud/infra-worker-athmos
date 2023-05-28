@@ -69,7 +69,7 @@ func (p *projectRepository) Create(ctx context.Context, project *model.Project) 
 	if err := mgm.Coll(project).Create(project); err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
-	if err := kubernetes.Client().Create(ctx, &corev1.Namespace{
+	if err := kubernetes.Client().Client.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},
@@ -90,7 +90,7 @@ func (p *projectRepository) Delete(ctx context.Context, project *model.Project) 
 	if err := mgm.Coll(project).Delete(project); err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
-	if err := kubernetes.Client().Delete(ctx, &corev1.Namespace{
+	if err := kubernetes.Client().Client.Delete(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: project.Namespace,
 		},

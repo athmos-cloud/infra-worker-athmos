@@ -9,12 +9,20 @@ const (
 	SubnetworkIdentifierKey = "identifier.subnetwork"
 	VMIdentifierKey         = "identifier.vm"
 	FirewallIdentifierKey   = "identifier.firewall"
+	ProviderNameKey         = "name.provider"
+	VpcNameKey              = "name.vpc"
+	NetworkNameKey          = "name.network"
+	SubnetworkNameKey       = "name.subnetwork"
+	VMNameKey               = "name.vm"
+	FirewallNameKey         = "name.firewall"
 )
 
 type ID interface {
 	Equals(other ID) bool
-	ToLabels() map[string]string
-	FromLabels(labels map[string]string) errors.Error
+	ToIDLabels() map[string]string
+	ToNameLabels() map[string]string
+	IDFromLabels(labels map[string]string) errors.Error
+	NameFromLabels(labels map[string]string) errors.Error
 }
 
 type Payload struct {

@@ -154,6 +154,7 @@ func Test_projectUseCase_Update(t *testing.T) {
 		assert.True(t, errGet.IsOk())
 		assert.Equal(t, projGet.Name, "test-2")
 	})
+
 	t.Run("Should return NotFound error when update a project if not exists", func(t *testing.T) {
 		ctx := NewContext()
 		proj := model.NewProject("test-1", "1")

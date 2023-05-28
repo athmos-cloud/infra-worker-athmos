@@ -9,6 +9,10 @@ import (
 	"regexp"
 )
 
+const (
+	ProjectIDLabelKey = "athmos.cloud/project-id"
+)
+
 type Project struct {
 	mgm.DefaultModel `bson:",inline"`
 	Name             string      `bson:"name"`

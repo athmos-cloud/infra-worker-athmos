@@ -94,7 +94,7 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 	toCreateSubnet := &model.Subnetwork{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
-			Managed:   *req.Managed,
+			Managed:   req.Managed,
 			Tags:      req.Tags,
 		},
 		IdentifierID: identifier.Subnetwork{

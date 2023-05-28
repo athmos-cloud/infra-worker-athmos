@@ -31,7 +31,7 @@ func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*resou
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	gcpVM := &v1beta1.Instance{}
-	if err := kubernetes.Client().Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, gcpVM); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, gcpVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", req.Name, req.Namespace))
 		}
@@ -55,7 +55,7 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
-	if err := kubernetes.Client().List(ctx, gcpVMList, listOpt); err != nil {
+	if err := kubernetes.Client().Client.List(ctx, gcpVMList, listOpt); err != nil {
 		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm in namespace %s", req.Namespace))
 		return
 	}
@@ -73,7 +73,7 @@ func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*r
 
 func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.Error {
 	gcpVM := gcp.toGCPVM(ctx, vm)
-	if err := kubernetes.Client().Create(ctx, gcpVM); err != nil {
+	if err := kubernetes.Client().Client.Create(ctx, gcpVM); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
 		}
@@ -84,7 +84,7 @@ func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.
 
 func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *resource.VM) errors.Error {
 	gcpVM := gcp.toGCPVM(ctx, vm)
-	if err := kubernetes.Client().Update(ctx, gcpVM); err != nil {
+	if err := kubernetes.Client().Client.Update(ctx, gcpVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
 		}
@@ -95,7 +95,7 @@ func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *resource.VM) errors.
 
 func (gcp *gcpRepository) DeleteVM(ctx context.Context, vm *resource.VM) errors.Error {
 	gcpVM := gcp.toGCPVM(ctx, vm)
-	if err := kubernetes.Client().Delete(ctx, gcpVM); err != nil {
+	if err := kubernetes.Client().Client.Delete(ctx, gcpVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
 		}
@@ -106,7 +106,11 @@ func (gcp *gcpRepository) DeleteVM(ctx context.Context, vm *resource.VM) errors.
 
 func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.Error) {
 	id := identifier.VM{}
-	if err := id.FromLabels(vm.Labels); !err.IsOk() {
+	name := identifier.VM{}
+	if err := id.IDFromLabels(vm.Labels); !err.IsOk() {
+		return nil, err
+	}
+	if err := name.NameFromLabels(vm.Labels); !err.IsOk() {
 		return nil, err
 	}
 	tags := map[string]string{}
@@ -123,14 +127,8 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 			Namespace: vm.ObjectMeta.Namespace,
 			Tags:      tags,
 		},
-		IdentifierID: id,
-		IdentifierName: identifier.VM{
-			//Network:    *vm.Spec.ForProvider.Network,
-			//Subnetwork:
-			VPC:      *vm.Spec.ForProvider.Project,
-			Provider: vm.Spec.ResourceSpec.ProviderConfigReference.Name,
-			VM:       vm.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey],
-		},
+		IdentifierID:   id,
+		IdentifierName: name,
 		AssignPublicIP: false,
 		PublicIP:       "",
 		Zone:           *vm.Spec.ForProvider.Zone,

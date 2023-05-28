@@ -17,7 +17,7 @@ type GetSubnetworkResponse struct {
 type CreateSubnetworkRequest struct {
 	ParentID    identifier.Network `json:"parentID"`
 	Name        string             `json:"name"`
-	Managed     *bool              `json:"managed" default:"true"`
+	Managed     bool               `json:"managed" default:"true"`
 	Region      string             `json:"region"`
 	IPCIDRRange string             `json:"ipCIDRRange" default:"10.0.0.1/28"`
 	Tags        map[string]string  `json:"tags"`
@@ -30,7 +30,7 @@ type CreateSubnetworkResponse struct {
 
 type UpdateSubnetworkRequest struct {
 	IdentifierID identifier.Subnetwork `json:"identifierID"`
-	Managed      *bool                 `json:"managed"`
+	Managed      bool                  `json:"managed"`
 	Region       *string               `json:"region"`
 	IPCIDRRange  *string               `json:"ipCIDRRange"`
 	Tags         *map[string]string    `json:"tags"`
@@ -38,5 +38,5 @@ type UpdateSubnetworkRequest struct {
 
 type DeleteSubnetworkRequest struct {
 	IdentifierID identifier.Subnetwork `json:"identifierID"`
-	Cascade      *bool                 `json:"cascade" default:"false"`
+	Cascade      bool                  `json:"cascade" default:"false"`
 }

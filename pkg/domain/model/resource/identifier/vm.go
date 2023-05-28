@@ -10,6 +10,34 @@ type VM struct {
 	Subnetwork string `json:"subnetwork"`
 }
 
+func (id *VM) NameFromLabels(labels map[string]string) errors.Error {
+	vm, ok := labels[VMIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing vm identifier")
+	}
+	provider, ok := labels[ProviderIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing provider identifier")
+	}
+	vpc := labels[VpcIdentifierKey]
+	network, ok := labels[NetworkIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing network identifier")
+	}
+	subnetwork, ok := labels[SubnetworkIdentifierKey]
+	if !ok {
+		return errors.InternalError.WithMessage("missing subnetwork identifier")
+	}
+	*id = VM{
+		VM:         vm,
+		Provider:   provider,
+		VPC:        vpc,
+		Network:    network,
+		Subnetwork: subnetwork,
+	}
+	return errors.OK
+}
+
 func (id *VM) Equals(other ID) bool {
 	otherVMID, ok := other.(*VM)
 	if !ok {
@@ -22,7 +50,7 @@ func (id *VM) Equals(other ID) bool {
 		id.Subnetwork == otherVMID.Subnetwork
 }
 
-func (id *VM) ToLabels() map[string]string {
+func (id *VM) ToIDLabels() map[string]string {
 	return map[string]string{
 		VMIdentifierKey:         id.VM,
 		ProviderIdentifierKey:   id.Provider,
@@ -32,7 +60,7 @@ func (id *VM) ToLabels() map[string]string {
 	}
 }
 
-func (id *VM) FromLabels(labels map[string]string) errors.Error {
+func (id *VM) IDFromLabels(labels map[string]string) errors.Error {
 	vmID, ok := labels[VMIdentifierKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing vm identifier")
@@ -61,4 +89,14 @@ func (id *VM) FromLabels(labels map[string]string) errors.Error {
 		Subnetwork: subnetworkID,
 	}
 	return errors.OK
+}
+
+func (id *VM) ToNameLabels() map[string]string {
+	return map[string]string{
+		VMIdentifierKey:         id.VM,
+		ProviderIdentifierKey:   id.Provider,
+		VpcIdentifierKey:        id.VPC,
+		NetworkIdentifierKey:    id.Network,
+		SubnetworkIdentifierKey: id.Subnetwork,
+	}
 }
