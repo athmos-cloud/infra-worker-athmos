@@ -2,39 +2,29 @@
 
 PLUGINS_REPO=git@github.com:athmos-cloud/infra-crossplane-plugin.git
 DOCKER_IMAGE_TEST=infra-worker-test
-TMP_INFRA_PLUGINS_DIR=/tmp/athmos/plugins
+CLUSTER_NAME=infra-worker-test
+
+cluster-test:
+	@kind create cluster --name $(CLUSTER_NAME)
+	$(MAKE) _crossplane-operator
+.PHONY: cluster-test
 
 
-_plugins:
-	@git clone $(PLUGINS_REPO) plugins
-	@cd plugins && ./plugin.sh _plugins && cp -r _plugins ../
-	@rm -rf plugins
-.PHONY: _plugins
-
-_clear-plugins:
-	@rm -rf .plugins
-.PHONY: _clear-plugins
-
-test-docker: _plugins
-	$(MAKE) _build-docker DOCKERFILE=Dockerfile_test DOCKER_IMAGE=infra-worker-test
-	@docker run --env CONFIG_FILE_LOCATION="/go/src/app/config.yaml" infra-worker-test
-	$(MAKE)  _clear-plugins
-.PHONY: test
-
-_plugin-local:
-	@rm -rf /tmp/plugins
-	@git clone git@github.com:athmos-cloud/infra-crossplane-plugin.git /tmp/plugins
-	@mkdir -p $(TMP_INFRA_PLUGINS_DIR)
-	@cd /tmp/plugins && ./plugin.sh _plugins && cp -r _plugins/* $(TMP_INFRA_PLUGINS_DIR)
-.PHONY: _plugin-local
-
-test: _plugin-local
-	@CONFIG_FILE_LOCATION="$(shell pwd)/config.yaml" PLUGINS_LOCATION=$(TMP_INFRA_PLUGINS_DIR) go test -v ./...
-.PHONY: test
+_crossplane-operator:
+	@kubectl delete namespace --ignore-not-found=true crossplane-system
+	@kubectl create namespace crossplane-system
+	@helm repo add crossplane-stable https://charts.crossplane.io/stable &&\
+   	helm repo update &&\
+   	helm install crossplane --namespace crossplane-system crossplane-stable/crossplane
+.PHONY: _crossplane-operator
 
 _build-docker:
 	@docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
 .PHONY: _build-docker
+
+test-configs:
+	@kubectl apply -f config
+.PHONY: test-configs
 
 restart:
 	@docker-compose restart infra-worker

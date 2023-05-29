@@ -21,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/upbound/provider-gcp v0.31.0
 	go.mongodb.org/mongo-driver v1.11.4
+	golang.org/x/crypto v0.7.0
 	gopkg.in/mcuadros/go-defaults.v1 v1.1.0
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
@@ -134,7 +135,6 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect

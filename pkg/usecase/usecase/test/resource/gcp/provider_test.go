@@ -379,6 +379,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 			SecretAuthName: testResource.SecretTestName,
 		}
 		ctx.Set(context.RequestKey, req)
+		ctx.Set(context.RequestKey, req)
 		provider := &resource.Provider{}
 		err := uc.Create(ctx, provider)
 		assert.True(t, err.IsOk())
