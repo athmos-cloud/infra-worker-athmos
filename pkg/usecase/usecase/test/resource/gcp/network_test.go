@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -44,7 +45,7 @@ func initNetwork(t *testing.T) (context.Context, *testResource.TestResource, use
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.ProviderIDKey, provider.IdentifierID)
 
-	nuc := usecase.NewNetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(), nil, nil)
+	nuc := usecase.NewNetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
 	return ctx, testNet, nuc
 }
 
@@ -131,7 +132,6 @@ func Test_networkUseCase_Delete(t *testing.T) {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clear(ctx)
 	}()
-
 	t.Run("Delete a valid network should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
 		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
@@ -175,7 +175,7 @@ func Test_networkUseCase_Delete(t *testing.T) {
 		net := &resource.Network{}
 		err := nuc.Create(ctx, net)
 		require.Equal(t, errors.Created.Code, err.Code)
-		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
+		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
 		subnet := &resource.Subnetwork{}
 		subnetReq := dto.CreateSubnetworkRequest{
 			ParentID:    net.IdentifierID,

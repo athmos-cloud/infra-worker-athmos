@@ -20,11 +20,16 @@ type CreateVMRequest struct {
 	AssignPublicIP bool                  `json:"assignPublicIP" default:"false"`
 	Zone           string                `json:"zone"`
 	MachineType    string                `json:"machineType"`
-	Auths          resource.VMAuthList   `json:"auths"`
+	Auths          []VMAuth              `json:"auths"`
 	Disks          resource.VMDiskList   `json:"disks"`
 	OS             resource.VMOS         `json:"os"`
 	Managed        bool                  `json:"managed" default:"true"`
 	Tags           map[string]string     `json:"tags"`
+}
+
+type VMAuth struct {
+	Username     string `json:"username"`
+	RSAKeyLength int    `json:"rsaKeyLength" default:"2048"`
 }
 
 type CreateVMResponse struct {
@@ -38,7 +43,7 @@ type UpdateVMRequest struct {
 	AssignPublicIP *bool                `json:"assignPublicIP"`
 	Zone           *string              `json:"zone"`
 	MachineType    *string              `json:"machineType"`
-	Auths          *resource.VMAuthList `json:"auths"`
+	Auths          *[]VMAuth            `json:"auths"`
 	Disks          *resource.VMDiskList `json:"disks"`
 	OS             *resource.VMOS       `json:"os"`
 	Managed        *bool                `json:"managed"`

@@ -14,17 +14,25 @@ type GetProviderResponse struct {
 	Payload   resource.Provider `json:"payload"`
 }
 
-type ListProvidersRequest struct {
-	Recursive bool `json:"recursive" default:"false"`
-}
+type ListProvidersRequest struct{}
 
 type ListProvidersResponse struct {
 	ProjectID string                      `json:"projectID"`
 	Payload   resource.ProviderCollection `json:"payload"`
 }
 
+type ListProviderItemResponse struct {
+	Name       string              `json:"name"`
+	Identifier identifier.Provider `json:"identifier"`
+}
+
 type GetProviderStackRequest struct {
 	ProviderID string `json:"providerID"`
+}
+
+type GetProviderStackResponse struct {
+	ProjectID string            `json:"projectID"`
+	Payload   resource.Provider `json:"payload"`
 }
 
 type CreateProviderRequest struct {

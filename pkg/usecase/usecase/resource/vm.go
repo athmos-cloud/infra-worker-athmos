@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
+	resourceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -16,21 +17,22 @@ import (
 )
 
 type VM interface {
-	Get(context.Context, *model.VM) errors.Error
-	Create(context.Context, *model.VM) errors.Error
-	Update(context.Context, *model.VM) errors.Error
-	Delete(context.Context, *model.VM) errors.Error
+	Get(context.Context, *resourceModel.VM) errors.Error
+	Create(context.Context, *resourceModel.VM) errors.Error
+	Update(context.Context, *resourceModel.VM) errors.Error
+	Delete(context.Context, *resourceModel.VM) errors.Error
 }
 
 type vmUseCase struct {
 	projectRepo repository.Project
+	sshKeyRepo  repository.SSHKeys
 	gcpRepo     resourceRepo.Resource
 	awsRepo     resourceRepo.Resource
 	azureRepo   resourceRepo.Resource
 }
 
-func NewVMUseCase(projectRepo repository.Project, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
-	return &vmUseCase{gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewVMUseCase(projectRepo repository.Project, sshKeyRepo repository.SSHKeys, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
+	return &vmUseCase{projectRepo: projectRepo, sshKeyRepo: sshKeyRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (vuc *vmUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
@@ -45,7 +47,7 @@ func (vuc *vmUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	return nil
 }
 
-func (vuc *vmUseCase) Get(ctx context.Context, vm *model.VM) errors.Error {
+func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Error {
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -70,7 +72,7 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *model.VM) errors.Error {
 	return errors.OK
 }
 
-func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
+func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.Error {
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -90,7 +92,19 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
 		return errNet
 	}
 
-	toCreateVM := &model.VM{
+	var keyList model.SSHKeyList
+	for _, auth := range req.Auths {
+		keyList = append(keyList, &model.SSHKey{
+			Username:        auth.Username,
+			KeyLength:       auth.RSAKeyLength,
+			SecretName:      idFromName(fmt.Sprintf("%s-%s", req.Name, auth.Username)),
+			SecretNamespace: project.Namespace,
+		})
+	}
+	if err := vuc.sshKeyRepo.CreateList(ctx, keyList); !err.IsOk() {
+		return err
+	}
+	toCreateVM := &resourceModel.VM{
 		Metadata: metadata.Metadata{
 			Namespace: project.Namespace,
 			Managed:   req.Managed,
@@ -113,7 +127,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
 		AssignPublicIP: req.AssignPublicIP,
 		Zone:           req.Zone,
 		MachineType:    req.MachineType,
-		Auths:          req.Auths,
+		Auths:          keyList,
 		Disks:          req.Disks,
 		OS:             req.OS,
 	}
@@ -125,7 +139,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *model.VM) errors.Error {
 	return errors.Created
 }
 
-func (vuc *vmUseCase) Update(ctx context.Context, vm *model.VM) errors.Error {
+func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.Error {
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -182,7 +196,7 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *model.VM) errors.Error {
 	return errors.NoContent
 }
 
-func (vuc *vmUseCase) Delete(ctx context.Context, vm *model.VM) errors.Error {
+func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.Error {
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
