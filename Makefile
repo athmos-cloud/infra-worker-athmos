@@ -9,6 +9,9 @@ cluster-test:
 	$(MAKE) _crossplane-operator
 .PHONY: cluster-test
 
+delete-cluster-test:
+	@kind delete cluster --name $(CLUSTER_NAME)
+.PHONY: delete-cluster-test
 
 _crossplane-operator:
 	@kubectl delete namespace --ignore-not-found=true crossplane-system

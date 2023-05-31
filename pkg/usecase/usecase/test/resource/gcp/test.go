@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
@@ -18,7 +19,7 @@ import (
 func initTest(t *testing.T) (context.Context, *testResource.TestResource, usecase.Provider) {
 	ctx := test.NewContext()
 	resourceTest := testResource.NewTest(ctx, t)
-	gcpRepo := gcp.NewRepository()
+	gcpRepo := gcp.NewRepository(repository.NewSSHKeyRepository())
 	uc := usecase.NewProviderUseCase(resourceTest.ProjectRepo, resourceTest.SecretRepo, gcpRepo, nil, nil)
 	ctx.Set(context.ProviderTypeKey, types.ProviderGCP)
 

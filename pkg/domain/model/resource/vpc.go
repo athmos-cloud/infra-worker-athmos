@@ -14,14 +14,14 @@ type VPC struct {
 	Networks       NetworkCollection `json:"networks,omitempty"`
 }
 
+type VPCCollection map[string]VPC
+
 func (vpc *VPC) Equals(other VPC) bool {
 	return vpc.Metadata.Equals(other.Metadata) &&
 		vpc.IdentifierID.Equals(&other.IdentifierID) &&
 		vpc.IdentifierName == other.IdentifierName &&
 		vpc.Networks.Equals(other.Networks)
 }
-
-type VPCCollection map[string]VPC
 
 func (collection *VPCCollection) Equals(other VPCCollection) bool {
 	if len(*collection) != len(other) {

@@ -1,9 +1,9 @@
 package resource
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 )
 
 type VM struct {
@@ -14,7 +14,7 @@ type VM struct {
 	PublicIP       string            `json:"publicIP,omitempty"`
 	Zone           string            `json:"zone"`
 	MachineType    string            `json:"machineType"`
-	Auths          VMAuthList        `json:"auths,omitempty"`
+	Auths          model.SSHKeyList  `json:"auths,omitempty"`
 	Disks          VMDiskList        `json:"disks"`
 	OS             VMOS              `json:"os"`
 }
@@ -22,25 +22,17 @@ type VM struct {
 type VMCollection map[string]VM
 
 type VMDisk struct {
-	Type       string         `json:"type"`
-	Mode       types.DiskMode `json:"mode"`
-	SizeGib    int            `json:"sizeGib"`
-	AutoDelete bool           `json:"autoDelete"`
+	Type       DiskType `json:"type"`
+	Mode       DiskMode `json:"mode"`
+	SizeGib    int      `json:"sizeGib"`
+	AutoDelete bool     `json:"autoDelete"`
 }
 
 type VMDiskList []VMDisk
 
-type VMAuth struct {
-	Username     string
-	SSHPublicKey string
-}
-
-type VMAuthList []VMAuth
-
 type VMOS struct {
-	Type    string `json:"type,omitempty"`
-	Version string `json:"version,omitempty"`
-	AMI     string `json:"ami,omitempty"`
+	Name string `json:"name"`
+	ID   string `json:"id,omitempty"`
 }
 
 func (vm *VM) Equals(other VM) bool {
@@ -51,7 +43,6 @@ func (vm *VM) Equals(other VM) bool {
 		vm.PublicIP == other.PublicIP &&
 		vm.Zone == other.Zone &&
 		vm.MachineType == other.MachineType &&
-		vm.Auths.Equals(other.Auths) &&
 		vm.Disks.Equals(other.Disks) &&
 		vm.OS.Equals(other.OS)
 }
@@ -84,22 +75,6 @@ func (diskList *VMDiskList) Equals(other VMDiskList) bool {
 	return true
 }
 
-func (auth *VMAuth) Equals(other VMAuth) bool {
-	return auth.Username == other.Username && auth.SSHPublicKey == other.SSHPublicKey
-}
-
-func (authList *VMAuthList) Equals(other VMAuthList) bool {
-	if len(*authList) != len(other) {
-		return false
-	}
-	for i, auth := range *authList {
-		if !auth.Equals(other[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (os *VMOS) Equals(other VMOS) bool {
-	return os.Type == other.Type && os.Version == other.Version && os.AMI == other.AMI
+	return os.Name == other.Name && os.ID == other.ID
 }

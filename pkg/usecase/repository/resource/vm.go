@@ -21,4 +21,5 @@ type VM interface {
 	CreateVM(context.Context, *resource.VM) errors.Error
 	UpdateVM(context.Context, *resource.VM) errors.Error
 	DeleteVM(context.Context, *resource.VM) errors.Error
+	VMExists(context.Context, *resource.VM) (bool, errors.Error)
 }

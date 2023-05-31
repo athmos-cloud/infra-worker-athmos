@@ -1,6 +1,9 @@
 package rabbitmq
 
-import "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+)
 
 const (
 	nestPatternValue = "project-event"
@@ -38,10 +41,11 @@ const (
 )
 
 type messageSend struct {
-	ProjectID string      `json:"project_id"`
-	Code      int         `json:"code"`
-	Type      eventType   `json:"type"`
-	Payload   interface{} `json:"payload"`
+	ProjectID  string             `json:"project_id"`
+	Code       int                `json:"code"`
+	Type       eventType          `json:"type"`
+	Identifier identifier.Payload `json:"identifier,omitempty"`
+	Payload    interface{}        `json:"payload,omitempty"`
 }
 
 type nestMessageWrap struct {

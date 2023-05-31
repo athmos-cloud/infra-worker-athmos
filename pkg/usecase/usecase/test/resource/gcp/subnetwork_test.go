@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -42,8 +43,28 @@ func initSubnetwork(t *testing.T) (context.Context, *testResource.TestResource, 
 	err := nuc.Create(ctx, net)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.NetworkIDKey, net.IdentifierID)
-	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(), nil, nil)
+	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
 	return ctx, testNet, uc
+}
+
+func createSubnetwork(t *testing.T, ctx context.Context, suc usecase.Subnetwork) *resource.Subnetwork {
+	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+	subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+	region := "europe-west1"
+	ipCIDR := "10.0.0.1/26"
+	req := dto.CreateSubnetworkRequest{
+		ParentID:    parentID,
+		Name:        subnetName,
+		Region:      region,
+		IPCIDRRange: ipCIDR,
+		Managed:     false,
+	}
+	ctx.Set(context.RequestKey, req)
+	subnet := &resource.Subnetwork{}
+	err := suc.Create(ctx, subnet)
+	require.Equal(t, errors.Created.Code, err.Code)
+
+	return subnet
 }
 
 func Test_subnetworkUseCase_Create(t *testing.T) {
@@ -55,21 +76,9 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	}()
 
 	t.Run("Create a valid subnetwork", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		subnet := createSubnetwork(t, ctx, suc)
 		region := "europe-west1"
 		ipCIDR := "10.0.0.1/26"
-		req := dto.CreateSubnetworkRequest{
-			ParentID:    parentID,
-			Name:        subnetName,
-			Region:      region,
-			IPCIDRRange: ipCIDR,
-			Managed:     false,
-		}
-		ctx.Set(context.RequestKey, req)
-		subnet := &resource.Subnetwork{}
-		err := suc.Create(ctx, subnet)
-		require.Equal(t, errors.Created.Code, err.Code)
 
 		kubeResource := &v1beta1.Subnetwork{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnet.IdentifierID.Network}, kubeResource)
@@ -84,7 +93,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 			"name.provider":                "test",
 			"name.vpc":                     "test",
 			"name.network":                 "test-net",
-			"name.subnetwork":              subnetName,
+			"name.subnetwork":              subnet.IdentifierName.Subnetwork,
 		}
 		wantSpec := v1beta1.SubnetworkSpec{
 			ResourceSpec: v1.ResourceSpec{
@@ -143,26 +152,12 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 		clear(ctx)
 	}()
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		region := "europe-west1"
-		ipCIDR := "10.0.0.1/26"
-		req := dto.CreateSubnetworkRequest{
-			ParentID:    parentID,
-			Name:        subnetName,
-			Region:      region,
-			IPCIDRRange: ipCIDR,
-			Managed:     false,
-		}
-		ctx.Set(context.RequestKey, req)
-		subnet := &resource.Subnetwork{}
-		err := suc.Create(ctx, subnet)
-		assert.Equal(t, errors.Created.Code, err.Code)
+		subnet := createSubnetwork(t, ctx, suc)
 		delReq := dto.DeleteSubnetworkRequest{
 			IdentifierID: subnet.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, delReq)
-		err = suc.Delete(ctx, subnet)
+		err := suc.Delete(ctx, subnet)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
