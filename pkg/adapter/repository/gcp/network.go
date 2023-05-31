@@ -198,8 +198,17 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *resource.N
 }
 
 func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *resource.Network) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
+	if subnets, err := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else {
+		for _, subnet := range *subnets {
+			if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); subnetErr == errors.NoContent {
+				return subnetErr
+			}
+		}
+		return gcp.DeleteNetwork(ctx, network)
+	}
 }
 
 func (gcp *gcpRepository) NetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
