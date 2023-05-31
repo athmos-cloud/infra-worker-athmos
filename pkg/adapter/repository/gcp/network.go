@@ -203,7 +203,7 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *res
 		return err
 	} else {
 		for _, subnet := range *subnets {
-			if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); subnetErr == errors.NoContent {
+			if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); !subnetErr.IsOk() {
 				return subnetErr
 			}
 		}

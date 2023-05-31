@@ -120,9 +120,9 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 }
 
 func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
-	serchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
 	if exists, err := gcp.SubnetworkExists(ctx,
-		option.Option{Value: resourceRepo.ResourceExistsOption{Namespace: subnetwork.Metadata.Namespace, Labels: serchLabels}}); !err.IsOk() {
+		option.Option{Value: resourceRepo.ResourceExistsOption{Namespace: subnetwork.Metadata.Namespace, Labels: searchLabels}}); !err.IsOk() {
 		return err
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
@@ -166,12 +166,22 @@ func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *reso
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
 	}
-	return errors.NoContent
+
+	return gcp.DeleteSubnetwork(ctx, subnetwork)
 }
 
 func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
+	if vms, err := gcp.FindAllVMs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else {
+		for _, vm := range *vms {
+			if vmErr := gcp.DeleteVM(ctx, &vm); !err.IsOk() {
+				return vmErr
+			}
+		}
+		return gcp.DeleteSubnetwork(ctx, subnetwork)
+	}
 }
 
 func (gcp *gcpRepository) SubnetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
