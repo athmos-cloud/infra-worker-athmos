@@ -85,7 +85,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 		return errRepo
 	}
 
-	network, errNet := repo.FindSubnetwork(ctx, option.Option{
+	subnetwork, errNet := repo.FindSubnetwork(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Subnetwork, Namespace: project.Namespace},
 	})
 	if !errNet.IsOk() {
@@ -118,10 +118,10 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 			VM:         idFromName(req.Name),
 		},
 		IdentifierName: identifier.VM{
-			Provider:   network.IdentifierName.Provider,
-			VPC:        network.IdentifierName.VPC,
-			Network:    network.IdentifierName.Network,
-			Subnetwork: network.IdentifierName.Subnetwork,
+			Provider:   subnetwork.IdentifierName.Provider,
+			VPC:        subnetwork.IdentifierName.VPC,
+			Network:    subnetwork.IdentifierName.Network,
+			Subnetwork: subnetwork.IdentifierName.Subnetwork,
 			VM:         req.Name,
 		},
 		AssignPublicIP: req.AssignPublicIP,
@@ -129,7 +129,10 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 		MachineType:    req.MachineType,
 		Auths:          keyList,
 		Disks:          req.Disks,
-		OS:             req.OS,
+		OS: resourceModel.VMOS{
+			ID:   req.OS.ID,
+			Name: req.OS.ID,
+		},
 	}
 	if err := repo.CreateVM(ctx, toCreateVM); !err.IsOk() {
 		return err
@@ -180,9 +183,9 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.E
 	if req.MachineType != nil {
 		vm.MachineType = *req.MachineType
 	}
-	if req.Auths != nil {
-		vm.Auths = *req.Auths
-	}
+	//if req.Auths != nil {
+	//	vm.Auths = *req.Auths TODO: update auths
+	//}
 	if req.Disks != nil {
 		vm.Disks = *req.Disks
 	}

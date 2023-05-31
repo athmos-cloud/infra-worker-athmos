@@ -76,12 +76,17 @@ func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*r
 }
 
 func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.Error {
+	if exists, err := gcp.VMExists(ctx, vm); !err.IsOk() {
+		return err
+	} else if exists {
+		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", vm.IdentifierName.VM, vm.IdentifierID.Subnetwork))
+	}
 	gcpVM := gcp.toGCPVM(ctx, vm)
 	if err := kubernetes.Client().Client.Create(ctx, gcpVM); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists", vm.IdentifierName.VM))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create vm %s in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create vm %s", vm.IdentifierName.VM))
 	}
 	return errors.Created
 }
@@ -106,6 +111,24 @@ func (gcp *gcpRepository) DeleteVM(ctx context.Context, vm *resource.VM) errors.
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete vm %s in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
 	}
 	return errors.NoContent
+}
+
+func (gcp *gcpRepository) VMExists(ctx context.Context, vm *resource.VM) (bool, errors.Error) {
+	gcpVMs := &v1beta1.InstanceList{}
+	parentID := identifier.Subnetwork{
+		Provider:   vm.IdentifierID.Provider,
+		VPC:        vm.IdentifierID.VPC,
+		Network:    vm.IdentifierID.Network,
+		Subnetwork: vm.IdentifierID.Subnetwork,
+	}
+	searchLabels := lo.Assign(parentID.ToIDLabels(), map[string]string{identifier.VMNameKey: vm.IdentifierName.VM})
+	listOpt := &client.ListOptions{
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(searchLabels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpVMs, listOpt); err != nil {
+		return false, errors.KubernetesError.WithMessage("unable to list vm")
+	}
+	return len(gcpVMs.Items) > 0, errors.OK
 }
 
 func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (*resource.VM, errors.Error) {
@@ -148,9 +171,9 @@ func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (
 func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1.Instance {
 	sshKeysLabels := crossplane.ToSSHKeySecretLabels(vm.Auths)
 	asPublicIPLabel := map[string]string{crossplane.VMPublicIPLabel: strconv.FormatBool(vm.AssignPublicIP)}
-	instanceLabels := lo.Assign(vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
-	networkID := identifier.Network{Provider: vm.IdentifierID.Network, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network}
-	subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Subnetwork, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
+	instanceLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
+	networkID := identifier.Network{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network}
+	subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
 
 	netInterface := []v1beta1.NetworkInterfaceParameters{
 		{
@@ -168,12 +191,20 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1
 
 	return &v1beta1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      vm.IdentifierName.VM,
-			Namespace: vm.Metadata.Namespace,
-			Labels:    instanceLabels,
+			Name:        vm.IdentifierID.VM,
+			Namespace:   vm.Metadata.Namespace,
+			Labels:      instanceLabels,
+			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.Network),
 		},
 		Spec: v1beta1.InstanceSpec{
+			ResourceSpec: v1.ResourceSpec{
+				DeletionPolicy: crossplane.GetDeletionPolicy(vm.Metadata.Managed),
+				ProviderConfigReference: &v1.Reference{
+					Name: vm.IdentifierID.VM,
+				},
+			},
 			ForProvider: v1beta1.InstanceParameters{
+				Project:     &vm.IdentifierID.VPC,
 				MachineType: &vm.MachineType,
 				Zone:        &vm.Zone,
 				BootDisk:    gcp.toGCPVMDiskList(vm.Disks, vm.OS),

@@ -92,7 +92,7 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 			return errProvider
 		}
 		id = identifier.Network{
-			Provider: provider.IdentifierID.VPC,
+			Provider: provider.IdentifierID.Provider,
 			VPC:      provider.IdentifierID.VPC,
 			Network:  idFromName(req.Name),
 		}

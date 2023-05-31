@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"strings"
 )
 
 type sshKey struct{}
@@ -22,6 +23,7 @@ const (
 	SecretPrivateKeyKey = "privateKey"
 	SecretPublicKeyKey  = "publicKey"
 	SecretUsernameKey   = "username"
+	reservedCharacter   = "."
 )
 
 func NewSSHKeyRepository() resourceRepo.SSHKeys {
@@ -40,9 +42,10 @@ func (s *sshKey) Create(ctx context.Context, key *model.SSHKey) errors.Error {
 	privateKeyPem := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
 	privateKeyBytes := pem.EncodeToMemory(privateKeyPem)
 	key.PublicKey = string(ssh.MarshalAuthorizedKey(publicKey))
+	secretNameFormatted := strings.ReplaceAll(key.SecretName, reservedCharacter, "-")
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      key.SecretName,
+			Name:      secretNameFormatted,
 			Namespace: key.SecretNamespace,
 		},
 		Type: "Opaque",

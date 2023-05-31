@@ -67,6 +67,8 @@ func Test_providerUseCase_Create(t *testing.T) {
 			"app.kubernetes.io/managed-by": "athmos",
 			"athmos.cloud/project-id":      ctx.Value(context.ProjectIDKey).(string),
 			"identifier.provider":          provider.IdentifierID.Provider,
+			"identifier.vpc":               provider.IdentifierID.VPC,
+			"name.vpc":                     provider.IdentifierID.VPC,
 			"name.provider":                "test",
 			"name.secret":                  testResource.SecretTestName,
 		}

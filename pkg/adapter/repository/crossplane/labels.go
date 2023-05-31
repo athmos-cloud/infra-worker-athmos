@@ -10,7 +10,7 @@ const (
 	managedByValue           = "athmos"
 	VMSSHKeysSecretNamespace = "vm-ssh-keys-secret-namespace"
 	VMSSHKeysNames           = "vm-ssh-keys-names"
-	VMSSHKeysNamesSeparator  = ","
+	VMSSHKeysNamesSeparator  = "."
 	VMPublicIPLabel          = "vm-has-public-ip"
 )
 
@@ -22,6 +22,9 @@ func GetBaseLabels(projectID string) map[string]string {
 }
 
 func ToSSHKeySecretLabels(keyList model.SSHKeyList) map[string]string {
+	if len(keyList) == 0 {
+		return map[string]string{}
+	}
 	sshKeyLabels := map[string]string{
 		VMSSHKeysSecretNamespace: keyList[0].SecretNamespace,
 	}

@@ -86,7 +86,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 		autoCreateSubnet := false
 		wantSpec := v1beta1.NetworkSpec{
 			ResourceSpec: v1.ResourceSpec{
-				DeletionPolicy: "Orphan",
+				DeletionPolicy: "Delete",
 				ProviderConfigReference: &v1.Reference{
 					Name: net.IdentifierID.Provider,
 				},
