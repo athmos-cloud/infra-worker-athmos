@@ -199,16 +199,29 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *resource.N
 
 func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *resource.Network) errors.Error {
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
-	if subnets, err := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
-		return err
-	} else {
-		for _, subnet := range *subnets {
-			if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); !subnetErr.IsOk() {
-				return subnetErr
-			}
-		}
-		return gcp.DeleteNetwork(ctx, network)
+	subnets, subnetsErr := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	firewalls, firewallsErr := gcp.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+
+	if !subnetsErr.IsOk() {
+		return subnetsErr
 	}
+	if !firewallsErr.IsOk() {
+		return firewallsErr
+	}
+
+	for _, subnet := range *subnets {
+		if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); !subnetErr.IsOk() {
+			return subnetErr
+		}
+	}
+
+	for _, firewall := range *firewalls {
+		if firewallErr := gcp.DeleteFirewall(ctx, &firewall); !firewallErr.IsOk() {
+			return firewallErr
+		}
+	}
+	return gcp.DeleteNetwork(ctx, network)
+
 }
 
 func (gcp *gcpRepository) NetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
