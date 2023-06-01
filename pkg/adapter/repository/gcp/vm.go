@@ -149,17 +149,19 @@ func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (
 		tags[split[0]] = split[1]
 	}
 	sshKeys := crossplane.FromSSHKeySecretLabels(vm.Labels)
-	gcp.sshKeysRepository.GetList(ctx, sshKeys)
+	publicIP := ""
+	if vm.Status.AtProvider.NetworkInterface != nil {
+		publicIP = *vm.Status.AtProvider.NetworkInterface[0].AccessConfig[0].NATIP
+	}
 	return &resource.VM{
 		Metadata: metadata.Metadata{
-			Managed:   vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
-			Namespace: vm.ObjectMeta.Namespace,
-			Tags:      tags,
+			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
+			Tags:    tags,
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
 		AssignPublicIP: false,
-		PublicIP:       *vm.Status.AtProvider.NetworkInterface[0].AccessConfig[0].NATIP,
+		PublicIP:       publicIP,
 		Zone:           *vm.Spec.ForProvider.Zone,
 		MachineType:    *vm.Spec.ForProvider.MachineType,
 		Auths:          sshKeys,
@@ -231,7 +233,8 @@ func (gcp *gcpRepository) toModelVMCollection(ctx context.Context, instanceList 
 
 func toVmOS(disk *v1beta1.BootDiskParameters) resource.VMOS {
 	return resource.VMOS{
-		ID: *disk.InitializeParams[0].Image,
+		ID:   *disk.InitializeParams[0].Image,
+		Name: *disk.InitializeParams[0].Image,
 	}
 }
 
@@ -246,8 +249,8 @@ func (gcp *gcpRepository) toVMDiskCollection(disks []v1beta1.BootDiskParameters)
 func (gcp *gcpRepository) toVMDisk(disk *v1beta1.BootDiskParameters) resource.VMDisk {
 	return resource.VMDisk{
 		SizeGib: int(*disk.InitializeParams[0].Size),
-		Type:    resource.DiskType(*disk.InitializeParams[0].Type),
-		Mode:    resource.DiskMode(*disk.Mode),
+		Type:    fromGCPDiskType(*disk.InitializeParams[0].Type),
+		Mode:    fromGCPDiskMode(*disk.Mode),
 	}
 }
 
@@ -261,10 +264,11 @@ func (gcp *gcpRepository) toGCPVMDiskList(disks []resource.VMDisk, os resource.V
 
 func (gcp *gcpRepository) toGCPVMDisk(disk resource.VMDisk, os resource.VMOS) v1beta1.BootDiskParameters {
 	diskSize := float64(disk.SizeGib)
-	diskType := getGCPDiskType(disk.Type)
+	diskType := toGCPDiskType(disk.Type)
+	diskMode := toGCPDiskMode(disk.Mode)
 	return v1beta1.BootDiskParameters{
 		AutoDelete: &disk.AutoDelete,
-		Mode:       (*string)(&disk.Mode),
+		Mode:       &diskMode,
 		InitializeParams: []v1beta1.InitializeParamsParameters{
 			{
 				Size:  &diskSize,
@@ -284,11 +288,38 @@ func sshKeysToString(sshKeys model.SSHKeyList) *string {
 	return &ret
 }
 
-func getGCPDiskType(diskType resource.DiskType) string {
+func toGCPDiskType(diskType resource.DiskType) string {
 	switch diskType {
 	case resource.DiskTypeSSD:
 		return "pd-ssd"
 	default:
 		return "pd-standard"
+	}
+}
+
+func fromGCPDiskType(diskType string) resource.DiskType {
+	switch diskType {
+	case "pd-ssd":
+		return resource.DiskTypeSSD
+	default:
+		return resource.DiskTypeHDD
+	}
+}
+
+func toGCPDiskMode(diskMode resource.DiskMode) string {
+	switch diskMode {
+	case resource.DiskModeReadWrite:
+		return "READ_WRITE"
+	default:
+		return "READ_ONLY"
+	}
+}
+
+func fromGCPDiskMode(diskMode string) resource.DiskMode {
+	switch diskMode {
+	case "READ_WRITE":
+		return resource.DiskModeReadWrite
+	default:
+		return resource.DiskModeReadOnly
 	}
 }

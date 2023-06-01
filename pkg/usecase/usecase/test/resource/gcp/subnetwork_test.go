@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -44,7 +43,7 @@ func initSubnetwork(t *testing.T) (context.Context, *testResource.TestResource, 
 	err := nuc.Create(ctx, net)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.NetworkIDKey, net.IdentifierID)
-	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
+	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(), nil, nil)
 
 	return ctx, testNet, uc
 }

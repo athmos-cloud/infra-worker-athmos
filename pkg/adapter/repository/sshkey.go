@@ -73,7 +73,7 @@ func (s *sshKey) CreateList(ctx context.Context, list model.SSHKeyList) errors.E
 
 func (s *sshKey) Get(ctx context.Context, key *model.SSHKey) errors.Error {
 	secret := &corev1.Secret{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Namespace: key.SecretName, Name: key.SecretNamespace}, secret); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Namespace: key.SecretNamespace, Name: key.SecretName}, secret); err != nil {
 		return errors.KubernetesError.WithMessage(err.Error())
 	}
 	key.Username = string(secret.Data[SecretUsernameKey])
