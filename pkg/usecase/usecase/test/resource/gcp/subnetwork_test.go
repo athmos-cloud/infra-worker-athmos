@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
@@ -43,8 +43,26 @@ func initSubnetwork(t *testing.T) (context.Context, *testResource.TestResource, 
 	err := nuc.Create(ctx, net)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.NetworkIDKey, net.IdentifierID)
-	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
+	uc := usecase.NewSubnetworkUseCase(testNet.ProjectRepo, gcp.NewRepository(), nil, nil)
+
 	return ctx, testNet, uc
+}
+
+func clearSubnetwork(ctx context.Context) {
+	clearNetwork(ctx)
+	subnetworks := &v1beta1.SubnetworkList{}
+
+	err := kubernetes.Client().Client.List(ctx, subnetworks)
+	if err != nil {
+		return
+	}
+	for _, subnetwork := range subnetworks.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &subnetwork)
+		if err != nil {
+			logger.Warning.Printf("Error deleting subnetwork %s: %v", subnetwork.Name, err)
+			continue
+		}
+	}
 }
 
 func createSubnetwork(t *testing.T, ctx context.Context, suc usecase.Subnetwork) *resource.Subnetwork {
@@ -72,7 +90,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearSubnetwork(ctx)
 	}()
 
 	t.Run("Create a valid subnetwork", func(t *testing.T) {
@@ -149,7 +167,7 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearSubnetwork(ctx)
 	}()
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
 		subnet := createSubnetwork(t, ctx, suc)
@@ -187,7 +205,7 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearSubnetwork(ctx)
 	}()
 	t.Run("Get a valid subnetwork should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
@@ -236,7 +254,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 	ctx, _, suc := initSubnetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearSubnetwork(ctx)
 	}()
 	t.Run("Update a valid subnetwork should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)

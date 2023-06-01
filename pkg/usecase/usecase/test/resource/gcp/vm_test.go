@@ -10,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
@@ -48,10 +49,26 @@ func initVM(t *testing.T) (context.Context, *testResource.TestResource, usecase.
 	err := suc.Create(ctx, subnet)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.SubnetworkIDKey, subnet.IdentifierID)
-	uc := usecase.NewVMUseCase(testNet.ProjectRepo, repository.NewSSHKeyRepository(), gcp.NewRepository(repository.NewSSHKeyRepository()), nil, nil)
+	uc := usecase.NewVMUseCase(testNet.ProjectRepo, repository.NewSSHKeyRepository(), gcp.NewRepository(), nil, nil)
 	return ctx, testNet, uc
 }
 
+func clearVM(ctx context.Context) {
+	clearSubnetwork(ctx)
+	vms := &v1beta1.InstanceList{}
+
+	err := kubernetes.Client().Client.List(ctx, vms)
+	if err != nil {
+		return
+	}
+	for _, vm := range vms.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &vm)
+		if err != nil {
+			logger.Warning.Printf("Error deleting vm %s: %v", vm.Name, err)
+			continue
+		}
+	}
+}
 func createVM(t *testing.T, ctx context.Context, vuc usecase.VM) *resource.VM {
 	machineType := "e2-medium"
 	zone := "europe-west9-b"
@@ -98,7 +115,7 @@ func Test_vmUseCase_Create(t *testing.T) {
 	ctx, _, vuc := initVM(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearVM(ctx)
 	}()
 	t.Run("Create a valid vm", func(t *testing.T) {
 		machineType := "e2-medium"
@@ -224,19 +241,90 @@ func Test_vmUseCase_Create(t *testing.T) {
 
 func Test_vmUseCase_Delete(t *testing.T) {
 	mongoC := test.Init(t)
+	ctx, _, vuc := initVM(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
+		clearVM(ctx)
 	}()
 	t.Run("Delete a valid vm should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		vm := createVM(t, ctx, vuc)
+		ctx.Set(context.RequestKey, dto.DeleteVMRequest{
+			IdentifierID: vm.IdentifierID,
+		})
+		foundVM := &resource.VM{}
+		err := vuc.Delete(ctx, foundVM)
+		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
-	t.Run("Delete a non-existing vm should fail", func(t *testing.T) {
-		t.Skip("TODO")
+	t.Run("Delete a non-existing vm should return not found", func(t *testing.T) {
+		ctx.Set(context.RequestKey, dto.DeleteVMRequest{
+			IdentifierID: identifier.VM{
+				Provider:   "provider-test",
+				Network:    "network-test",
+				Subnetwork: "subnet-test",
+				VM:         "this-vm-does-not-exist",
+			},
+		})
+		foundVM := &resource.VM{}
+		err := vuc.Delete(ctx, foundVM)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
-	t.Run("Delete a vm with children should fail", func(t *testing.T) {
+}
 
+func Test_vmUseCase_Get(t *testing.T) {
+	mongoC := test.Init(t)
+	ctx, _, vuc := initVM(t)
+	defer func() {
+		require.NoError(t, gnomock.Stop(mongoC))
+		clearVM(ctx)
+	}()
+	t.Run("Get a valid vm should succeed", func(t *testing.T) {
+		vm := createVM(t, ctx, vuc)
+		ctx.Set(context.RequestKey, dto.GetVMRequest{
+			IdentifierID: vm.IdentifierID,
+		})
+		foundVM := &resource.VM{}
+		err := vuc.Get(ctx, foundVM)
+		assert.Equal(t, errors.OK.Code, err.Code)
+		assert.Equal(t, vm, foundVM)
 	})
-	t.Run("Delete cascade a vm should succeed", func(t *testing.T) {
+	t.Run("Get a non-existing vm should return not found", func(t *testing.T) {
+		ctx.Set(context.RequestKey, dto.GetVMRequest{
+			IdentifierID: identifier.VM{
+				Provider:   "provider-test",
+				Network:    "network-test",
+				Subnetwork: "subnet-test",
+				VM:         "this-vm-does-not-exist",
+			},
+		})
+		delVM := &resource.VM{}
+		err := vuc.Get(ctx, delVM)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
+	})
+}
+
+func Test_vmUseCase_Update(t *testing.T) {
+	mongoC := test.Init(t)
+	ctx, _, vuc := initVM(t)
+	defer func() {
+		require.NoError(t, gnomock.Stop(mongoC))
+		clearVM(ctx)
+	}()
+
+	t.Run("Update an existing vm should succeed", func(t *testing.T) {
 		t.Skip("TODO")
+	})
+
+	t.Run("Update a non-existing VM should return not found error", func(t *testing.T) {
+		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
+			IdentifierID: identifier.VM{
+				Provider:   "provider-test",
+				Network:    "network-test",
+				Subnetwork: "subnet-test",
+				VM:         "this-vm-does-not-exist",
+			},
+		})
+		delVM := &resource.VM{}
+		err := vuc.Update(ctx, delVM)
+		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 }

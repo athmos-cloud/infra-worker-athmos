@@ -25,14 +25,14 @@ type VM interface {
 
 type vmUseCase struct {
 	projectRepo repository.Project
-	sshKeyRepo  repository.SSHKeys
+	sshKeysRepo repository.SSHKeys
 	gcpRepo     resourceRepo.Resource
 	awsRepo     resourceRepo.Resource
 	azureRepo   resourceRepo.Resource
 }
 
-func NewVMUseCase(projectRepo repository.Project, sshKeyRepo repository.SSHKeys, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
-	return &vmUseCase{projectRepo: projectRepo, sshKeyRepo: sshKeyRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
+func NewVMUseCase(projectRepo repository.Project, sshKeysRepo repository.SSHKeys, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) VM {
+	return &vmUseCase{projectRepo: projectRepo, sshKeysRepo: sshKeysRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
 func (vuc *vmUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
@@ -68,6 +68,9 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 		return err
 	}
 	*vm = *foundVM
+	if errKeys := vuc.sshKeysRepo.GetList(ctx, vm.Auths); !errKeys.IsOk() {
+		return errKeys
+	}
 
 	return errors.OK
 }
@@ -101,14 +104,14 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 			SecretNamespace: project.Namespace,
 		})
 	}
-	if err := vuc.sshKeyRepo.CreateList(ctx, keyList); !err.IsOk() {
+	if err := vuc.sshKeysRepo.CreateList(ctx, keyList); !err.IsOk() {
 		return err
 	}
+
 	toCreateVM := &resourceModel.VM{
 		Metadata: metadata.Metadata{
-			Namespace: project.Namespace,
-			Managed:   req.Managed,
-			Tags:      req.Tags,
+			Managed: req.Managed,
+			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.VM{
 			Provider:   req.ParentID.Provider,
@@ -215,7 +218,7 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 		return errProject
 	}
 	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err

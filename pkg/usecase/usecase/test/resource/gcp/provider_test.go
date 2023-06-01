@@ -11,6 +11,7 @@ import (
 	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
@@ -39,12 +40,28 @@ type wantProvider struct {
 	Spec   v1beta1.ProviderConfigSpec
 }
 
+func clearProvider(ctx context.Context) {
+	clear(ctx)
+	providers := &v1beta1.ProviderConfigList{}
+
+	err := kubernetes.Client().Client.List(ctx, providers)
+	if err != nil {
+		return
+	}
+	for _, provider := range providers.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &provider)
+		if err != nil {
+			logger.Warning.Printf("Error deleting provider %s: %v", provider.Name, err)
+			continue
+		}
+	}
+}
 func Test_providerUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, _, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearProvider(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -134,7 +151,7 @@ func Test_providerUseCase_Delete(t *testing.T) {
 	ctx, _, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearProvider(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -185,7 +202,7 @@ func Test_providerUseCase_Get(t *testing.T) {
 	ctx, _, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearProvider(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -238,7 +255,7 @@ func Test_providerUseCase_List(t *testing.T) {
 	ctx, _, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearProvider(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -279,7 +296,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 	ctx, _, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearProvider(ctx)
 	}()
 
 	t.Run("Update a valid provider should succeed", func(t *testing.T) {
