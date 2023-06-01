@@ -186,7 +186,7 @@ func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network
 		return errNet
 	}
 	*subnetwork = *foundNetwork
-	errDel := repo.DeleteNetwork(ctx, foundNetwork)
+	errDel := repo.DeleteNetworkCascade(ctx, foundNetwork)
 	if !errDel.IsOk() {
 		return errDel
 	}

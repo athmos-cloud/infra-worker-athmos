@@ -72,7 +72,8 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 
 func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*resource.VMCollection, errors.Error) {
 	//TODO implement me
-	panic("implement me")
+	//panic("implement me")
+	return &resource.VMCollection{}, errors.OK
 }
 
 func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.Error {
