@@ -10,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
@@ -52,6 +53,22 @@ func initVM(t *testing.T) (context.Context, *testResource.TestResource, usecase.
 	return ctx, testNet, uc
 }
 
+func clearVM(ctx context.Context) {
+	clearSubnetwork(ctx)
+	vms := &v1beta1.InstanceList{}
+
+	err := kubernetes.Client().Client.List(ctx, vms)
+	if err != nil {
+		return
+	}
+	for _, vm := range vms.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &vm)
+		if err != nil {
+			logger.Warning.Printf("Error deleting vm %s: %v", vm.Name, err)
+			continue
+		}
+	}
+}
 func createVM(t *testing.T, ctx context.Context, vuc usecase.VM) *resource.VM {
 	machineType := "e2-medium"
 	zone := "europe-west9-b"
@@ -98,7 +115,7 @@ func Test_vmUseCase_Create(t *testing.T) {
 	ctx, _, vuc := initVM(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearVM(ctx)
 	}()
 	t.Run("Create a valid vm", func(t *testing.T) {
 		machineType := "e2-medium"

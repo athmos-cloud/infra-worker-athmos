@@ -10,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
@@ -46,12 +47,29 @@ func initFirewall(t *testing.T) (context.Context, *testResource.TestResource, us
 	return ctx, testNet, uc
 }
 
+func clearFirewall(ctx context.Context) {
+	clearSubnetwork(ctx)
+	firewalls := &v1beta1.FirewallList{}
+
+	err := kubernetes.Client().Client.List(ctx, firewalls)
+	if err != nil {
+		return
+	}
+	for _, firewall := range firewalls.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &firewall)
+		if err != nil {
+			logger.Warning.Printf("Error deleting firewall %s: %v", firewall.Name, err)
+			continue
+		}
+	}
+}
+
 func Test_firewallUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, _, fuc := initFirewall(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearFirewall(ctx)
 	}()
 	t.Run("Create a valid firewall", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
@@ -187,7 +205,7 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 	ctx, _, fuc := initFirewall(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearFirewall(ctx)
 	}()
 	t.Run("Delete a valid firewall should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
@@ -241,7 +259,7 @@ func Test_firewallUseCase_Get(t *testing.T) {
 	ctx, _, fuc := initFirewall(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearFirewall(ctx)
 	}()
 	t.Run("Get a valid firewall should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
@@ -297,7 +315,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 	ctx, _, fuc := initFirewall(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clear(ctx)
+		clearFirewall(ctx)
 	}()
 	t.Run("Update a valid firewall should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
