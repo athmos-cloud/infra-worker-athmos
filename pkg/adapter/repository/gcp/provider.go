@@ -142,8 +142,20 @@ func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource
 }
 
 func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *resource.Provider) errors.Error {
-	//TODO implement me
-	panic("implement me")
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
+	networks, networksErr := gcp.FindAllNetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+
+	if !networksErr.IsOk() {
+		return networksErr
+	}
+
+	for _, network := range *networks {
+		if networkErr := gcp.DeleteNetworkCascade(ctx, &network); !networkErr.IsOk() {
+			return networkErr
+		}
+	}
+
+	return gcp.DeleteProvider(ctx, provider)
 }
 
 func (gcp *gcpRepository) ProviderExists(ctx context.Context, name identifier.Provider) (bool, errors.Error) {
@@ -179,6 +191,7 @@ func (gcp *gcpRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*re
 		},
 	}, errors.OK
 }
+
 func (gcp *gcpRepository) toGCPProvider(ctx context.Context, provider *resource.Provider) *v1beta1.ProviderConfig {
 	resLabels := lo.Assign(
 		crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)),
