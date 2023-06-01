@@ -1,0 +1,55 @@
+regions:
+  - name: asia-east1
+    location: Taiwan
+  - name: asia-east2
+    location: Hong Kong
+  - name: asia-northeast1
+    location: Tokyo
+  - name: asia-northeast2
+    location: Osaka
+  - name: asia-northeast3
+    location: Seoul
+  - name: asia-south1
+    location: Mumbai
+  - name: asia-south2
+    location: Delhi
+  - name: asia-southeast1
+    location: Singapore
+  - name: asia-southeast2
+    location: Jakarta
+  - name: australia-southeast1
+    location: Sydney
+  - name: europe-north1
+    location: Finland
+  - name: europe-west1
+    location: Belgium
+  - name: europe-west2
+    location: London
+  - name: europe-west3
+    location: Frankfurt
+  - name: europe-west4
+    location: Netherlands
+  - name: europe-west6
+    location: Zurich
+  - name: europe-west9
+    location: Paris
+  - name: northamerica-northeast1
+    location: Montreal
+  - name: northamerica-northeast2
+    location: Toronto
+  - name: southamerica-east1
+    location: Sao Paulo
+  - name: us-central1
+    location: Iowa
+  - name: us-east1
+    location: South Carolina
+  - name: us-east4
+    location: North Virginia
+  - name: us-west1
+    location: Oregon
+  - name: us-west2
+    location: Los Angeles
+  - name: us-west3
+    location: Salt Lake location
+  - name: us-west4
+    location: Las Vegas

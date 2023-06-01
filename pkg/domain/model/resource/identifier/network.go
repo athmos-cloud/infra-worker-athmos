@@ -13,11 +13,11 @@ func (id *Network) NameFromLabels(labels map[string]string) errors.Error {
 	if !ok {
 		return errors.InternalError.WithMessage("missing network identifier")
 	}
-	provider, ok := labels[ProviderIdentifierKey]
+	provider, ok := labels[ProviderNameKey]
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}
-	vpc := labels[VpcIdentifierKey]
+	vpc := labels[VpcNameKey]
 	*id = Network{
 		Network:  network,
 		Provider: provider,
