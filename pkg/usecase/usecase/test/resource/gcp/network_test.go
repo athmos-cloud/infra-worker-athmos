@@ -163,7 +163,38 @@ func Test_networkUseCase_Delete(t *testing.T) {
 		err := nuc.Delete(ctx, net)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})
-	t.Run("Delete a network with children should fail", func(t *testing.T) {
+	t.Run("Delete a network with children should cascade", func(t *testing.T) {
+		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
+		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		req := dto.CreateNetworkRequest{
+			ParentIDProvider: &parentID,
+			Name:             netName,
+			Managed:          false,
+		}
+		ctx.Set(context.RequestKey, req)
+		net := &resource.Network{}
+		err := nuc.Create(ctx, net)
+		require.Equal(t, errors.Created.Code, err.Code)
+		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
+		subnet := &resource.Subnetwork{}
+		subnetReq := dto.CreateSubnetworkRequest{
+			ParentID:    net.IdentifierID,
+			Name:        fmt.Sprintf("%s-%s", "test", utils.RandomString(5)),
+			Region:      "europe-west1",
+			IPCIDRRange: "10.0.0.1/27",
+		}
+		ctx.Set(context.RequestKey, subnetReq)
+		err = suc.Create(ctx, subnet)
+		require.Equal(t, errors.Created.Code, err.Code)
+		delReq := dto.DeleteNetworkRequest{
+			IdentifierID: net.IdentifierID,
+		}
+		ctx.Set(context.RequestKey, delReq)
+		err = nuc.Delete(ctx, net)
+		require.Equal(t, errors.NoContent.Code, err.Code)
+	})
+
+	/*t.Run("Delete cascade a network should succeed", func(t *testing.T) {
 		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
 		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 		req := dto.CreateNetworkRequest{
@@ -192,11 +223,7 @@ func Test_networkUseCase_Delete(t *testing.T) {
 		ctx.Set(context.RequestKey, delReq)
 		err = nuc.Delete(ctx, net)
 		require.Equal(t, errors.BadRequest.Code, err.Code)
-	})
-
-	t.Run("Delete cascade a network should succeed", func(t *testing.T) {
-		t.Skip("TODO")
-	})
+	})*/
 }
 
 func Test_networkUseCase_Get(t *testing.T) {

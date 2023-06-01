@@ -167,7 +167,7 @@ func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *reso
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
 	}
 
-	return gcp.DeleteSubnetwork(ctx, subnetwork)
+	return errors.NoContent
 }
 
 func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
@@ -248,7 +248,7 @@ func (gcp *gcpRepository) toGCPSubnetwork(ctx context.Context, subnet *resource.
 }
 
 func (gcp *gcpRepository) toModelSubnetworkCollection(subnetworkList *v1beta1.SubnetworkList) (*resource.SubnetworkCollection, errors.Error) {
-	var items resource.SubnetworkCollection
+	items := resource.SubnetworkCollection{}
 	for _, item := range subnetworkList.Items {
 		subnet, err := gcp.toModelSubnetwork(&item)
 		if !err.IsOk() {
