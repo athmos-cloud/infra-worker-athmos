@@ -21,5 +21,5 @@ type Firewall interface {
 	CreateFirewall(context.Context, *resource.Firewall) errors.Error
 	UpdateFirewall(context.Context, *resource.Firewall) errors.Error
 	DeleteFirewall(context.Context, *resource.Firewall) errors.Error
-	FirewallExists(context.Context, option.Option) (bool, errors.Error)
+	FirewallExists(context.Context, *resource.Firewall) (bool, errors.Error)
 }

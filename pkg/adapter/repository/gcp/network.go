@@ -141,10 +141,7 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 }
 
 func (gcp *gcpRepository) CreateNetwork(ctx context.Context, network *resource.Network) errors.Error {
-	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
-	if exist, errExists := gcp.NetworkExists(ctx, option.Option{
-		Value: resourceRepo.ResourceExistsOption{Namespace: network.Metadata.Namespace, Labels: searchLabels},
-	}); !errExists.IsOk() {
+	if exist, errExists := gcp.NetworkExists(ctx, network); !errExists.IsOk() {
 		return errExists
 	} else if exist {
 		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
@@ -175,7 +172,7 @@ func (gcp *gcpRepository) UpdateNetwork(ctx context.Context, network *resource.N
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", network.IdentifierName.Network))
 	}
 	return errors.NoContent
 }
@@ -224,17 +221,18 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *res
 
 }
 
-func (gcp *gcpRepository) NetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String()).Validate() {
-		return false, errors.InvalidOption.WithMessage(fmt.Sprintf("option %v is invalid", opt.Get()))
-	}
-	req := opt.Get().(resourceRepo.ResourceExistsOption)
+func (gcp *gcpRepository) NetworkExists(ctx context.Context, network *resource.Network) (bool, errors.Error) {
 	gcpNetwork := &v1beta1.NetworkList{}
+	searchLabels := lo.Assign(map[string]string{
+		model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
+		identifier.ProviderIdentifierKey: network.IdentifierID.Provider,
+		identifier.NetworkNameKey:        network.IdentifierName.Network,
+	})
 	kubeOptions := &client.ListOptions{
-		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(searchLabels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpNetwork, kubeOptions); err != nil {
-		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list subnetworks in namespace %s", req.Namespace))
+		return false, errors.KubernetesError.WithMessage("unable to list subnetworks in namespace")
 	}
 	return len(gcpNetwork.Items) > 0, errors.OK
 }

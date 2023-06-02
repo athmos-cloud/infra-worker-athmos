@@ -152,17 +152,8 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.E
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateVMRequest)
 	defaults.SetDefaults(&req)
-	project, errProject := vuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
-	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
-	})
+
+	foundVM, err := repo.FindVM(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM}})
 	if !err.IsOk() {
 		return err
 	}
@@ -186,9 +177,15 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.E
 	if req.MachineType != nil {
 		vm.MachineType = *req.MachineType
 	}
-	//if req.Auths != nil {
-	//	vm.Auths = *req.Auths TODO: update auths
-	//}
+	if req.Auths != nil {
+		if errSSH := vuc.updateSSHKeys(ctx, vm.IdentifierName.VM, &vm.Auths, req); !errSSH.IsOk() {
+			return errSSH
+		}
+	} else if req.UpdateSSHKeys {
+		if errSSH := vuc.sshKeysRepo.CreateList(ctx, vm.Auths); !errSSH.IsOk() {
+			return errSSH
+		}
+	}
 	if req.Disks != nil {
 		vm.Disks = *req.Disks
 	}
@@ -199,6 +196,50 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.E
 		return errUpdate
 	}
 
+	return errors.NoContent
+}
+
+func (vuc *vmUseCase) updateSSHKeys(ctx context.Context, vmName string, auths *model.SSHKeyList, req dto.UpdateVMRequest) errors.Error {
+	userExists := func(username string) bool {
+		for _, auth := range *auths {
+			if auth.Username == username {
+				return true
+			}
+		}
+		return false
+	}
+	userRemoved := func(username string) bool {
+		for _, auth := range *req.Auths {
+			if auth.Username == username {
+				return false
+			}
+		}
+		return true
+	}
+	projectNamespace := (*auths)[0].SecretNamespace
+	for _, auth := range *req.Auths {
+		if userExists(auth.Username) {
+			continue
+		}
+		key := &model.SSHKey{
+			Username:        auth.Username,
+			KeyLength:       auth.RSAKeyLength,
+			SecretName:      idFromName(fmt.Sprintf("%s-%s", vmName, auth.Username)),
+			SecretNamespace: projectNamespace,
+		}
+		if errSSH := vuc.sshKeysRepo.Create(ctx, key); !errSSH.IsOk() {
+			return errSSH
+		}
+		*auths = append(*auths, key)
+	}
+	for i, auth := range *auths {
+		if userRemoved(auth.Username) {
+			if errSSH := vuc.sshKeysRepo.Delete(ctx, auth); !errSSH.IsOk() {
+				return errSSH
+			}
+			*auths = append((*auths)[:i], (*auths)[i+1:]...)
+		}
+	}
 	return errors.NoContent
 }
 

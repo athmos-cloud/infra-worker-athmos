@@ -22,5 +22,5 @@ type Subnetwork interface {
 	UpdateSubnetwork(context.Context, *resource.Subnetwork) errors.Error
 	DeleteSubnetwork(context.Context, *resource.Subnetwork) errors.Error
 	DeleteSubnetworkCascade(context.Context, *resource.Subnetwork) errors.Error
-	SubnetworkExists(context.Context, option.Option) (bool, errors.Error)
+	SubnetworkExists(context.Context, *resource.Subnetwork) (bool, errors.Error)
 }

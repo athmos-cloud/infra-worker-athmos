@@ -41,7 +41,7 @@ func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*resou
 		}
 		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s in namespace %s", req.Name, req.Namespace))
 	}
-	mod, err := gcp.toModelVM(ctx, gcpVM)
+	mod, err := gcp.toModelVM(gcpVM)
 	if !err.IsOk() {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm in namespace %s", req.Namespace))
 		return
 	}
-	if firewalls, err := gcp.toModelVMCollection(ctx, gcpVMList); !err.IsOk() {
+	if firewalls, err := gcp.toModelVMCollection(gcpVMList); !err.IsOk() {
 		ch.ErrorChannel <- err
 	} else {
 		ch.Channel <- firewalls
@@ -93,12 +93,21 @@ func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.
 }
 
 func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *resource.VM) errors.Error {
-	gcpVM := gcp.toGCPVM(ctx, vm)
-	if err := kubernetes.Client().Client.Update(ctx, gcpVM); err != nil {
+	existingVM := &v1beta1.Instance{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, existingVM); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierID.VM))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update vm %s in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.Subnetwork))
+	}
+	gcpVM := gcp.toGCPVM(ctx, vm)
+	existingVM.Spec = gcpVM.Spec
+	existingVM.Labels = gcpVM.Labels
+	if err := kubernetes.Client().Client.Update(ctx, existingVM); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierName.VM))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update vm %s", vm.IdentifierName.VM))
 	}
 	return errors.NoContent
 }
@@ -132,7 +141,7 @@ func (gcp *gcpRepository) VMExists(ctx context.Context, vm *resource.VM) (bool, 
 	return len(gcpVMs.Items) > 0, errors.OK
 }
 
-func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (*resource.VM, errors.Error) {
+func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.Error) {
 	id := identifier.VM{}
 	name := identifier.VM{}
 	if err := id.IDFromLabels(vm.Labels); !err.IsOk() {
@@ -154,6 +163,10 @@ func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (
 	if vm.Status.AtProvider.NetworkInterface != nil {
 		publicIP = *vm.Status.AtProvider.NetworkInterface[0].AccessConfig[0].NATIP
 	}
+	hasPublicIp, err := strconv.ParseBool(vm.ObjectMeta.Labels[crossplane.VMPublicIPLabel])
+	if err != nil {
+		return nil, errors.InternalError.WithMessage("unable to parse public ip label")
+	}
 	return &resource.VM{
 		Metadata: metadata.Metadata{
 			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
@@ -161,7 +174,7 @@ func (gcp *gcpRepository) toModelVM(ctx context.Context, vm *v1beta1.Instance) (
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
-		AssignPublicIP: false,
+		AssignPublicIP: hasPublicIp,
 		PublicIP:       publicIP,
 		Zone:           *vm.Spec.ForProvider.Zone,
 		MachineType:    *vm.Spec.ForProvider.MachineType,
@@ -220,10 +233,10 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1
 	}
 }
 
-func (gcp *gcpRepository) toModelVMCollection(ctx context.Context, instanceList *v1beta1.InstanceList) (*resource.VMCollection, errors.Error) {
+func (gcp *gcpRepository) toModelVMCollection(instanceList *v1beta1.InstanceList) (*resource.VMCollection, errors.Error) {
 	var items resource.VMCollection
 	for _, item := range instanceList.Items {
-		vm, err := gcp.toModelVM(ctx, &item)
+		vm, err := gcp.toModelVM(&item)
 		if !err.IsOk() {
 			return nil, err
 		}
@@ -249,9 +262,10 @@ func (gcp *gcpRepository) toVMDiskCollection(disks []v1beta1.BootDiskParameters)
 
 func (gcp *gcpRepository) toVMDisk(disk *v1beta1.BootDiskParameters) resource.VMDisk {
 	return resource.VMDisk{
-		SizeGib: int(*disk.InitializeParams[0].Size),
-		Type:    fromGCPDiskType(*disk.InitializeParams[0].Type),
-		Mode:    fromGCPDiskMode(*disk.Mode),
+		AutoDelete: *disk.AutoDelete,
+		SizeGib:    int(*disk.InitializeParams[0].Size),
+		Type:       fromGCPDiskType(*disk.InitializeParams[0].Type),
+		Mode:       fromGCPDiskMode(*disk.Mode),
 	}
 }
 

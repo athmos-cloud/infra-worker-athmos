@@ -29,7 +29,7 @@ type CreateVMRequest struct {
 
 type VMAuth struct {
 	Username     string `json:"username"`
-	RSAKeyLength int    `json:"rsaKeyLength" default:"2048"`
+	RSAKeyLength int    `json:"rsaKeyLength"`
 }
 
 type CreateVMResponse struct {
@@ -44,6 +44,7 @@ type UpdateVMRequest struct {
 	Zone           *string              `json:"zone"`
 	MachineType    *string              `json:"machineType"`
 	Auths          *[]VMAuth            `json:"auths"`
+	UpdateSSHKeys  bool                 `json:"updateSSHKeys" default:"false"`
 	Disks          *resource.VMDiskList `json:"disks"`
 	OS             *resource.VMOS       `json:"os"`
 	Managed        *bool                `json:"managed"`

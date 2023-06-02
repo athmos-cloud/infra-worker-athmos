@@ -9,8 +9,8 @@ const (
 	managedByLabel           = "app.kubernetes.io/managed-by"
 	managedByValue           = "athmos"
 	VMSSHKeysSecretNamespace = "vm-ssh-keys-secret-namespace"
-	VMSSHKeysNames           = "vm-ssh-keys-names"
-	VMSSHKeysNamesSeparator  = "."
+	VMSSHKeysNamePrefix      = "vm-ssh-keys_"
+	VMSSHKeysNameSeparator   = "_"
 	VMPublicIPLabel          = "vm-has-public-ip"
 )
 
@@ -29,20 +29,23 @@ func ToSSHKeySecretLabels(keyList model.SSHKeyList) map[string]string {
 		VMSSHKeysSecretNamespace: keyList[0].SecretNamespace,
 	}
 	for _, key := range keyList {
-		sshKeyLabels[VMSSHKeysNames] = sshKeyLabels[VMSSHKeysNames] + key.SecretName + VMSSHKeysNamesSeparator
+		sshKeyLabels[VMSSHKeysNamePrefix+key.Username] = key.SecretName
 	}
-	sshKeyLabels[VMSSHKeysNames] = strings.TrimSuffix(sshKeyLabels[VMSSHKeysNames], VMSSHKeysNamesSeparator)
 	return sshKeyLabels
 }
 
-func FromSSHKeySecretLabels(secretLabels map[string]string) model.SSHKeyList {
+func FromSSHKeySecretLabels(labels map[string]string) model.SSHKeyList {
 	sshKeyList := model.SSHKeyList{}
-	names := strings.Split(secretLabels[VMSSHKeysNames], VMSSHKeysNamesSeparator)
-	for _, name := range names {
-		sshKeyList = append(sshKeyList, &model.SSHKey{
-			SecretNamespace: secretLabels[VMSSHKeysSecretNamespace],
-			SecretName:      name,
-		})
+	for key, val := range labels {
+		if strings.HasPrefix(key, VMSSHKeysNamePrefix) {
+			splitLabel := strings.Split(val, VMSSHKeysNameSeparator)
+			name := splitLabel[len(splitLabel)-1]
+			sshKeyList = append(sshKeyList, &model.SSHKey{
+				Username:        strings.TrimPrefix(key, VMSSHKeysNamePrefix),
+				SecretNamespace: labels[VMSSHKeysSecretNamespace],
+				SecretName:      name,
+			})
+		}
 	}
 	return sshKeyList
 }

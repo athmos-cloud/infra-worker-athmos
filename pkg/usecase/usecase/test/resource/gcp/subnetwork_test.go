@@ -99,7 +99,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		ipCIDR := "10.0.0.1/26"
 
 		kubeResource := &v1beta1.Subnetwork{}
-		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnet.IdentifierID.Network}, kubeResource)
+		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnet.IdentifierID.Subnetwork}, kubeResource)
 		assert.NoError(t, errk)
 		wantLabels := map[string]string{
 			"app.kubernetes.io/managed-by": "athmos",
@@ -129,7 +129,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 			},
 		}
 		wantNet := wantSubnetwork{
-			Name:   subnet.IdentifierID.Network,
+			Name:   subnet.IdentifierID.Subnetwork,
 			Labels: wantLabels,
 			Spec:   wantSpec,
 		}
@@ -157,7 +157,8 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		subnet := &resource.Subnetwork{}
 		err := suc.Create(ctx, subnet)
 		require.Equal(t, errors.Created.Code, err.Code)
-		err = suc.Create(ctx, subnet)
+		newSubnet := &resource.Subnetwork{}
+		err = suc.Create(ctx, newSubnet)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
@@ -175,7 +176,8 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 			IdentifierID: subnet.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, delReq)
-		err := suc.Delete(ctx, subnet)
+		delSubnet := &resource.Subnetwork{}
+		err := suc.Delete(ctx, delSubnet)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
@@ -227,7 +229,8 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 			IdentifierID: subnet.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, getReq)
-		err = suc.Get(ctx, subnet)
+		getSubnet := &resource.Subnetwork{}
+		err = suc.Get(ctx, getSubnet)
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, subnet.IdentifierID, getReq.IdentifierID)
 		assert.Equal(t, subnet.IPCIDRRange, ipCIDR)

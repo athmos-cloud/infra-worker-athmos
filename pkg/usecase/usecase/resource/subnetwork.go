@@ -60,13 +60,13 @@ func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *model.Subnetw
 	if !errProject.IsOk() {
 		return errProject
 	}
-	foundNetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+	findSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err
 	}
-	*subnetwork = *foundNetwork
+	*subnetwork = *findSubnetwork
 
 	return errors.OK
 }
@@ -177,7 +177,7 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subn
 		return errProject
 	}
 	foundNetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
 	})
 	if !err.IsOk() {
 		return err
