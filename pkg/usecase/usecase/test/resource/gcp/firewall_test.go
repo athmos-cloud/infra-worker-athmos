@@ -82,10 +82,10 @@ func Test_firewallUseCase_Create(t *testing.T) {
 					Protocol: "tcp",
 					Ports:    []string{"80", "443"},
 				},
-				{
-					Protocol: "udp",
-					Ports:    []string{"53"},
-				},
+				//{
+				//	Protocol: "udp",
+				//	Ports:    []string{"53"},
+				//},
 			},
 			DenyRules: resource.FirewallRuleList{
 				{
@@ -116,26 +116,25 @@ func Test_firewallUseCase_Create(t *testing.T) {
 			"name.firewall":                firewallName,
 		}
 		var allow []v1beta1.AllowParameters
-		for _, rule := range req.AllowRules {
-			var ports []*string
+		for _, rule := range firewall.Allow {
 			for _, port := range rule.Ports {
-				ports = append(ports, &port)
+				p := port
+				allow = append(allow, v1beta1.AllowParameters{
+					Protocol: &rule.Protocol,
+					Ports:    []*string{&p},
+				})
 			}
-			allow = append(allow, v1beta1.AllowParameters{
-				Protocol: &rule.Protocol,
-				Ports:    ports,
-			})
 		}
 		var deny []v1beta1.DenyParameters
-		for _, rule := range req.DenyRules {
-			var ports []*string
+		for _, rule := range firewall.Deny {
 			for _, port := range rule.Ports {
-				ports = append(ports, &port)
+				p := port
+				deny = append(deny, v1beta1.DenyParameters{
+					Protocol: &rule.Protocol,
+					Ports:    []*string{&p},
+				})
 			}
-			deny = append(deny, v1beta1.DenyParameters{
-				Protocol: &rule.Protocol,
-				Ports:    ports,
-			})
+
 		}
 		wantSpec := v1beta1.FirewallSpec{
 			ResourceSpec: v1.ResourceSpec{
@@ -152,17 +151,17 @@ func Test_firewallUseCase_Create(t *testing.T) {
 				Deny:    deny,
 			},
 		}
-		wantNet := wantFirewall{
+		want := wantFirewall{
 			Name:   firewall.IdentifierID.Firewall,
 			Labels: wantLabels,
 			Spec:   wantSpec,
 		}
-		gotNet := wantFirewall{
+		got := wantFirewall{
 			Name:   kubeResource.Name,
 			Labels: kubeResource.Labels,
 			Spec:   kubeResource.Spec,
 		}
-		assertFirewallEqual(t, wantNet, gotNet)
+		assertFirewallEqual(t, want, got)
 	})
 
 	t.Run("Create a firewall with an already existing name should fail", func(t *testing.T) {

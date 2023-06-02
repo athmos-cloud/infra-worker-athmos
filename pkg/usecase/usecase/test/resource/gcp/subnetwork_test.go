@@ -99,7 +99,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		ipCIDR := "10.0.0.1/26"
 
 		kubeResource := &v1beta1.Subnetwork{}
-		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnet.IdentifierID.Network}, kubeResource)
+		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnet.IdentifierID.Subnetwork}, kubeResource)
 		assert.NoError(t, errk)
 		wantLabels := map[string]string{
 			"app.kubernetes.io/managed-by": "athmos",
@@ -129,7 +129,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 			},
 		}
 		wantNet := wantSubnetwork{
-			Name:   subnet.IdentifierID.Network,
+			Name:   subnet.IdentifierID.Subnetwork,
 			Labels: wantLabels,
 			Spec:   wantSpec,
 		}

@@ -144,7 +144,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 
 func Test_networkUseCase_Delete(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, testRes, nuc := initNetwork(t)
+	ctx, _, nuc := initNetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clearNetwork(ctx)

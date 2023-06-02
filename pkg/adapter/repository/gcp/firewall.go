@@ -72,8 +72,7 @@ func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 
 func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
 	searchOpt := resourceRepo.ResourceExistsOption{
-		Namespace: firewall.Metadata.Namespace,
-		Labels:    lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, firewall.IdentifierName.ToNameLabels()),
+		Labels: lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, firewall.IdentifierName.ToNameLabels()),
 	}
 	if exists, err := gcp.FirewallExists(ctx, option.Option{Value: searchOpt}); !err.IsOk() {
 		return err

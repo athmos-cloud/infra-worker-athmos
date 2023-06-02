@@ -11,4 +11,5 @@ type SSHKeys interface {
 	CreateList(context.Context, model.SSHKeyList) errors.Error
 	Get(context.Context, *model.SSHKey) errors.Error
 	GetList(context.Context, model.SSHKeyList) errors.Error
+	Delete(context.Context, *model.SSHKey) errors.Error
 }

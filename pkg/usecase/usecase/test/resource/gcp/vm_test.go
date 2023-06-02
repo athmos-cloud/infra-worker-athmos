@@ -134,6 +134,8 @@ func Test_vmUseCase_Create(t *testing.T) {
 			"identifier.network":           vm.IdentifierID.Network,
 			"identifier.subnetwork":        vm.IdentifierID.Subnetwork,
 			"identifier.vm":                vm.IdentifierID.VM,
+			"vm-ssh-keys_admin":            vm.Auths[0].SecretName,
+			"vm-ssh-keys_test":             vm.Auths[1].SecretName,
 			"name.provider":                "test",
 			"name.vpc":                     "test",
 			"name.network":                 "test-net",
@@ -141,7 +143,6 @@ func Test_vmUseCase_Create(t *testing.T) {
 			"name.vm":                      "test-vm",
 			"vm-has-public-ip":             "true",
 			"vm-ssh-keys-secret-namespace": ctx.Value(test.TestNamespaceContextKey).(string),
-			"vm-ssh-keys-names":            fmt.Sprintf("%s.%s", vm.Auths[0].SecretName, vm.Auths[1].SecretName),
 		}
 		readWrite := "READ_WRITE"
 		sizeGib := float64(10)
@@ -284,6 +285,10 @@ func Test_vmUseCase_Get(t *testing.T) {
 		})
 		foundVM := &resource.VM{}
 		err := vuc.Get(ctx, foundVM)
+		vm.Metadata.Tags = map[string]string{}
+		for _, auth := range vm.Auths {
+			auth.KeyLength = 0
+		}
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, vm, foundVM)
 	})
@@ -311,7 +316,26 @@ func Test_vmUseCase_Update(t *testing.T) {
 	}()
 
 	t.Run("Update an existing vm should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		vm := createVM(t, ctx, vuc)
+		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
+			IdentifierID: vm.IdentifierID,
+			Auths: &[]dto.VMAuth{
+				{
+					Username: "admin",
+				},
+				{
+					Username: "some-new-user",
+				},
+			},
+		})
+		updatedVM := &resource.VM{}
+		err := vuc.Update(ctx, updatedVM)
+		assert.Equal(t, errors.NoContent.Code, err.Code)
+		expectedUserList := []string{"admin", "some-new-user"}
+		for _, auth := range updatedVM.Auths {
+			assert.Contains(t, expectedUserList, auth.Username)
+		}
+
 	})
 
 	t.Run("Update a non-existing VM should return not found error", func(t *testing.T) {

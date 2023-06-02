@@ -23,7 +23,7 @@ const (
 	SecretPrivateKeyKey = "privateKey"
 	SecretPublicKeyKey  = "publicKey"
 	SecretUsernameKey   = "username"
-	reservedCharacter   = "."
+	reservedCharacter   = "_"
 )
 
 func NewSSHKeyRepository() resourceRepo.SSHKeys {
@@ -31,7 +31,10 @@ func NewSSHKeyRepository() resourceRepo.SSHKeys {
 }
 
 func (s *sshKey) Create(ctx context.Context, key *model.SSHKey) errors.Error {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if key.KeyLength == 0 {
+		key.KeyLength = 2048
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, key.KeyLength)
 	if err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
@@ -42,6 +45,7 @@ func (s *sshKey) Create(ctx context.Context, key *model.SSHKey) errors.Error {
 	privateKeyPem := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
 	privateKeyBytes := pem.EncodeToMemory(privateKeyPem)
 	key.PublicKey = string(ssh.MarshalAuthorizedKey(publicKey))
+	key.PrivateKey = string(privateKeyBytes)
 	secretNameFormatted := strings.ReplaceAll(key.SecretName, reservedCharacter, "-")
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -88,6 +92,17 @@ func (s *sshKey) GetList(c context.Context, list model.SSHKeyList) errors.Error 
 		if err := s.Get(c, key); !err.IsOk() {
 			return err
 		}
+	}
+	return errors.OK
+}
+
+func (s *sshKey) Delete(ctx context.Context, key *model.SSHKey) errors.Error {
+	secret := &corev1.Secret{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Namespace: key.SecretNamespace, Name: key.SecretName}, secret); err != nil {
+		return errors.KubernetesError.WithMessage(err.Error())
+	}
+	if err := kubernetes.Client().Client.Delete(ctx, secret); err != nil {
+		return errors.KubernetesError.WithMessage(err.Error())
 	}
 	return errors.OK
 }
