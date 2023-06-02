@@ -120,9 +120,7 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 }
 
 func (gcp *gcpRepository) CreateSubnetwork(ctx context.Context, subnetwork *resource.Subnetwork) errors.Error {
-	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
-	if exists, err := gcp.SubnetworkExists(ctx,
-		option.Option{Value: resourceRepo.ResourceExistsOption{Namespace: subnetwork.Metadata.Namespace, Labels: searchLabels}}); !err.IsOk() {
+	if exists, err := gcp.SubnetworkExists(ctx, subnetwork); !err.IsOk() {
 		return err
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists in namespace %s", subnetwork.IdentifierName.Subnetwork, subnetwork.Metadata.Namespace))
@@ -184,18 +182,19 @@ func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwor
 	}
 }
 
-func (gcp *gcpRepository) SubnetworkExists(ctx context.Context, opt option.Option) (bool, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String()).Validate() {
-		return false, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String(), opt.Get()))
-	}
-	req := opt.Get().(resourceRepo.ResourceExistsOption)
+func (gcp *gcpRepository) SubnetworkExists(ctx context.Context, subnetwork *resource.Subnetwork) (bool, errors.Error) {
 	gcpSubnetwork := &v1beta1.SubnetworkList{}
+	searchLabels := lo.Assign(map[string]string{
+		model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
+		identifier.ProviderIdentifierKey: subnetwork.IdentifierID.Provider,
+		identifier.NetworkIdentifierKey:  subnetwork.IdentifierID.Network,
+		identifier.SubnetworkNameKey:     subnetwork.IdentifierName.Subnetwork,
+	})
 	listOpt := &client.ListOptions{
-		Namespace:     req.Namespace,
-		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(searchLabels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpSubnetwork, listOpt); err != nil {
-		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetworks in namespace %s", req.Namespace))
+		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetworks"))
 	}
 	return len(gcpSubnetwork.Items) > 0, errors.OK
 }

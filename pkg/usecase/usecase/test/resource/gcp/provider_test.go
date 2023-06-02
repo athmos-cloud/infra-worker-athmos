@@ -225,7 +225,9 @@ func Test_providerUseCase_Get(t *testing.T) {
 		getProvider := &resource.Provider{}
 		err = uc.Get(ctx, getProvider)
 		assert.Equal(t, errors.OK.Code, err.Code)
-		assert.True(t, getProvider.Equals(*provider))
+		assert.Equal(t, provider.IdentifierName, getProvider.IdentifierName)
+		assert.Equal(t, provider.IdentifierID, getProvider.IdentifierID)
+		assert.Equal(t, provider.Auth, getProvider.Auth)
 	})
 	t.Run("Get a non-existing provider should fail", func(t *testing.T) {
 		getReq := dto.GetProviderRequest{

@@ -71,10 +71,7 @@ func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 }
 
 func (gcp *gcpRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
-	searchOpt := resourceRepo.ResourceExistsOption{
-		Labels: lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, firewall.IdentifierName.ToNameLabels()),
-	}
-	if exists, err := gcp.FirewallExists(ctx, option.Option{Value: searchOpt}); !err.IsOk() {
+	if exists, err := gcp.FirewallExists(ctx, firewall); !err.IsOk() {
 		return err
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
@@ -120,18 +117,19 @@ func (gcp *gcpRepository) DeleteFirewall(ctx context.Context, firewall *resource
 	return errors.NoContent
 }
 
-func (gcp *gcpRepository) FirewallExists(context context.Context, option option.Option) (bool, errors.Error) {
-	if !option.SetType(reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String()).Validate() {
-		return false, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.ResourceExistsOption{}).String(), option.Get()))
+func (gcp *gcpRepository) FirewallExists(ctx context.Context, firewall *resource.Firewall) (bool, errors.Error) {
+	searchLabels := map[string]string{
+		model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
+		identifier.ProviderIdentifierKey: firewall.IdentifierID.Provider,
+		identifier.NetworkIdentifierKey:  firewall.IdentifierID.Network,
+		identifier.FirewallNameKey:       firewall.IdentifierName.Firewall,
 	}
-	req := option.Get().(resourceRepo.ResourceExistsOption)
 	gcpFirewalls := &v1beta1.FirewallList{}
 	listOpt := &client.ListOptions{
-		Namespace:     req.Namespace,
-		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(searchLabels)},
 	}
-	if err := kubernetes.Client().Client.List(context, gcpFirewalls, listOpt); err != nil {
-		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list firewalls in namespace %s", req.Namespace))
+	if err := kubernetes.Client().Client.List(ctx, gcpFirewalls, listOpt); err != nil {
+		return false, errors.KubernetesError.WithMessage("unable to list firewalls")
 	}
 	return len(gcpFirewalls.Items) > 0, errors.OK
 }

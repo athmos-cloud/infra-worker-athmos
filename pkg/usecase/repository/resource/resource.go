@@ -18,8 +18,3 @@ type FindAllResourceOption struct {
 	Labels    map[string]string
 	Namespace string
 }
-
-type ResourceExistsOption struct {
-	Labels    map[string]string
-	Namespace string
-}
