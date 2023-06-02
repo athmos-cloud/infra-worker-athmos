@@ -189,9 +189,7 @@ func Test_providerUseCase_Delete(t *testing.T) {
 		err := uc.Delete(ctx, provider)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
-	t.Run("Delete a provider with children should fail", func(t *testing.T) {
-		t.Skip("TODO")
-	})
+
 	t.Run("Delete cascade a provider should succeed", func(t *testing.T) {
 		t.Skip("TODO")
 	})
