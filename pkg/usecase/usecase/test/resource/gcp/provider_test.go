@@ -69,16 +69,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 	t.Run("Create a valid provider", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
-
+		provider := ProviderFixture(ctx, t, uc)
 		kubeResource := &v1beta1.ProviderConfig{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: provider.IdentifierID.Provider}, kubeResource)
 		assert.NoError(t, errk)
@@ -94,7 +85,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 		}
 		usedSecret := ctx.Value(test.TestSecretContextKey).(secret.Secret)
 		wantSpecs := v1beta1.ProviderConfigSpec{
-			ProjectID: req.VPC,
+			ProjectID: provider.IdentifierName.VPC,
 			Credentials: v1beta1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
@@ -133,18 +124,9 @@ func Test_providerUseCase_Create(t *testing.T) {
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Create a provider with an already existing name should fail", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test-1",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
-
+		_ = ProviderFixture(ctx, t, uc)
 		newProvider := &resource.Provider{}
-		err = uc.Create(ctx, newProvider)
+		err := uc.Create(ctx, newProvider)
 		assert.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
@@ -311,15 +293,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 	}()
 
 	t.Run("Update a valid provider should succeed", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
+		provider := ProviderFixture(ctx, t, uc)
 
 		// New secret
 		secrRepo := secretRepo.NewSecretRepository()
@@ -364,7 +338,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 			"name.secret":                  "test-2",
 		}
 		wantSpecs := v1beta1.ProviderConfigSpec{
-			ProjectID: req.VPC,
+			ProjectID: provider.IdentifierID.VPC,
 			Credentials: v1beta1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
@@ -413,7 +387,6 @@ func Test_providerUseCase_Update(t *testing.T) {
 		ctx.Set(context.RequestKey, updateReq)
 		updatedProvider := &resource.Provider{}
 		err := uc.Update(ctx, updatedProvider)
-
 		assert.Equal(t, errors.BadRequest.Code, err.Code)
 	})
 }
