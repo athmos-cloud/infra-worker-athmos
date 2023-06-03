@@ -3,6 +3,8 @@ package gcp
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
+	repository2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -14,6 +16,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -148,7 +151,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 
 func Test_providerUseCase_Delete(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, _, uc := initTest(t)
+	ctx, testRes, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clearProvider(ctx)
@@ -157,15 +160,8 @@ func Test_providerUseCase_Delete(t *testing.T) {
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 
 	t.Run("Delete a valid provider should succeed", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
+		provider := ProviderFixture(ctx, t, uc)
+
 		delReq := dto.DeleteProviderRequest{
 			IdentifierID: identifier.Provider{
 				Provider: provider.IdentifierID.Provider,
@@ -173,7 +169,8 @@ func Test_providerUseCase_Delete(t *testing.T) {
 		}
 		ctx.Set(context.RequestKey, delReq)
 		delProvider := &resource.Provider{}
-		err = uc.Delete(ctx, delProvider)
+		err := uc.Delete(ctx, delProvider)
+
 		assert.True(t, err.IsOk())
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
@@ -189,11 +186,30 @@ func Test_providerUseCase_Delete(t *testing.T) {
 		err := uc.Delete(ctx, provider)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
-	t.Run("Delete a provider with children should fail", func(t *testing.T) {
-		t.Skip("TODO")
-	})
+
 	t.Run("Delete cascade a provider should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		gcpRepo := gcp.NewRepository()
+		sshRepo := repository2.NewSSHKeyRepository()
+
+		nuc := usecase.NewNetworkUseCase(testRes.ProjectRepo, gcpRepo, nil, nil)
+		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcpRepo, nil, nil)
+		vuc := usecase.NewVMUseCase(testRes.ProjectRepo, sshRepo, gcpRepo, nil, nil)
+
+		provider := ProviderFixture(ctx, t, uc)
+		NetworkFixture(ctx, t, nuc)
+		SubnetworkFixture(ctx, t, suc)
+		VMFixture(ctx, t, vuc)
+
+		delReq := dto.DeleteProviderRequest{
+			IdentifierID: identifier.Provider{
+				Provider: provider.IdentifierID.Provider,
+			},
+		}
+		ctx.Set(context.RequestKey, delReq)
+		delProvider := &resource.Provider{}
+		err := uc.Delete(ctx, delProvider)
+
+		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 }
 
@@ -207,15 +223,8 @@ func Test_providerUseCase_Get(t *testing.T) {
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 	t.Run("Get a valid provider should succeed", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
+		provider := ProviderFixture(ctx, t, uc)
+
 		getReq := dto.GetProviderRequest{
 			IdentifierID: identifier.Provider{
 				Provider: provider.IdentifierID.Provider,
@@ -223,7 +232,7 @@ func Test_providerUseCase_Get(t *testing.T) {
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getProvider := &resource.Provider{}
-		err = uc.Get(ctx, getProvider)
+		err := uc.Get(ctx, getProvider)
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, provider.IdentifierName, getProvider.IdentifierName)
 		assert.Equal(t, provider.IdentifierID, getProvider.IdentifierID)
@@ -394,16 +403,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Update a provider with a non-existing secret should return bad request", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
-		ctx.Set(context.RequestKey, req)
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-		assert.True(t, err.IsOk())
+		provider := ProviderFixture(ctx, t, uc)
 
 		updateReq := dto.UpdateProviderRequest{
 			IdentifierID:   provider.IdentifierID,
@@ -412,7 +412,8 @@ func Test_providerUseCase_Update(t *testing.T) {
 		}
 		ctx.Set(context.RequestKey, updateReq)
 		updatedProvider := &resource.Provider{}
-		err = uc.Update(ctx, updatedProvider)
+		err := uc.Update(ctx, updatedProvider)
+
 		assert.Equal(t, errors.BadRequest.Code, err.Code)
 	})
 }
