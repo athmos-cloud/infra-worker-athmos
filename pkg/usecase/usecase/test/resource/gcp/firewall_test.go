@@ -1,7 +1,6 @@
 package gcp
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
@@ -10,7 +9,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
@@ -71,34 +69,7 @@ func Test_firewallUseCase_Create(t *testing.T) {
 		clearFirewall(ctx)
 	}()
 	t.Run("Create a valid firewall", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-
-		req := dto.CreateFirewallRequest{
-			ParentID: parentID,
-			Name:     firewallName,
-			AllowRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"80", "443"},
-				},
-				//{
-				//	Protocol: "udp",
-				//	Ports:    []string{"53"},
-				//},
-			},
-			DenyRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"65"},
-				},
-			},
-			Managed: false,
-		}
-		ctx.Set(context.RequestKey, req)
-		firewall := &resource.Firewall{}
-		err := fuc.Create(ctx, firewall)
-		require.Equal(t, errors.Created.Code, err.Code)
+		firewall := FirewallFixture(ctx, t, fuc)
 
 		kubeResource := &v1beta1.Firewall{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall}, kubeResource)
@@ -113,7 +84,7 @@ func Test_firewallUseCase_Create(t *testing.T) {
 			"name.provider":                "test",
 			"name.vpc":                     "test",
 			"name.network":                 "test-net",
-			"name.firewall":                firewallName,
+			"name.firewall":                firewall.IdentifierName.Firewall,
 		}
 		var allow []v1beta1.AllowParameters
 		for _, rule := range firewall.Allow {
@@ -165,35 +136,8 @@ func Test_firewallUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a firewall with an already existing name should fail", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-
-		req := dto.CreateFirewallRequest{
-			ParentID: parentID,
-			Name:     firewallName,
-			AllowRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"80", "443"},
-				},
-				{
-					Protocol: "udp",
-					Ports:    []string{"53"},
-				},
-			},
-			DenyRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"65"},
-				},
-			},
-			Managed: false,
-		}
-		ctx.Set(context.RequestKey, req)
-		firewall := &resource.Firewall{}
+		firewall := FirewallFixture(ctx, t, fuc)
 		err := fuc.Create(ctx, firewall)
-		require.Equal(t, errors.Created.Code, err.Code)
-		err = fuc.Create(ctx, firewall)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
@@ -206,37 +150,10 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 		clearFirewall(ctx)
 	}()
 	t.Run("Delete a valid firewall should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-
-		req := dto.CreateFirewallRequest{
-			ParentID: parentID,
-			Name:     firewallName,
-			AllowRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"80", "443"},
-				},
-				{
-					Protocol: "udp",
-					Ports:    []string{"53"},
-				},
-			},
-			DenyRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"65"},
-				},
-			},
-			Managed: false,
-		}
-		ctx.Set(context.RequestKey, req)
-		firewall := &resource.Firewall{}
-		err := fuc.Create(ctx, firewall)
-		require.Equal(t, errors.Created.Code, err.Code)
+		firewall := FirewallFixture(ctx, t, fuc)
 		ctx.Set(context.RequestKey, dto.DeleteFirewallRequest{IdentifierID: firewall.IdentifierID})
 		delFirewall := &resource.Firewall{}
-		err = fuc.Delete(ctx, delFirewall)
+		err := fuc.Delete(ctx, delFirewall)
 		require.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing firewall should fail", func(t *testing.T) {
@@ -260,34 +177,12 @@ func Test_firewallUseCase_Get(t *testing.T) {
 		clearFirewall(ctx)
 	}()
 	t.Run("Get a valid firewall should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		firewall := FirewallFixture(ctx, t, fuc)
 
-		req := dto.CreateFirewallRequest{
-			ParentID: parentID,
-			Name:     firewallName,
-			AllowRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"80", "443"},
-				},
-			},
-			DenyRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"65"},
-				},
-			},
-			Managed: false,
-		}
-		ctx.Set(context.RequestKey, req)
-		firewall := &resource.Firewall{}
-		err := fuc.Create(ctx, firewall)
-		require.Equal(t, errors.Created.Code, err.Code)
 		getReq := dto.GetFirewallRequest{IdentifierID: firewall.IdentifierID}
 		ctx.Set(context.RequestKey, getReq)
 		getFirewall := &resource.Firewall{}
-		err = fuc.Get(ctx, getFirewall)
+		err := fuc.Get(ctx, getFirewall)
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, firewall.IdentifierName, getFirewall.IdentifierName)
 		assert.Equal(t, firewall.IdentifierID, getFirewall.IdentifierID)
@@ -316,34 +211,8 @@ func Test_firewallUseCase_Update(t *testing.T) {
 		clearFirewall(ctx)
 	}()
 	t.Run("Update a valid firewall should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+		firewall := FirewallFixture(ctx, t, fuc)
 
-		req := dto.CreateFirewallRequest{
-			ParentID: parentID,
-			Name:     firewallName,
-			AllowRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"80", "443"},
-				},
-				{
-					Protocol: "udp",
-					Ports:    []string{"53"},
-				},
-			},
-			DenyRules: resource.FirewallRuleList{
-				{
-					Protocol: "tcp",
-					Ports:    []string{"65"},
-				},
-			},
-			Managed: false,
-		}
-		ctx.Set(context.RequestKey, req)
-		firewall := &resource.Firewall{}
-		err := fuc.Create(ctx, firewall)
-		require.Equal(t, errors.Created.Code, err.Code)
 		port := "42"
 		protocol := "tcp"
 		updateReq := dto.UpdateFirewallRequest{
@@ -357,7 +226,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 		}
 		ctx.Set(context.RequestKey, updateReq)
 		updateFirewall := &resource.Firewall{}
-		err = fuc.Update(ctx, updateFirewall)
+		err := fuc.Update(ctx, updateFirewall)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 		kubeResource := &v1beta1.Firewall{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall}, kubeResource)

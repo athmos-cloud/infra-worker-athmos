@@ -114,3 +114,35 @@ func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *resource.VM {
 
 	return vm
 }
+
+func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *resource.Firewall {
+	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
+	firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+
+	req := dto.CreateFirewallRequest{
+		ParentID: parentID,
+		Name:     firewallName,
+		AllowRules: resource.FirewallRuleList{
+			{
+				Protocol: "tcp",
+				Ports:    []string{"80", "443"},
+			},
+			//{
+			//	Protocol: "udp",
+			//	Ports:    []string{"53"},
+			//},
+		},
+		DenyRules: resource.FirewallRuleList{
+			{
+				Protocol: "tcp",
+				Ports:    []string{"65"},
+			},
+		},
+		Managed: false,
+	}
+	ctx.Set(context.RequestKey, req)
+	firewall := &resource.Firewall{}
+	err := fuc.Create(ctx, firewall)
+	require.Equal(t, errors.Created.Code, err.Code)
+	return firewall
+}

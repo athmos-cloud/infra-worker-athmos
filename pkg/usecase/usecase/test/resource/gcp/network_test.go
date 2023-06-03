@@ -1,7 +1,6 @@
 package gcp
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
@@ -11,7 +10,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -76,17 +74,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 	}()
 
 	t.Run("Create a valid network", func(t *testing.T) {
-		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		req := dto.CreateNetworkRequest{
-			ParentIDProvider: &parentID,
-			Name:             netName,
-			Managed:          false,
-		}
-		ctx.Set(context.RequestKey, req)
-		net := &resource.Network{}
-		err := nuc.Create(ctx, net)
-		require.Equal(t, errors.Created.Code, err.Code)
+		net := NetworkFixture(ctx, t, nuc)
 
 		kubeResource := &v1beta1.Network{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: net.IdentifierID.Network}, kubeResource)
@@ -99,7 +87,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 			"identifier.network":           net.IdentifierID.Network,
 			"name.provider":                "test",
 			"name.vpc":                     "test",
-			"name.network":                 netName,
+			"name.network":                 net.IdentifierName.Network,
 		}
 		autoCreateSubnet := false
 		wantSpec := v1beta1.NetworkSpec{
@@ -128,44 +116,26 @@ func Test_networkUseCase_Create(t *testing.T) {
 		assertNetworkEqual(t, wantNet, gotNet)
 	})
 	t.Run("Create a network with an already existing name should raise conflict error", func(t *testing.T) {
-		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		req := dto.CreateNetworkRequest{
-			ParentIDProvider: &parentID,
-			Name:             netName,
-		}
-		ctx.Set(context.RequestKey, req)
-		net := &resource.Network{}
+		net := NetworkFixture(ctx, t, nuc)
 		err := nuc.Create(ctx, net)
-		require.Equal(t, errors.Created.Code, err.Code)
-		err = nuc.Create(ctx, net)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
 
 func Test_networkUseCase_Delete(t *testing.T) {
 	mongoC := test.Init(t)
-	ctx, _, nuc := initNetwork(t)
+	ctx, testRes, nuc := initNetwork(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clearNetwork(ctx)
 	}()
 	t.Run("Delete a valid network should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		req := dto.CreateNetworkRequest{
-			ParentIDProvider: &parentID,
-			Name:             netName,
-		}
-		ctx.Set(context.RequestKey, req)
-		net := &resource.Network{}
-		err := nuc.Create(ctx, net)
-		require.Equal(t, errors.Created.Code, err.Code)
+		net := NetworkFixture(ctx, t, nuc)
 		delReq := dto.DeleteNetworkRequest{
 			IdentifierID: net.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, delReq)
-		err = nuc.Delete(ctx, net)
+		err := nuc.Delete(ctx, net)
 		require.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing network should fail", func(t *testing.T) {
@@ -240,22 +210,13 @@ func Test_networkUseCase_Get(t *testing.T) {
 	}()
 
 	t.Run("Get a valid network should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		req := dto.CreateNetworkRequest{
-			ParentIDProvider: &parentID,
-			Name:             netName,
-		}
-		ctx.Set(context.RequestKey, req)
-		net := &resource.Network{}
-		err := nuc.Create(ctx, net)
-		require.Equal(t, errors.Created.Code, err.Code)
+		net := NetworkFixture(ctx, t, nuc)
 		getReq := dto.GetNetworkRequest{
 			IdentifierID: net.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		gotNet := &resource.Network{}
-		err = nuc.Get(ctx, gotNet)
+		err := nuc.Get(ctx, gotNet)
 		require.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, net, gotNet)
 
@@ -284,23 +245,14 @@ func Test_networkUseCase_Update(t *testing.T) {
 		clearNetwork(ctx)
 	}()
 	t.Run("Update a valid network should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		req := dto.CreateNetworkRequest{
-			ParentIDProvider: &parentID,
-			Name:             netName,
-		}
-		ctx.Set(context.RequestKey, req)
-		net := &resource.Network{}
-		err := nuc.Create(ctx, net)
-		require.Equal(t, errors.Created.Code, err.Code)
+		net := NetworkFixture(ctx, t, nuc)
 		managed := false
 		toUp := dto.UpdateNetworkRequest{
 			IdentifierID: net.IdentifierID,
 			Managed:      &managed,
 		}
 		ctx.Set(context.RequestKey, toUp)
-		err = nuc.Update(ctx, net)
+		err := nuc.Update(ctx, net)
 		require.Equal(t, errors.NoContent.Code, err.Code)
 		kubeResource := &v1beta1.Network{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: net.IdentifierID.Network}, kubeResource)

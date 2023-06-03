@@ -65,26 +65,6 @@ func clearSubnetwork(ctx context.Context) {
 	}
 }
 
-func createSubnetwork(t *testing.T, ctx context.Context, suc usecase.Subnetwork) *resource.Subnetwork {
-	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-	subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-	region := "europe-west1"
-	ipCIDR := "10.0.0.1/26"
-	req := dto.CreateSubnetworkRequest{
-		ParentID:    parentID,
-		Name:        subnetName,
-		Region:      region,
-		IPCIDRRange: ipCIDR,
-		Managed:     false,
-	}
-	ctx.Set(context.RequestKey, req)
-	subnet := &resource.Subnetwork{}
-	err := suc.Create(ctx, subnet)
-	require.Equal(t, errors.Created.Code, err.Code)
-
-	return subnet
-}
-
 func Test_subnetworkUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, _, suc := initSubnetwork(t)
@@ -94,7 +74,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	}()
 
 	t.Run("Create a valid subnetwork", func(t *testing.T) {
-		subnet := createSubnetwork(t, ctx, suc)
+		subnet := SubnetworkFixture(ctx, t, suc)
 		region := "europe-west1"
 		ipCIDR := "10.0.0.1/26"
 
@@ -142,23 +122,9 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		region := "europe-west1"
-		ipCIDR := "10.0.0.1/26"
-		req := dto.CreateSubnetworkRequest{
-			ParentID:    parentID,
-			Name:        subnetName,
-			Region:      region,
-			IPCIDRRange: ipCIDR,
-			Managed:     false,
-		}
-		ctx.Set(context.RequestKey, req)
-		subnet := &resource.Subnetwork{}
-		err := suc.Create(ctx, subnet)
-		require.Equal(t, errors.Created.Code, err.Code)
+		_ = SubnetworkFixture(ctx, t, suc)
 		newSubnet := &resource.Subnetwork{}
-		err = suc.Create(ctx, newSubnet)
+		err := suc.Create(ctx, newSubnet)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
 }
@@ -171,7 +137,7 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 		clearSubnetwork(ctx)
 	}()
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
-		subnet := createSubnetwork(t, ctx, suc)
+		subnet := SubnetworkFixture(ctx, t, suc)
 		delReq := dto.DeleteSubnetworkRequest{
 			IdentifierID: subnet.IdentifierID,
 		}
