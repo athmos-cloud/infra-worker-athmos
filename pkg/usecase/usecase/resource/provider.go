@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -26,13 +27,13 @@ type Provider interface {
 
 type providerUseCase struct {
 	projectRepo repository.Project
-	secretRepo  repository.Secret
+	secretRepo  secret.Secret
 	gcpRepo     resourceRepo.Resource
 	awsRepo     resourceRepo.Resource
 	azureRepo   resourceRepo.Resource
 }
 
-func NewProviderUseCase(projectRepo repository.Project, secretRepo repository.Secret, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
+func NewProviderUseCase(projectRepo repository.Project, secretRepo secret.Secret, gcpRepo resourceRepo.Resource, awsRepo resourceRepo.Resource, azureRepo resourceRepo.Resource) Provider {
 	return &providerUseCase{projectRepo: projectRepo, secretRepo: secretRepo, gcpRepo: gcpRepo, awsRepo: awsRepo, azureRepo: azureRepo}
 }
 
@@ -107,7 +108,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.
 	req := ctx.Value(context.RequestKey).(dto.CreateProviderRequest)
 	defaults.SetDefaults(&req)
 
-	secret, errSecret := puc.secretRepo.Find(ctx, option.Option{Value: repository.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
+	secret, errSecret := puc.secretRepo.Find(ctx, option.Option{Value: secret.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
 	if !errSecret.IsOk() {
 		return errSecret
 	}
@@ -148,7 +149,7 @@ func (puc *providerUseCase) Update(ctx context.Context, provider *resourceModel.
 		return errFind
 	}
 	if req.SecretAuthName != "" {
-		secret, err := puc.secretRepo.Find(ctx, option.Option{Value: repository.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
+		secret, err := puc.secretRepo.Find(ctx, option.Option{Value: secret.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
 		if !err.IsOk() {
 			return errors.BadRequest.WithMessage(fmt.Sprintf("secret %s does not exist", req.SecretAuthName))
 		}

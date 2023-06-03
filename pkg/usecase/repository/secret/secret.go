@@ -1,4 +1,4 @@
-package repository
+package secret
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"

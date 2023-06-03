@@ -7,24 +7,24 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/kamva/mgm/v3"
 	"reflect"
 )
 
 type secretRepository struct{}
 
-func NewSecretRepository() repository.Secret {
+func NewSecretRepository() secret2.Secret {
 	return &secretRepository{}
 }
 
 func (s *secretRepository) Find(_ context.Context, opt option.Option) (*secret.Secret, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(repository.GetSecretByProjectIdAndName{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(secret2.GetSecretByProjectIdAndName{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected GetSecretByProjectIdAndName option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	request := opt.Value.(repository.GetSecretByProjectIdAndName)
+	request := opt.Value.(secret2.GetSecretByProjectIdAndName)
 	project, err := s.getProjectByID(request.ProjectId)
 	if !err.IsOk() {
 		return nil, err
@@ -39,12 +39,12 @@ func (s *secretRepository) Find(_ context.Context, opt option.Option) (*secret.S
 }
 
 func (s *secretRepository) FindAll(_ context.Context, opt option.Option) (*[]secret.Secret, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(repository.GetSecretInProject{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(secret2.GetSecretInProject{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected GetSecretInProject option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	request := opt.Value.(repository.GetSecretInProject)
+	request := opt.Value.(secret2.GetSecretInProject)
 	project, err := s.getProjectByID(request.ProjectId)
 	if !err.IsOk() {
 		return nil, err

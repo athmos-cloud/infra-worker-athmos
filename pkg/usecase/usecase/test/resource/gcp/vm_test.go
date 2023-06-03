@@ -335,9 +335,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 		for _, auth := range updatedVM.Auths {
 			assert.Contains(t, expectedUserList, auth.Username)
 		}
-
 	})
-
 	t.Run("Update a non-existing VM should return not found error", func(t *testing.T) {
 		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
 			IdentifierID: identifier.VM{

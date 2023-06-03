@@ -14,6 +14,7 @@ const DefaultConfigFileLocation = "config.mapstructure"
 
 type Config struct {
 	TempDir        string     `mapstructure:"tmpDir" env:"TMP_DIR"`
+	StaticsFileDir string     `mapstructure:"staticsFileDir" env:"STATIC_FILES_DIR"`
 	RedirectionURL string     `mapstructure:"redirectionURL" env:"REDIRECTION_URL"`
 	Test           Test       `mapstructure:"test" `
 	Http           Http       `mapstructure:"http" `
@@ -77,6 +78,9 @@ func init() {
 
 func bindEnvs() {
 	if err := viper.BindEnv("redirectionURL", "REDIRECTION_URL"); err != nil {
+		panic(err)
+	}
+	if err := viper.BindEnv("staticsFileDir", "STATIC_FILES_DIR"); err != nil {
 		panic(err)
 	}
 	if err := viper.BindEnv("tmpDir", "TMP_DIR"); err != nil {
