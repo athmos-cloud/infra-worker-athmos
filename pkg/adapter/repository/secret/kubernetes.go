@@ -8,7 +8,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/kamva/mgm/v3"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,17 +19,17 @@ import (
 
 type kubernetesRepository struct{}
 
-func NewKubernetesRepository() repository.KubernetesSecret {
+func NewKubernetesRepository() secret2.KubernetesSecret {
 	return &kubernetesRepository{}
 }
 
 func (k *kubernetesRepository) Create(ctx context.Context, opt option.Option) (*secret.Kubernetes, errors.Error) {
-	if !opt.SetType(reflect.TypeOf(repository.CreateKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(secret2.CreateKubernetesSecretRequest{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected CreateKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(repository.CreateKubernetesSecretRequest)
+	req := opt.Value.(secret2.CreateKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return nil, err
@@ -52,12 +52,12 @@ func (k *kubernetesRepository) Create(ctx context.Context, opt option.Option) (*
 }
 
 func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) errors.Error {
-	if !opt.SetType(reflect.TypeOf(repository.UpdateKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(secret2.UpdateKubernetesSecretRequest{}).String()).Validate() {
 		return errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected UpdateKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(repository.UpdateKubernetesSecretRequest)
+	req := opt.Value.(secret2.UpdateKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return err
@@ -80,12 +80,12 @@ func (k *kubernetesRepository) Update(ctx context.Context, opt option.Option) er
 }
 
 func (k *kubernetesRepository) Delete(ctx context.Context, opt option.Option) errors.Error {
-	if !opt.SetType(reflect.TypeOf(repository.DeleteKubernetesSecretRequest{}).String()).Validate() {
+	if !opt.SetType(reflect.TypeOf(secret2.DeleteKubernetesSecretRequest{}).String()).Validate() {
 		return errors.InvalidOption.WithMessage(
 			fmt.Sprintf("expected DeleteKubernetesSecretRequest option, got %s", reflect.TypeOf(opt.Value).String()),
 		)
 	}
-	req := opt.Value.(repository.DeleteKubernetesSecretRequest)
+	req := opt.Value.(secret2.DeleteKubernetesSecretRequest)
 	ns, err := k.getProjectNamespace(req.ProjectID)
 	if !err.IsOk() {
 		return err

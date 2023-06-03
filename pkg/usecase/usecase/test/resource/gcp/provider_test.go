@@ -15,7 +15,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
@@ -299,7 +299,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 		secrRepo := secretRepo.NewSecretRepository()
 		kubeSecretRepo := secretRepo.NewKubernetesRepository()
 		createdSecret, err := kubeSecretRepo.Create(ctx, option.Option{
-			Value: repository.CreateKubernetesSecretRequest{
+			Value: secret2.CreateKubernetesSecretRequest{
 				ProjectID:   ctx.Value(context.ProjectIDKey).(string),
 				SecretName:  "test-2",
 				SecretKey:   "key.json",

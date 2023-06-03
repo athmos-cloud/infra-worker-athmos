@@ -21,6 +21,10 @@ _crossplane-operator:
    	helm install crossplane --namespace crossplane-system crossplane-stable/crossplane
 .PHONY: _crossplane-operator
 
+crossplane-providers:
+	@kubectl apply -f config/
+.PHONY: crossplane-providers
+
 _build-docker:
 	@docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
 .PHONY: _build-docker

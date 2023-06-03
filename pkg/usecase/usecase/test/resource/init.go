@@ -8,6 +8,7 @@ import (
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -25,8 +26,8 @@ const (
 
 type TestResource struct {
 	ProjectRepo          repository.Project
-	SecretRepo           repository.Secret
-	KubernetesSecretRepo repository.KubernetesSecret
+	SecretRepo           secret2.Secret
+	KubernetesSecretRepo secret2.KubernetesSecret
 }
 
 func NewTest(ctx context.Context, t *testing.T) *TestResource {
@@ -40,7 +41,7 @@ func NewTest(ctx context.Context, t *testing.T) *TestResource {
 	ctx.Set(context.ProjectIDKey, project.ID.Hex())
 
 	createdSecret, err := kubeSecretRepo.Create(ctx, option.Option{
-		Value: repository.CreateKubernetesSecretRequest{
+		Value: secret2.CreateKubernetesSecretRequest{
 			ProjectID:   project.ID.Hex(),
 			SecretName:  "test",
 			SecretKey:   "key.json",

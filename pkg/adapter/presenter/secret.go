@@ -41,6 +41,7 @@ func (s *Secret) RenderCreate(ctx context.Context, secretAuth *secret.Secret) {
 	resp := dto.CreateSecretResponse{
 		ID:             secretAuth.IDField.ID.Hex(),
 		RedirectionURL: fmt.Sprintf("%s/secrets/%s", config.Current.RedirectionURL, secretAuth.Name),
+		Prerequisites:  secretAuth.Prerequisites,
 	}
 	ctx.JSON(201, gin.H{"payload": resp})
 }

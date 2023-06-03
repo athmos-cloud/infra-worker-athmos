@@ -16,6 +16,7 @@ type Secret struct {
 	Description      string         `bson:"description,omitempty"`
 	ProviderType     types.Provider `bson:"providerType"`
 	Kubernetes       Kubernetes     `bson:"secretAuth,omitempty"`
+	Prerequisites    Prerequisites  `bson:"prerequisites,omitempty"`
 }
 
 type List map[string]Secret
@@ -24,11 +25,12 @@ func (s *Secret) Equals(other Secret) bool {
 	return s.Name == other.Name && s.Description == other.Description && s.Kubernetes.Equals(other.Kubernetes)
 }
 
-func NewSecret(name string, description string, secretAuth Kubernetes) *Secret {
+func NewSecret(name string, description string, secretAuth Kubernetes, forProvider types.Provider) *Secret {
 	return &Secret{
-		Name:        name,
-		Description: description,
-		Kubernetes:  secretAuth,
+		Name:         name,
+		ProviderType: forProvider,
+		Description:  description,
+		Kubernetes:   secretAuth,
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
+	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
@@ -41,6 +42,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 		su := usecase.NewSecretUseCase(secretRepo.NewSecretRepository(), secretRepo.NewKubernetesRepository())
 		ctx.Set(context.RequestKey, dto.CreateSecretRequest{
 			ProjectID:   curProject.ID.Hex(),
+			ForProvider: domainTypes.ProviderGCP,
 			Name:        secretName,
 			Description: "A test secret",
 			Value:       []byte(secretData),

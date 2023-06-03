@@ -1,4 +1,5 @@
 tmpDir: "/tmp/worker"
+staticFilesDir: "/static"
 test:
   credentials:
     gcp: "/etc/credentials/resource.json"
