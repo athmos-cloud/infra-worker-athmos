@@ -233,13 +233,68 @@ func Test_providerUseCase_Get(t *testing.T) {
 	})
 }
 
-func Test_providerUseCase_GetRecursively(t *testing.T) {
+func Test_providerUseCase_GetProviderStack(t *testing.T) {
 	mongoC := test.Init(t)
+	ctx, testRes, uc := initTest(t)
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
+		clearProvider(ctx)
 	}()
-	t.Run("GetRecursively a valid provider should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+	t.Run("Get a valid Provider Stack should succeed", func(t *testing.T) {
+		provider := ProviderFixture(ctx, t, uc)
+		nuc := usecase.NewNetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
+		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
+		fuc := usecase.NewFirewallUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
+		vuc := usecase.NewVMUseCase(testRes.ProjectRepo, repository2.NewSSHKeyRepository(), gcp.NewRepository(), nil, nil)
+
+		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
+			ParentIDProvider: &provider.IdentifierID,
+			Name:             "test-network-1",
+		})
+		net1 := &resource.Network{}
+		err := nuc.Create(ctx, net1)
+		require.True(t, err.IsOk())
+		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
+			ParentIDProvider: &provider.IdentifierID,
+			Name:             "test-network-2",
+		})
+		net2 := &resource.Network{}
+		err = nuc.Create(ctx, net2)
+		require.True(t, err.IsOk())
+		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
+			ParentID: net1.IdentifierID,
+			Name:     "test-subnetwork-11",
+		})
+		subnet11 := &resource.Subnetwork{}
+		err = suc.Create(ctx, subnet11)
+		require.True(t, err.IsOk())
+		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
+			ParentID: net1.IdentifierID,
+			Name:     "test-subnetwork-12",
+		})
+		subnet12 := &resource.Subnetwork{}
+		err = suc.Create(ctx, subnet12)
+		require.True(t, err.IsOk())
+		ctx.Set(context.RequestKey, dto.CreateFirewallRequest{
+			ParentID: net2.IdentifierID,
+			Name:     "test-firewall-21",
+		})
+		fw21 := &resource.Firewall{}
+		err = fuc.Create(ctx, fw21)
+		require.True(t, err.IsOk())
+		ctx.Set(context.RequestKey, dto.CreateVMRequest{
+			ParentID: subnet11.IdentifierID,
+			Name:     "test-vm-111",
+		})
+		vm111 := &resource.VM{}
+		err = vuc.Create(ctx, vm111)
+		require.True(t, err.IsOk())
+
+		foundProvider := &resource.Provider{}
+		ctx.Set(context.RequestKey, dto.GetProviderStackRequest{
+			ProviderID: provider.IdentifierID.Provider,
+		})
+		err = uc.GetStack(ctx, foundProvider)
 	})
 }
 
@@ -307,7 +362,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 			},
 		})
 		require.True(t, err.IsOk())
-		secretAuth := secretModel.NewSecret("test-2", "A new secret", *createdSecret)
+		secretAuth := secretModel.NewSecret("test-2", "A new secret", *createdSecret, domainTypes.ProviderGCP)
 		err = secrRepo.Create(ctx, secretAuth)
 		require.True(t, err.IsOk())
 

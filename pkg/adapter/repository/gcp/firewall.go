@@ -56,7 +56,6 @@ func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
 	gcpFirewallList := &v1beta1.FirewallList{}
 	listOpt := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpFirewallList, listOpt); err != nil {
@@ -237,7 +236,7 @@ func (gcp *gcpRepository) toModelFirewallCollection(firewallList *v1beta1.Firewa
 		if !err.IsOk() {
 			return nil, err
 		}
-		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *firewall
+		items[firewall.IdentifierName.Firewall] = *firewall
 	}
 	return &items, errors.OK
 }

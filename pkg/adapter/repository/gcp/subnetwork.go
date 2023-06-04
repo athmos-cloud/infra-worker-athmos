@@ -72,7 +72,6 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
 	gcpSubnetworkList := &v1beta1.SubnetworkList{}
 	listOpt := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpSubnetworkList, listOpt); err != nil {

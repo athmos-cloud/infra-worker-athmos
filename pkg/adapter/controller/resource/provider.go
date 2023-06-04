@@ -44,7 +44,7 @@ func (pc *providerController) GetStack(ctx context.Context) {
 		errorCtrl.RaiseError(ctx, err)
 	}
 	stack := &model.Provider{}
-	if err := pc.providerUseCase.GetRecursively(ctx, stack); !err.IsOk() {
+	if err := pc.providerUseCase.GetStack(ctx, stack); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
 		pc.providerOutput.Render(ctx, stack)

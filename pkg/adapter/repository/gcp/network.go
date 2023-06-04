@@ -93,10 +93,6 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
 
 	for _, network := range *modNetworks {
-		subnetOpt := resourceRepo.FindAllResourceOption{
-			Namespace: req.Namespace,
-			Labels:    network.IdentifierID.ToIDLabels(),
-		}
 		chFirewall := &resourceRepo.FirewallChannel{
 			WaitGroup:    wg,
 			Channel:      make(chan *resource.FirewallCollection),
@@ -111,18 +107,41 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		firewallChannels = append(firewallChannels, *chFirewall)
 
 		wg.Add(2)
-		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: subnetOpt}, chFirewall)
-		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: subnetOpt}, chSubnet)
-
-		select {
-		case firewalls := <-chFirewall.Channel:
-			network.Firewalls = *firewalls
-		case errChFirewall := <-chFirewall.ErrorChannel:
-			logger.Error.Println("error while listing firewalls", errChFirewall)
-		case subnetworks := <-chSubnet.Channel:
-			network.Subnetworks = *subnetworks
-		case errCh := <-chSubnet.ErrorChannel:
-			logger.Error.Println("error while listing subnetworks", errCh)
+		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chFirewall)
+		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chSubnet)
+		gotFirewalls := false
+		gotSubnets := false
+		for {
+			select {
+			case firewalls := <-chFirewall.Channel:
+				network.Firewalls = *firewalls
+				if gotSubnets {
+					wg.Done()
+					return modNetworks, errors.OK
+				}
+				gotFirewalls = true
+			case errChFirewall := <-chFirewall.ErrorChannel:
+				logger.Error.Println("error while listing firewalls", errChFirewall)
+				if gotSubnets {
+					wg.Done()
+					return modNetworks, errors.OK
+				}
+				gotFirewalls = true
+			case subnetworks := <-chSubnet.Channel:
+				network.Subnetworks = *subnetworks
+				if gotFirewalls {
+					wg.Done()
+					return modNetworks, errors.OK
+				}
+				gotSubnets = true
+			case errCh := <-chSubnet.ErrorChannel:
+				logger.Error.Println("error while listing subnetworks", errCh)
+				if gotFirewalls {
+					wg.Done()
+					return modNetworks, errors.OK
+				}
+				gotFirewalls = true
+			}
 		}
 	}
 	go func() {
