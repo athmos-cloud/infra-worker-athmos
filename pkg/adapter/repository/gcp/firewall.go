@@ -230,7 +230,7 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *resource.
 }
 
 func (gcp *gcpRepository) toModelFirewallCollection(firewallList *v1beta1.FirewallList) (*resource.FirewallCollection, errors.Error) {
-	var items resource.FirewallCollection
+	items := resource.FirewallCollection{}
 	for _, item := range firewallList.Items {
 		firewall, err := gcp.toModelFirewall(&item)
 		if !err.IsOk() {

@@ -85,11 +85,13 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 	}
 	wg := &sync.WaitGroup{}
 	vmChannels := make([]*resourceRepo.VMChannel, 0)
+	subnetResult := &resource.SubnetworkCollection{}
 	for _, subnet := range *subnetworkCollection {
 		wg.Add(1)
-		optVM := option.Option{}
+		optVM := option.Option{Value: resourceRepo.FindAllResourceOption{
+			Labels: subnet.IdentifierID.ToIDLabels(),
+		}}
 		vmCh := &resourceRepo.VMChannel{
-			WaitGroup:    ch.WaitGroup,
 			Channel:      make(chan *resource.VMCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
@@ -101,20 +103,18 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 		case vms := <-vmCh.Channel:
 			subnet.VMs = *vms
 		}
+		(*subnetResult)[subnet.IdentifierName.Subnetwork] = subnet
 	}
 
-	subnetworks, err := gcp.toModelSubnetworkCollection(gcpSubnetworkList)
-	go func() {
-		wg.Wait()
-		for _, c := range vmChannels {
-			close(c.Channel)
-			close(c.ErrorChannel)
-		}
-	}()
+	for _, c := range vmChannels {
+		close(c.Channel)
+		close(c.ErrorChannel)
+	}
+
 	if !err.IsOk() {
 		ch.ErrorChannel <- err
 	} else {
-		ch.Channel <- subnetworks
+		ch.Channel <- subnetResult
 	}
 }
 

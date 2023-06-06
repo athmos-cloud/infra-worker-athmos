@@ -5,11 +5,9 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"sync"
 )
 
 type SubnetworkChannel struct {
-	WaitGroup    *sync.WaitGroup
 	Channel      chan *resource.SubnetworkCollection
 	ErrorChannel chan errors.Error
 }

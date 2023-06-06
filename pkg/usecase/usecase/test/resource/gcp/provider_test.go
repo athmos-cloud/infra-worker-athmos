@@ -295,6 +295,13 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 			ProviderID: provider.IdentifierID.Provider,
 		})
 		err = uc.GetStack(ctx, foundProvider)
+		assert.True(t, err.IsOk())
+		assert.Equal(t, provider.IdentifierName, foundProvider.IdentifierName)
+		assert.Equal(t, 2, len(foundProvider.Networks))
+		assert.Equal(t, 2, len(foundProvider.Networks["test-network-1"].Subnetworks))
+		assert.Equal(t, 1, len(foundProvider.Networks["test-network-2"].Firewalls))
+		assert.Equal(t, "test-vm-111", foundProvider.Networks["test-network-1"].Subnetworks["test-subnetwork-11"].VMs["test-vm-111"].IdentifierName.VM)
+
 	})
 }
 

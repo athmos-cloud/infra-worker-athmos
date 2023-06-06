@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
 )
 
 var (
@@ -87,26 +86,22 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 	if !err.IsOk() {
 		return nil, err
 	}
-	wg := &sync.WaitGroup{}
 
 	subnetChannels := make([]resourceRepo.SubnetworkChannel, 0)
 	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
 
-	for _, network := range *modNetworks {
+	getNested := func(network *resource.Network) {
 		chFirewall := &resourceRepo.FirewallChannel{
-			WaitGroup:    wg,
 			Channel:      make(chan *resource.FirewallCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		chSubnet := &resourceRepo.SubnetworkChannel{
-			WaitGroup:    wg,
 			Channel:      make(chan *resource.SubnetworkCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		subnetChannels = append(subnetChannels, *chSubnet)
 		firewallChannels = append(firewallChannels, *chFirewall)
 
-		wg.Add(2)
 		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chFirewall)
 		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chSubnet)
 		gotFirewalls := false
@@ -116,47 +111,45 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 			case firewalls := <-chFirewall.Channel:
 				network.Firewalls = *firewalls
 				if gotSubnets {
-					wg.Done()
-					return modNetworks, errors.OK
+					return
 				}
 				gotFirewalls = true
 			case errChFirewall := <-chFirewall.ErrorChannel:
 				logger.Error.Println("error while listing firewalls", errChFirewall)
 				if gotSubnets {
-					wg.Done()
-					return modNetworks, errors.OK
+					return
 				}
 				gotFirewalls = true
 			case subnetworks := <-chSubnet.Channel:
 				network.Subnetworks = *subnetworks
 				if gotFirewalls {
-					wg.Done()
-					return modNetworks, errors.OK
+					return
 				}
 				gotSubnets = true
 			case errCh := <-chSubnet.ErrorChannel:
 				logger.Error.Println("error while listing subnetworks", errCh)
 				if gotFirewalls {
-					wg.Done()
-					return modNetworks, errors.OK
+					return
 				}
 				gotFirewalls = true
 			}
 		}
 	}
-	go func() {
-		wg.Wait()
-		for _, ch := range subnetChannels {
-			close(ch.Channel)
-			close(ch.ErrorChannel)
-		}
-		for _, ch := range firewallChannels {
-			close(ch.Channel)
-			close(ch.ErrorChannel)
-		}
-	}()
+	networks := &resource.NetworkCollection{}
+	for _, network := range *modNetworks {
+		getNested(&network)
+		(*networks)[network.IdentifierName.Network] = network
+	}
+	for _, ch := range subnetChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
+	for _, ch := range firewallChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
 
-	return nil, errors.OK
+	return networks, errors.OK
 }
 
 func (gcp *gcpRepository) CreateNetwork(ctx context.Context, network *resource.Network) errors.Error {
