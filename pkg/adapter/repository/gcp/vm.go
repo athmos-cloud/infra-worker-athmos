@@ -56,7 +56,6 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
 	gcpVMList := &v1beta1.InstanceList{}
 	listOpt := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpVMList, listOpt); err != nil {
@@ -167,6 +166,10 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 	if err != nil {
 		return nil, errors.InternalError.WithMessage("unable to parse public ip label")
 	}
+	vmOS := resource.VMOS{}
+	if vm.Spec.ForProvider.BootDisk != nil {
+		vmOS = toVmOS(&vm.Spec.ForProvider.BootDisk[0])
+	}
 	return &resource.VM{
 		Metadata: metadata.Metadata{
 			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
@@ -180,7 +183,7 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 		MachineType:    *vm.Spec.ForProvider.MachineType,
 		Auths:          sshKeys,
 		Disks:          gcp.toVMDiskCollection(vm.Spec.ForProvider.BootDisk),
-		OS:             toVmOS(&vm.Spec.ForProvider.BootDisk[0]),
+		OS:             vmOS,
 	}, errors.OK
 }
 
@@ -234,18 +237,21 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1
 }
 
 func (gcp *gcpRepository) toModelVMCollection(instanceList *v1beta1.InstanceList) (*resource.VMCollection, errors.Error) {
-	var items resource.VMCollection
+	items := resource.VMCollection{}
 	for _, item := range instanceList.Items {
 		vm, err := gcp.toModelVM(&item)
 		if !err.IsOk() {
 			return nil, err
 		}
-		items[item.ObjectMeta.Annotations[crossplane.ExternalNameAnnotationKey]] = *vm
+		items[vm.IdentifierName.VM] = *vm
 	}
 	return &items, errors.OK
 }
 
 func toVmOS(disk *v1beta1.BootDiskParameters) resource.VMOS {
+	if disk == nil {
+		return resource.VMOS{}
+	}
 	return resource.VMOS{
 		ID:   *disk.InitializeParams[0].Image,
 		Name: *disk.InitializeParams[0].Image,

@@ -80,8 +80,7 @@ func (gcp *gcpRepository) FindProviderStack(ctx context.Context, opt option.Opti
 	// Find Networks recursively
 	networks, err := gcp.FindAllRecursiveNetworks(ctx, option.Option{
 		Value: resourceRepo.FindAllResourceOption{
-			Labels:    providerModel.IdentifierID.ToIDLabels(),
-			Namespace: req.Namespace,
+			Labels: providerModel.IdentifierID.ToIDLabels(),
 		},
 	}, nil)
 	if !err.IsOk() {
@@ -89,7 +88,7 @@ func (gcp *gcpRepository) FindProviderStack(ctx context.Context, opt option.Opti
 	}
 	providerModel.Networks = *networks
 
-	return nil, errors.OK
+	return providerModel, errors.OK
 }
 
 func (gcp *gcpRepository) CreateProvider(ctx context.Context, provider *resource.Provider) errors.Error {

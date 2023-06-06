@@ -19,7 +19,7 @@ import (
 type Provider interface {
 	List(context.Context, *resourceModel.ProviderCollection) errors.Error
 	Get(context.Context, *resourceModel.Provider) errors.Error
-	GetRecursively(context.Context, *resourceModel.Provider) errors.Error
+	GetStack(context.Context, *resourceModel.Provider) errors.Error
 	Create(context.Context, *resourceModel.Provider) errors.Error
 	Update(context.Context, *resourceModel.Provider) errors.Error
 	Delete(context.Context, *resourceModel.Provider) errors.Error
@@ -70,13 +70,17 @@ func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.P
 	return errors.OK
 }
 
-func (puc *providerUseCase) GetRecursively(ctx context.Context, providers *resourceModel.Provider) errors.Error {
+func (puc *providerUseCase) GetStack(ctx context.Context, provider *resourceModel.Provider) errors.Error {
 	repo := puc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
-	_ = ctx.Value(context.RequestKey).(dto.GetProviderStackRequest)
-
+	req := ctx.Value(context.RequestKey).(dto.GetProviderStackRequest)
+	foundProvider, err := repo.FindProviderStack(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.ProviderID}})
+	if !err.IsOk() {
+		return err
+	}
+	*provider = *foundProvider
 	return errors.OK
 }
 
