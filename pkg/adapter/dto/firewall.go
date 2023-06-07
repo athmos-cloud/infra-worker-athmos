@@ -6,19 +6,19 @@ import (
 )
 
 type GetFirewallRequest struct {
-	IdentifierID identifier.Firewall `json:"identifierID"`
+	IdentifierID identifier.Firewall `json:"identifier_id"`
 }
 
 type GetFirewallResponse struct {
-	ProjectID string            `json:"projectID"`
+	ProjectID string            `json:"project_id"`
 	Payload   resource.Firewall `json:"payload"`
 }
 
 type CreateFirewallRequest struct {
-	ParentID   identifier.Network        `json:"parentID"`
+	ParentID   identifier.Network        `json:"parent_id"`
 	Name       string                    `json:"name"`
-	AllowRules resource.FirewallRuleList `json:"allowRules,omitempty"`
-	DenyRules  resource.FirewallRuleList `json:"denyRules,omitempty"`
+	AllowRules resource.FirewallRuleList `json:"allow_rules,omitempty"`
+	DenyRules  resource.FirewallRuleList `json:"deny_rules,omitempty"`
 	Managed    bool                      `json:"managed" default:"true"`
 	Tags       map[string]string         `json:"tags"`
 }

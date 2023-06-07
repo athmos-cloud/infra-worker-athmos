@@ -18,11 +18,12 @@ const (
 )
 
 type messageReceived struct {
-	Verb Verb        `json:"verb"`
-	Data dataMessage `json:"payload"`
+	Pattern string      `json:"pattern"`
+	Data    dataMessage `json:"data"`
 }
 
 type dataMessage struct {
+	Verb         Verb           `json:"verb"`
 	ProjectID    string         `json:"project_id"`
 	ProviderType types.Provider `json:"provider_type"`
 	ResourceType types.Resource `json:"resource_type"`

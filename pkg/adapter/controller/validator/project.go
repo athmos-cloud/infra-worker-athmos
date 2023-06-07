@@ -9,10 +9,10 @@ import (
 
 func GetProject(ctx context.Context) errors.Error {
 	if ctx.Value(context2.ProjectIDKey) == nil {
-		panic(errors.BadRequest.WithMessage("ProjectID is mandatory"))
+		return errors.BadRequest.WithMessage("ProjectID is mandatory")
 	}
 	if _, ok := ctx.Value(context2.ProjectIDKey).(string); !ok {
-		panic(errors.BadRequest.WithMessage("ProjectID must be a string"))
+		return errors.BadRequest.WithMessage("ProjectID must be a string")
 	}
 	return errors.OK
 }
@@ -29,10 +29,11 @@ func ListProjectByOwner(ctx context.Context) errors.Error {
 
 func CreateProject(ctx context.Context) errors.Error {
 	if ctx.Value(context2.RequestKey) == nil {
-		panic(errors.BadRequest.WithMessage("Request is mandatory"))
+		return errors.BadRequest.WithMessage("Request is mandatory")
 	}
-	if _, ok := ctx.Value(context2.RequestKey).(dto.CreateProjectRequest); !ok {
-		panic(errors.BadRequest.WithMessage("Request must be a Project DTO"))
+	_, ok := ctx.Value(context2.RequestKey).(dto.CreateProjectRequest)
+	if !ok {
+		return errors.BadRequest.WithMessage("Request must be a Project DTO")
 	}
 	return errors.OK
 }
@@ -58,7 +59,7 @@ func DeleteProject(ctx context.Context) errors.Error {
 		panic(errors.BadRequest.WithMessage("ProjectID is mandatory"))
 	}
 	if _, ok := ctx.Value(context2.ProjectIDKey).(string); !ok {
-		panic(errors.BadRequest.WithMessage("ProjectID must be a string"))
+		return errors.BadRequest.WithMessage("ProjectID must be a string")
 	}
 	return errors.OK
 }

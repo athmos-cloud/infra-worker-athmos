@@ -52,9 +52,6 @@ func (pc *providerController) GetStack(ctx context.Context) {
 }
 
 func (pc *providerController) ListProviders(ctx context.Context) {
-	if err := resourceValidator.ListProviders(ctx); !err.IsOk() {
-		errorCtrl.RaiseError(ctx, err)
-	}
 	providers := &model.ProviderCollection{}
 	if err := pc.providerUseCase.List(ctx, providers); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)

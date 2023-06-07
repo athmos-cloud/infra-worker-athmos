@@ -14,6 +14,11 @@ type Context struct {
 	goContext.Context
 }
 
+func (c *Context) BindJSON(a any) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewContext() context.Context {
 	return &Context{goContext.Background()}
 }

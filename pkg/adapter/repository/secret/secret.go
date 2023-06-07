@@ -6,6 +6,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/kamva/mgm/v3"
@@ -100,6 +101,7 @@ func (s *secretRepository) Delete(ctx context.Context, secretAuth *secret.Secret
 			fmt.Sprintf("Secret with name %s not found in project %s",
 				secretAuth.Name, project.ID.Hex()))
 	}
+	logger.Info.Println("Project secr : %v", project.Secrets)
 	delete(project.Secrets, secretAuth.Name)
 	if errUp := mgm.Coll(project).Update(project); errUp != nil {
 		return errors.InternalError.WithMessage(errUp.Error())

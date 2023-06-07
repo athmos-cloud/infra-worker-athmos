@@ -61,7 +61,7 @@ func (s *secretController) CreateSecret(ctx context.Context) {
 	if err := s.secretUseCase.Create(ctx, secretAuth); !err.IsOk() {
 		error2.RaiseError(ctx, err)
 	} else {
-		s.secretPort.Render(ctx, secretAuth)
+		s.secretPort.RenderCreate(ctx, secretAuth)
 	}
 }
 

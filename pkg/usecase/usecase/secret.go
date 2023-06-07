@@ -70,7 +70,7 @@ func (suc *secretUseCase) Create(ctx context.Context, secretAuth *secret.Secret)
 			ProjectID:   req.ProjectID,
 			SecretName:  secretName,
 			SecretKey:   defaultSecretKey,
-			SecretValue: req.Value[:],
+			SecretValue: []byte(req.Value),
 		},
 	})
 	if !err.IsOk() {
@@ -124,14 +124,6 @@ func (suc *secretUseCase) Update(ctx context.Context, secretAuth *secret.Secret)
 func (suc *secretUseCase) Delete(ctx context.Context) errors.Error {
 	req := ctx.Value(context.RequestKey).(dto.DeleteSecretRequest)
 	projectID := ctx.Value(context.ProjectIDKey).(string)
-	if err := suc.kubernetesSecretRepo.Delete(ctx, option.Option{
-		Value: secret2.DeleteKubernetesSecretRequest{
-			ProjectID:  projectID,
-			SecretName: req.Name,
-		},
-	}); !err.IsOk() {
-		return err
-	}
 	curSecret, err := suc.secretRepo.Find(ctx, option.Option{
 		Value: secret2.GetSecretByProjectIdAndName{
 			ProjectId: projectID,
@@ -141,6 +133,15 @@ func (suc *secretUseCase) Delete(ctx context.Context) errors.Error {
 	if !err.IsOk() {
 		return err
 	}
+	if errKube := suc.kubernetesSecretRepo.Delete(ctx, option.Option{
+		Value: secret2.DeleteKubernetesSecretRequest{
+			ProjectID:  projectID,
+			SecretName: curSecret.Kubernetes.SecretName,
+		},
+	}); !errKube.IsOk() {
+		return errKube
+	}
+
 	if errDelete := suc.secretRepo.Delete(ctx, curSecret); !errDelete.IsOk() {
 		return errDelete
 	}

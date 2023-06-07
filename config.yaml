@@ -7,7 +7,7 @@ http:
   port: 8081
 kubernetes:
   configPath: "/root/.kube/config"
-queue:
+rabbitmq:
   uri: "amqp://user:password@rabbitmq:5672/"
   exchange: "to-gateway-api"
   queue: "to-infra-worker"

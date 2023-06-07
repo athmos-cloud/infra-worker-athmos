@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	_ "github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/mongo"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	"github.com/kamva/mgm/v3"
@@ -60,13 +61,16 @@ func (p *projectRepository) FindAll(_ context.Context, opt option.Option) (*[]mo
 
 func (p *projectRepository) Create(ctx context.Context, project *model.Project) errors.Error {
 	projects := &[]model.Project{}
+	logger.Info.Printf("Project: %v", project)
 	if err := mgm.Coll(&model.Project{}).SimpleFind(projects, bson.M{NameDocumentKey: project.Name, OwnerIDDocumentKey: project.OwnerID}); err != nil {
 		return errors.InternalError.WithMessage(err.Error())
 	}
+
 	if len(*projects) > 0 {
 		return errors.Conflict.WithMessage(fmt.Sprintf("Project with name %s already exists", project.Name))
 	}
 	if err := mgm.Coll(project).Create(project); err != nil {
+		logger.Info.Printf("err: %v", err)
 		return errors.InternalError.WithMessage(err.Error())
 	}
 	if err := kubernetes.Client().Client.Create(ctx, &corev1.Namespace{
@@ -74,6 +78,7 @@ func (p *projectRepository) Create(ctx context.Context, project *model.Project) 
 			Name: project.Namespace,
 		},
 	}); err != nil {
+		logger.Info.Printf("err: %v", err)
 		return errors.KubernetesError.WithMessage(err.Error())
 	}
 	return errors.Created

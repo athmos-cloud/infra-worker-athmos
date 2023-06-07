@@ -1,6 +1,7 @@
 package resourceValidator
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
@@ -8,29 +9,69 @@ import (
 )
 
 func GetFirewall(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.GetFirewallRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.GetFirewallRequest{}, ctx.Value(context.RequestKey)))
+	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
+	req := ctx.Value(context.RequestKey).(map[string]interface{})
+	jsonbody, errMarshall := json.Marshal(req)
+	if errMarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
+	}
+	dtoRequest := dto.GetFirewallRequest{}
+	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.GetFirewallRequest{}, req))
+	}
+	ctx.Set(context.RequestKey, dtoRequest)
 	return errors.OK
 }
 
 func CreateFirewall(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.CreateFirewallRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.CreateFirewallRequest{}, ctx.Value(context.RequestKey)))
+	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
+	req := ctx.Value(context.RequestKey).(map[string]interface{})
+	jsonbody, errMarshall := json.Marshal(req)
+	if errMarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
+	}
+	dtoRequest := dto.CreateFirewallRequest{}
+	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.CreateFirewallRequest{}, req))
+	}
+	ctx.Set(context.RequestKey, dtoRequest)
 	return errors.OK
 }
 
 func UpdateFirewall(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.UpdateFirewallRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.UpdateFirewallRequest{}, ctx.Value(context.RequestKey)))
+	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
+	req := ctx.Value(context.RequestKey).(map[string]interface{})
+	jsonbody, errMarshall := json.Marshal(req)
+	if errMarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
+	}
+	dtoRequest := dto.UpdateFirewallRequest{}
+	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.UpdateFirewallRequest{}, req))
+	}
+	ctx.Set(context.RequestKey, dtoRequest)
 	return errors.OK
 }
 
 func DeleteFirewall(ctx context.Context) errors.Error {
-	if _, ok := ctx.Value(context.RequestKey).(dto.DeleteFirewallRequest); !ok {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("expected %+v, got %+v", dto.DeleteFirewallRequest{}, ctx.Value(context.RequestKey)))
+	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
+	req := ctx.Value(context.RequestKey).(map[string]interface{})
+	jsonbody, errMarshall := json.Marshal(req)
+	if errMarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
+	}
+	dtoRequest := dto.DeleteFirewallRequest{}
+	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.DeleteFirewallRequest{}, req))
+	}
+	ctx.Set(context.RequestKey, dtoRequest)
 	return errors.OK
 }

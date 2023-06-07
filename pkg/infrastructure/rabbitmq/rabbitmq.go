@@ -21,7 +21,6 @@ type RabbitMQ struct {
 }
 
 func New(uri string, receiveQueue string, sendQueue string, resourceController controller.Resource) *RabbitMQ {
-	logger.Info.Printf("Connecting to RabbitMQ...")
 	conn, err := amqp.Dial(uri)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
@@ -97,6 +96,7 @@ func publish(channel *amqp.Channel, queue string, payload any) {
 		Body:        messageBody,
 	}
 	// Attempt to publish a message to the rabbitmq.
+	logger.Info.Printf("Message to %s", queue)
 	if err := channel.Publish(
 		"",      // exchange
 		queue,   // rabbitmq name

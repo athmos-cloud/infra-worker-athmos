@@ -1,13 +1,11 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 )
@@ -54,11 +52,10 @@ func (pc *projectController) GetProject(ctx context.Context) {
 }
 
 func (pc *projectController) CreateProject(ctx context.Context) {
-	var req dto.CreateProjectRequest
-	if err := ctx.BindJSON(&req); err != nil {
-		ctx.JSON(400, errors.BadRequest.WithMessage(fmt.Sprintf("Expected : %+v", dto.CreateProjectRequest{})))
-		return
+	if err := validator.CreateProject(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
 	}
+	req := ctx.Value(context.RequestKey).(dto.CreateProjectRequest)
 	project := model.NewProject(req.Name, req.Owner)
 	if err := pc.projectUseCase.Create(ctx, project); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)

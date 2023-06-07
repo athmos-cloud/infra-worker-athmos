@@ -6,37 +6,37 @@ import (
 )
 
 type GetSubnetworkRequest struct {
-	IdentifierID identifier.Subnetwork `json:"identifierID"`
+	IdentifierID identifier.Subnetwork `json:"identifier_id"`
 }
 
 type GetSubnetworkResponse struct {
-	ProjectID string              `json:"projectID"`
+	ProjectID string              `json:"project_id"`
 	Payload   resource.Subnetwork `json:"payload"`
 }
 
 type CreateSubnetworkRequest struct {
-	ParentID    identifier.Network `json:"parentID"`
+	ParentID    identifier.Network `json:"parent_id"`
 	Name        string             `json:"name"`
 	Managed     bool               `json:"managed" default:"true"`
 	Region      string             `json:"region"`
-	IPCIDRRange string             `json:"ipCIDRRange" default:"10.0.0.1/28"`
+	IPCIDRRange string             `json:"ip_cidr_range" default:"10.0.0.1/28"`
 	Tags        map[string]string  `json:"tags"`
 }
 
 type CreateSubnetworkResponse struct {
-	ProjectID string              `json:"projectID"`
+	ProjectID string              `json:"project_id"`
 	Payload   resource.Subnetwork `json:"payload"`
 }
 
 type UpdateSubnetworkRequest struct {
-	IdentifierID identifier.Subnetwork `json:"identifierID"`
+	IdentifierID identifier.Subnetwork `json:"identifier_id"`
 	Managed      bool                  `json:"managed"`
 	Region       *string               `json:"region"`
-	IPCIDRRange  *string               `json:"ipCIDRRange"`
+	IPCIDRRange  *string               `json:"ip_cidr_range"`
 	Tags         *map[string]string    `json:"tags"`
 }
 
 type DeleteSubnetworkRequest struct {
-	IdentifierID identifier.Subnetwork `json:"identifierID"`
+	IdentifierID identifier.Subnetwork `json:"identifier_id"`
 	Cascade      bool                  `json:"cascade" default:"false"`
 }

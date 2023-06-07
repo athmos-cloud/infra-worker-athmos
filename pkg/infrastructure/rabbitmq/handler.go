@@ -21,7 +21,7 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	ctx.Set(context.ResourceTypeKey, message.Data.ResourceType)
 	ctx.Set(context.RequestKey, message.Data.Payload)
 
-	switch message.Verb {
+	switch message.Data.Verb {
 	case CREATE:
 		rq.ResourceController.CreateResource(ctx)
 		rq.handleResponse(ctx, eventTypeCreateRequestSent)
@@ -37,12 +37,12 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 }
 
 func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
-	code := ctx.Value(context.ResponseKey).(int)
+	code := ctx.Value(context.ResponseCodeKey).(int)
 	if code%100 == 2 {
 		msg := messageSend{
 			ProjectID: ctx.Value(context.ProjectIDKey).(string),
 			Type:      eventType,
-			Code:      ctx.Value(context.ResponseCodeKey).(int),
+			Code:      code,
 			Payload:   ctx.Value(context.ResponseKey),
 		}
 		rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)

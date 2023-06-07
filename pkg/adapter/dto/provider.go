@@ -6,18 +6,18 @@ import (
 )
 
 type GetProviderRequest struct {
-	IdentifierID identifier.Provider `json:"identifierID"`
+	IdentifierID identifier.Provider `json:"identifier_id"`
 }
 
 type GetProviderResponse struct {
-	ProjectID string            `json:"projectID"`
+	ProjectID string            `json:"project_id"`
 	Payload   resource.Provider `json:"payload"`
 }
 
 type ListProvidersRequest struct{}
 
 type ListProvidersResponse struct {
-	ProjectID string                      `json:"projectID"`
+	ProjectID string                      `json:"project_id"`
 	Payload   resource.ProviderCollection `json:"payload"`
 }
 
@@ -27,32 +27,32 @@ type ListProviderItemResponse struct {
 }
 
 type GetProviderStackRequest struct {
-	ProviderID string `json:"providerID"`
+	ProviderID string `json:"provider_id"`
 }
 
 type GetProviderStackResponse struct {
-	ProjectID string            `json:"projectID"`
+	ProjectID string            `json:"project_id"`
 	Payload   resource.Provider `json:"payload"`
 }
 
 type CreateProviderRequest struct {
 	Name           string `json:"name"`
 	VPC            string `json:"vpc,omitempty"`
-	SecretAuthName string `json:"secretAuthName"`
+	SecretAuthName string `json:"secret_auth_name"`
 }
 
 type CreateProviderResponse struct {
-	ProjectID string            `json:"projectID"`
+	ProjectID string            `json:"project_id"`
 	Payload   resource.Provider `json:"payload"`
 }
 
 type UpdateProviderRequest struct {
-	IdentifierID   identifier.Provider `json:"identifierID"`
+	IdentifierID   identifier.Provider `json:"identifier_id"`
 	Name           string              `json:"name"`
-	SecretAuthName string              `json:"secretAuthName"`
+	SecretAuthName string              `json:"secret_auth_name"`
 }
 
 type DeleteProviderRequest struct {
-	IdentifierID identifier.Provider `json:"identifierID"`
+	IdentifierID identifier.Provider `json:"identifier_id"`
 	Cascade      bool                `json:"cascade" default:"false"`
 }

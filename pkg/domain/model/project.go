@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	"github.com/kamva/mgm/v3"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -35,5 +36,6 @@ func namespaceFormat(namespace string) string {
 	if err != nil {
 		panic(errors.InternalError.WithMessage(err.Error()))
 	}
-	return reg.ReplaceAllString(namespace, "")
+	stringWoSpace := reg.ReplaceAllString(namespace, "")
+	return strings.ToLower(stringWoSpace)
 }

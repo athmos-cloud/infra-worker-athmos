@@ -6,6 +6,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"
 	"github.com/gin-gonic/gin"
 )
@@ -39,10 +40,10 @@ func (s *Secret) RenderAll(ctx context.Context, secretAuths *[]secret.Secret) {
 
 func (s *Secret) RenderCreate(ctx context.Context, secretAuth *secret.Secret) {
 	resp := dto.CreateSecretResponse{
-		ID:             secretAuth.IDField.ID.Hex(),
-		RedirectionURL: fmt.Sprintf("%s/secrets/%s", config.Current.RedirectionURL, secretAuth.Name),
+		RedirectionURL: fmt.Sprintf("%s/projects/%s/secrets/%s", config.Current.RedirectionURL, ctx.Value(context.ProjectIDKey), secretAuth.Name),
 		Prerequisites:  secretAuth.Prerequisites,
 	}
+	logger.Info.Printf("Resp: %v", resp)
 	ctx.JSON(201, gin.H{"payload": resp})
 }
 

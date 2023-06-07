@@ -14,6 +14,7 @@ func (r *registry) NewResourceController() controller.Resource {
 	projectRepo := repository.NewProjectRepository()
 	secretRepo := secretRepository.NewSecretRepository()
 	gcpRepo := gcpRepository.NewRepository()
+	sshKeysRepo := repository.NewSSHKeyRepository()
 
 	providerCtrl := resourceCtrl.NewProviderController(
 		usecase.NewProviderUseCase(projectRepo, secretRepo, gcpRepo, gcpRepo, gcpRepo),
@@ -32,7 +33,7 @@ func (r *registry) NewResourceController() controller.Resource {
 		presenter.NewFirewallPresenter(),
 	)
 	vmCtrl := resourceCtrl.NewVMController(
-		usecase.NewVMUseCase(projectRepo, gcpRepo, gcpRepo, gcpRepo),
+		usecase.NewVMUseCase(projectRepo, sshKeysRepo, gcpRepo, nil, nil),
 		presenter.NewVMPresenter(),
 	)
 

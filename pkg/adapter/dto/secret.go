@@ -24,11 +24,10 @@ type CreateSecretRequest struct {
 	ForProvider types.Provider `json:"for_provider"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
-	Value       []byte         `json:"value"`
+	Value       string         `json:"value"`
 }
 
 type CreateSecretResponse struct {
-	ID             string               `json:"id"`
 	RedirectionURL string               `json:"redirection_url"`
 	Prerequisites  secret.Prerequisites `json:"prerequisites"`
 }

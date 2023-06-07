@@ -20,6 +20,12 @@ func (server *Server) WithProjectRouter() *Server {
 	})
 
 	server.Engine.POST("/projects", func(c *gin.Context) {
+		var req dto.CreateProjectRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"message": errors.BadRequest.WithMessage(fmt.Sprintf("Expected : %+v", dto.CreateProjectRequest{}))})
+			return
+		}
+		c.Set(context.RequestKey, req)
 		server.ProjectController.CreateProject(c)
 	})
 
