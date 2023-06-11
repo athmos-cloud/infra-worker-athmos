@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -52,16 +52,9 @@ func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *model.Subnetw
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetSubnetworkRequest)
 	defaults.SetDefaults(&req)
-	project, errProject := suc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	findSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork},
 	})
 	if !err.IsOk() {
 		return err
@@ -79,13 +72,8 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 	req := ctx.Value(context.RequestKey).(dto.CreateSubnetworkRequest)
 	defaults.SetDefaults(&req)
 
-	project, errRepo := suc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !errRepo.IsOk() {
-		return errRepo
-	}
-
 	network, errNet := repo.FindNetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Network},
 	})
 	if !errNet.IsOk() {
 		return errNet
@@ -93,9 +81,8 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 
 	toCreateSubnet := &model.Subnetwork{
 		Metadata: metadata.Metadata{
-			Namespace: project.Namespace,
-			Managed:   req.Managed,
-			Tags:      req.Tags,
+			Managed: req.Managed,
+			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.Subnetwork{
 			Provider:   req.ParentID.Provider,
@@ -128,16 +115,9 @@ func (suc *subnetworkUseCase) Update(ctx context.Context, subnetwork *model.Subn
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateSubnetworkRequest)
 	defaults.SetDefaults(&req)
-	project, errProject := suc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork},
 	})
 	if !err.IsOk() {
 		return err
@@ -168,16 +148,9 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subn
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteSubnetworkRequest)
 	defaults.SetDefaults(&req)
-	project, errProject := suc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundNetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork},
 	})
 	if !err.IsOk() {
 		return err

@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -115,7 +116,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 		}
 		assertNetworkEqual(t, wantNet, gotNet)
 	})
-	t.Run("Create a network with an already existing name should raise conflict error", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a network with an already existing name should raise conflict error", func(t *testing.T) {
 		net := NetworkFixture(ctx, t, nuc)
 		err := nuc.Create(ctx, net)
 		require.Equal(t, errors.Conflict.Code, err.Code)
@@ -147,45 +148,16 @@ func Test_networkUseCase_Delete(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, delReq)
-		net := &resource.Network{}
+		net := &network.Network{}
 		err := nuc.Delete(ctx, net)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Delete a network with children should cascade", func(t *testing.T) {
-		/*		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
-				netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))*/
-
 		gcpRepo := gcp.NewRepository()
 		sshRepo := repository.NewSSHKeyRepository()
 
 		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
 		vuc := usecase.NewVMUseCase(testRes.ProjectRepo, sshRepo, gcpRepo, nil, nil)
-
-		/*		req := dto.CreateNetworkRequest{
-					ParentIDProvider: &parentID,
-					Name:             netName,
-					Managed:          false,
-				}
-				ctx.Set(context.RequestKey, req)
-				net := &resource.Network{}
-				err := nuc.Create(ctx, net)
-				require.Equal(t, errors.Created.Code, err.Code)
-
-				subnet := &resource.Subnetwork{}
-				subnetReq := dto.CreateSubnetworkRequest{
-					ParentID:    net.IdentifierID,
-					Name:        fmt.Sprintf("%s-%s", "test", utils.RandomString(5)),
-					Region:      "europe-west1",
-					IPCIDRRange: "10.0.0.1/27",
-				}
-				ctx.Set(context.RequestKey, subnetReq)
-				err = suc.Create(ctx, subnet)
-				require.Equal(t, errors.Created.Code, err.Code)
-				delReq := dto.DeleteNetworkRequest{
-					IdentifierID: net.IdentifierID,
-				}
-				ctx.Set(context.RequestKey, delReq)
-				err = nuc.Delete(ctx, net)*/
 
 		network := NetworkFixture(ctx, t, nuc)
 		SubnetworkFixture(ctx, t, suc)
@@ -215,7 +187,7 @@ func Test_networkUseCase_Get(t *testing.T) {
 			IdentifierID: net.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, getReq)
-		gotNet := &resource.Network{}
+		gotNet := &network.Network{}
 		err := nuc.Get(ctx, gotNet)
 		require.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, net, gotNet)
@@ -230,7 +202,7 @@ func Test_networkUseCase_Get(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, getReq)
-		gotNet := &resource.Network{}
+		gotNet := &network.Network{}
 		err := nuc.Get(ctx, gotNet)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -268,7 +240,7 @@ func Test_networkUseCase_Update(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, toUp)
-		net := &resource.Network{}
+		net := &network.Network{}
 		err := nuc.Update(ctx, net)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})

@@ -2,19 +2,17 @@ package resource
 
 type Resource interface {
 	Provider
-	VPC
 	Network
 	Subnetwork
 	Firewall
 	VM
+	SqlDB
 }
 
 type FindResourceOption struct {
-	Name      string
-	Namespace string
+	Name string
 }
 
 type FindAllResourceOption struct {
-	Labels    map[string]string
-	Namespace string
+	Labels map[string]string
 }

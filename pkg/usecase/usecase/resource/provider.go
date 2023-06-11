@@ -92,11 +92,7 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *resourceModel.Pro
 	req := ctx.Value(context.RequestKey).(dto.GetProviderRequest)
 	defaults.SetDefaults(&req)
 
-	project, err := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !err.IsOk() {
-		return err
-	}
-	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider, Namespace: project.Namespace}})
+	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider}})
 	if !err.IsOk() {
 		return err
 	}

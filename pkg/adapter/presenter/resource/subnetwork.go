@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	network2 "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +15,7 @@ func NewSubnetworkPresenter() output.SubnetworkPort {
 	return &subnetwork{}
 }
 
-func (s *subnetwork) Render(ctx context.Context, subnetwork *resource.Subnetwork) {
+func (s *subnetwork) Render(ctx context.Context, subnetwork *network2.Subnetwork) {
 	resp := &dto.GetSubnetworkResponse{
 		ProjectID: ctx.Value(context.ProjectIDKey).(string),
 		Payload:   *subnetwork,
@@ -23,7 +23,7 @@ func (s *subnetwork) Render(ctx context.Context, subnetwork *resource.Subnetwork
 	ctx.JSON(200, gin.H{"payload": resp})
 }
 
-func (s *subnetwork) RenderCreate(ctx context.Context, subnetwork *resource.Subnetwork) {
+func (s *subnetwork) RenderCreate(ctx context.Context, subnetwork *network2.Subnetwork) {
 	resp := &dto.CreateSubnetworkResponse{
 		ProjectID: ctx.Value(context.ProjectIDKey).(string),
 		Payload:   *subnetwork,
@@ -31,10 +31,10 @@ func (s *subnetwork) RenderCreate(ctx context.Context, subnetwork *resource.Subn
 	ctx.JSON(201, gin.H{"payload": resp})
 }
 
-func (s *subnetwork) RenderUpdate(ctx context.Context, subnetwork *resource.Subnetwork) {
+func (s *subnetwork) RenderUpdate(ctx context.Context, subnetwork *network2.Subnetwork) {
 	ctx.JSON(204, gin.H{"message": fmt.Sprintf("subnetwork %s updated", subnetwork.IdentifierID.Subnetwork)})
 }
 
-func (s *subnetwork) RenderDelete(ctx context.Context, subnetwork *resource.Subnetwork) {
+func (s *subnetwork) RenderDelete(ctx context.Context, subnetwork *network2.Subnetwork) {
 	ctx.JSON(204, gin.H{"message": fmt.Sprintf("subnetwork %s deleted", subnetwork.IdentifierID.Subnetwork)})
 }

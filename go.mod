@@ -11,7 +11,6 @@ replace (
 
 require (
 	github.com/crossplane/crossplane-runtime v0.20.0-rc.0.0.20230406155702-4e1673b7141f
-	github.com/fatih/structs v1.1.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/kamva/mgm/v3 v3.5.0
 	github.com/orlangure/gnomock v0.26.0
@@ -23,6 +22,7 @@ require (
 	go.mongodb.org/mongo-driver v1.11.4
 	golang.org/x/crypto v0.7.0
 	gopkg.in/mcuadros/go-defaults.v1 v1.1.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
@@ -151,7 +151,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/apiextensions-apiserver v0.26.3 // indirect
 	k8s.io/component-base v0.27.2 // indirect

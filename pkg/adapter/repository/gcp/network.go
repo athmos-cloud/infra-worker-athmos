@@ -5,9 +5,10 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	networkModels "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -28,19 +29,18 @@ var (
 	autoCreateSubnetworks = false
 )
 
-func (gcp *gcpRepository) FindNetwork(ctx context.Context, opt option.Option) (*resource.Network, errors.Error) {
+func (gcp *gcpRepository) FindNetwork(ctx context.Context, opt option.Option) (*networkModels.Network, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	gcpNetwork := &v1beta1.Network{}
-	if err := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, gcpNetwork); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: req.Name}, gcpNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("network %s not found in namespace %s", req.Name, req.Namespace))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", req.Name))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get network %s in namespace %s", req.Name, req.Namespace))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s in namespace %s", req.Name))
 	}
-	gcpNetwork.ObjectMeta.Namespace = req.Namespace // hack to avoid kubernetes client bug
 	mod, err := gcp.toModelNetwork(gcpNetwork)
 	if !err.IsOk() {
 		return nil, err
@@ -48,18 +48,17 @@ func (gcp *gcpRepository) FindNetwork(ctx context.Context, opt option.Option) (*
 	return mod, errors.OK
 }
 
-func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option) (*resource.NetworkCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option) (*networkModels.Collection, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
 	gcpNetworkList := &v1beta1.NetworkList{}
 	kubeOptions := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpNetworkList, kubeOptions); err != nil {
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks in namespace %s", req.Namespace))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks"))
 	}
 	modNetworks, err := gcp.toModelNetworkCollection(gcpNetworkList)
 	if !err.IsOk() {
@@ -69,18 +68,17 @@ func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option
 
 }
 
-func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*resource.NetworkCollection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*networkModels.Collection, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
 	gcpNetworkList := &v1beta1.NetworkList{}
 	kubeOptions := &client.ListOptions{
-		Namespace:     req.Namespace,
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpNetworkList, kubeOptions); err != nil {
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks in namespace %s", req.Namespace))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks"))
 	}
 	modNetworks, err := gcp.toModelNetworkCollection(gcpNetworkList)
 	if !err.IsOk() {
@@ -89,23 +87,32 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 
 	subnetChannels := make([]resourceRepo.SubnetworkChannel, 0)
 	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
+	dbChannels := make([]resourceRepo.SqlDBChannel, 0)
 
-	getNested := func(network *resource.Network) {
+	getNested := func(network *networkModels.Network) {
 		chFirewall := &resourceRepo.FirewallChannel{
-			Channel:      make(chan *resource.FirewallCollection),
+			Channel:      make(chan *networkModels.FirewallCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		chSubnet := &resourceRepo.SubnetworkChannel{
-			Channel:      make(chan *resource.SubnetworkCollection),
+			Channel:      make(chan *networkModels.SubnetworkCollection),
+			ErrorChannel: make(chan errors.Error),
+		}
+		chDB := &resourceRepo.SqlDBChannel{
+			Channel:      make(chan *instance.SqlDBCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
 		subnetChannels = append(subnetChannels, *chSubnet)
 		firewallChannels = append(firewallChannels, *chFirewall)
+		dbChannels = append(dbChannels, *chDB)
 
 		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chFirewall)
 		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chSubnet)
+		go gcp.FindAllRecursiveSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chDB)
+
 		gotFirewalls := false
 		gotSubnets := false
+		gotDBs := false
 		for {
 			select {
 			case firewalls := <-chFirewall.Channel:
@@ -114,8 +121,8 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 					return
 				}
 				gotFirewalls = true
-			case errChFirewall := <-chFirewall.ErrorChannel:
-				logger.Error.Println("error while listing firewalls", errChFirewall)
+			case errCh := <-chFirewall.ErrorChannel:
+				logger.Error.Println("error while listing firewalls", errCh)
 				if gotSubnets {
 					return
 				}
@@ -132,10 +139,22 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 					return
 				}
 				gotFirewalls = true
+			case dbs := <-chDB.Channel:
+				network.SqlDbs = *dbs
+				if gotDBs {
+					return
+				}
+				gotDBs = true
+			case errCh := <-chSubnet.ErrorChannel:
+				logger.Error.Println("error while listing dbs", errCh)
+				if gotDBs {
+					return
+				}
+				gotDBs = true
 			}
 		}
 	}
-	networks := &resource.NetworkCollection{}
+	networks := &networkModels.Collection{}
 	for _, network := range *modNetworks {
 		getNested(&network)
 		(*networks)[network.IdentifierName.Network] = network
@@ -152,29 +171,29 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 	return networks, errors.OK
 }
 
-func (gcp *gcpRepository) CreateNetwork(ctx context.Context, network *resource.Network) errors.Error {
+func (gcp *gcpRepository) CreateNetwork(ctx context.Context, network *networkModels.Network) errors.Error {
 	if exist, errExists := gcp.NetworkExists(ctx, network); !errExists.IsOk() {
 		return errExists
 	} else if exist {
-		return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+		return errors.Conflict.WithMessage(fmt.Sprintf("networkModels %s already exists", network.IdentifierName.Network))
 	}
 	gcpNetwork := gcp.toGCPNetwork(ctx, network)
 	if err := kubernetes.Client().Client.Create(ctx, gcpNetwork); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+			return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists", network.IdentifierName.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s", network.IdentifierName.Network))
 	}
 	return errors.Created
 }
 
-func (gcp *gcpRepository) UpdateNetwork(ctx context.Context, network *resource.Network) errors.Error {
+func (gcp *gcpRepository) UpdateNetwork(ctx context.Context, network *networkModels.Network) errors.Error {
 	existingNetwork := &v1beta1.Network{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network, Namespace: network.Metadata.Namespace}, existingNetwork); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, existingNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found", network.IdentifierID.Network))
+			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get network %s", network.IdentifierID.Network))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
 	}
 	gcpNetwork := gcp.toGCPNetwork(ctx, network)
 	existingNetwork.Spec = gcpNetwork.Spec
@@ -182,31 +201,31 @@ func (gcp *gcpRepository) UpdateNetwork(ctx context.Context, network *resource.N
 
 	if err := kubernetes.Client().Client.Update(ctx, existingNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", network.IdentifierName.Network))
 	}
 	return errors.NoContent
 }
 
-func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *resource.Network) errors.Error {
+func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *networkModels.Network) errors.Error {
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
 	if subnets, err := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
 		return err
 	} else if len(*subnets) > 0 {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("can't delete network %s without cascade option", network.IdentifierName.Network))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("can't delete networkModels %s without cascade option", network.IdentifierName.Network))
 	}
 	gcpSubnetwork := gcp.toGCPNetwork(ctx, network)
 	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", network.IdentifierName.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", network.IdentifierName.Network, network.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s", network.IdentifierName.Network))
 	}
 	return errors.NoContent
 }
 
-func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *resource.Network) errors.Error {
+func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *networkModels.Network) errors.Error {
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
 	subnets, subnetsErr := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	firewalls, firewallsErr := gcp.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
@@ -233,7 +252,7 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *res
 
 }
 
-func (gcp *gcpRepository) NetworkExists(ctx context.Context, network *resource.Network) (bool, errors.Error) {
+func (gcp *gcpRepository) NetworkExists(ctx context.Context, network *networkModels.Network) (bool, errors.Error) {
 	gcpNetwork := &v1beta1.NetworkList{}
 	searchLabels := lo.Assign(map[string]string{
 		model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
@@ -249,7 +268,7 @@ func (gcp *gcpRepository) NetworkExists(ctx context.Context, network *resource.N
 	return len(gcpNetwork.Items) > 0, errors.OK
 }
 
-func (gcp *gcpRepository) toModelNetwork(network *v1beta1.Network) (*resource.Network, errors.Error) {
+func (gcp *gcpRepository) toModelNetwork(network *v1beta1.Network) (*networkModels.Network, errors.Error) {
 	id := identifier.Network{}
 	name := identifier.Network{}
 	if err := id.IDFromLabels(network.Labels); !err.IsOk() {
@@ -258,17 +277,16 @@ func (gcp *gcpRepository) toModelNetwork(network *v1beta1.Network) (*resource.Ne
 	if err := name.NameFromLabels(network.Labels); !err.IsOk() {
 		return nil, err
 	}
-	return &resource.Network{
+	return &networkModels.Network{
 		Metadata: metadata.Metadata{
-			Managed:   network.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
-			Namespace: network.ObjectMeta.Namespace,
+			Managed: network.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
 	}, errors.OK
 }
 
-func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *resource.Network) *v1beta1.Network {
+func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *networkModels.Network) *v1beta1.Network {
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), network.IdentifierID.ToIDLabels(), network.IdentifierName.ToNameLabels())
 
 	return &v1beta1.Network{
@@ -292,8 +310,8 @@ func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *resource.Ne
 	}
 }
 
-func (gcp *gcpRepository) toModelNetworkCollection(list *v1beta1.NetworkList) (*resource.NetworkCollection, errors.Error) {
-	res := resource.NetworkCollection{}
+func (gcp *gcpRepository) toModelNetworkCollection(list *v1beta1.NetworkList) (*networkModels.Collection, errors.Error) {
+	res := networkModels.Collection{}
 	for _, item := range list.Items {
 		network, err := gcp.toModelNetwork(&item)
 		if !err.IsOk() {

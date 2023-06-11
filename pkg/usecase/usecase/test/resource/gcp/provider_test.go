@@ -8,6 +8,8 @@ import (
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -68,7 +70,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
-	t.Run("Create a valid provider", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a valid provider", func(t *testing.T) {
 		provider := ProviderFixture(ctx, t, uc)
 		kubeResource := &v1beta1.ProviderConfig{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: provider.IdentifierID.Provider}, kubeResource)
@@ -246,47 +248,55 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 		suc := usecase.NewSubnetworkUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
 		fuc := usecase.NewFirewallUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
 		vuc := usecase.NewVMUseCase(testRes.ProjectRepo, repository2.NewSSHKeyRepository(), gcp.NewRepository(), nil, nil)
-
+		duc := usecase.NewSqlDBUseCase(testRes.ProjectRepo, gcp.NewRepository(), nil, nil)
 		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-1",
 		})
-		net1 := &resource.Network{}
+		net1 := &network.Network{}
 		err := nuc.Create(ctx, net1)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-2",
 		})
-		net2 := &resource.Network{}
+		net2 := &network.Network{}
 		err = nuc.Create(ctx, net2)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-11",
 		})
-		subnet11 := &resource.Subnetwork{}
+		subnet11 := &network.Subnetwork{}
 		err = suc.Create(ctx, subnet11)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-12",
 		})
-		subnet12 := &resource.Subnetwork{}
+		subnet12 := &network.Subnetwork{}
 		err = suc.Create(ctx, subnet12)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateFirewallRequest{
 			ParentID: net2.IdentifierID,
 			Name:     "test-firewall-21",
 		})
-		fw21 := &resource.Firewall{}
+		fw21 := &network.Firewall{}
 		err = fuc.Create(ctx, fw21)
+		ctx.Set(context.RequestKey, dto.CreateSqlDBRequest{
+			ParentID:   net2.IdentifierID,
+			Name:       "test-db-21",
+			SQLType:    instance.PostgresSQLType,
+			SQLVersion: "13",
+		})
+		db21 := &instance.SqlDB{}
+		err = duc.Create(ctx, db21)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateVMRequest{
 			ParentID: subnet11.IdentifierID,
 			Name:     "test-vm-111",
 		})
-		vm111 := &resource.VM{}
+		vm111 := &instance.VM{}
 		err = vuc.Create(ctx, vm111)
 		require.True(t, err.IsOk())
 
@@ -300,6 +310,7 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 		assert.Equal(t, 2, len(foundProvider.Networks))
 		assert.Equal(t, 2, len(foundProvider.Networks["test-network-1"].Subnetworks))
 		assert.Equal(t, 1, len(foundProvider.Networks["test-network-2"].Firewalls))
+		assert.Equal(t, 1, len(foundProvider.Networks["test-network-2"].SqlDbs))
 		assert.Equal(t, "test-vm-111", foundProvider.Networks["test-network-1"].Subnetworks["test-subnetwork-11"].VMs["test-vm-111"].IdentifierName.VM)
 
 	})

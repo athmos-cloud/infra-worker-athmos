@@ -5,8 +5,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -29,17 +29,17 @@ const (
 	tagKeyValueSeparator = "="
 )
 
-func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*resource.VM, errors.Error) {
+func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*instance.VM, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	gcpVM := &v1beta1.Instance{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, gcpVM); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, gcpVM); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", req.Name, req.Namespace))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", req.Name))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s in namespace %s", req.Name, req.Namespace))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", req.Name))
 	}
 	mod, err := gcp.toModelVM(gcpVM)
 	if !err.IsOk() {
@@ -59,7 +59,7 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpVMList, listOpt); err != nil {
-		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm in namespace %s", req.Namespace))
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage("unable to list vm")
 		return
 	}
 	if firewalls, err := gcp.toModelVMCollection(gcpVMList); !err.IsOk() {
@@ -69,13 +69,27 @@ func (gcp *gcpRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 	}
 }
 
-func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*resource.VMCollection, errors.Error) {
-	//TODO implement me
-	//panic("implement me")
-	return &resource.VMCollection{}, errors.OK
+func (gcp *gcpRepository) FindAllVMs(ctx context.Context, opt option.Option) (*instance.VMCollection, errors.Error) {
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpVMList := &v1beta1.InstanceList{}
+	kubeOptions := &client.ListOptions{
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpVMList, kubeOptions); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm"))
+	}
+	modVms, err := gcp.toModelVMCollection(gcpVMList)
+	if !err.IsOk() {
+		return nil, err
+	}
+
+	return modVms, errors.OK
 }
 
-func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.Error {
+func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.Error {
 	if exists, err := gcp.VMExists(ctx, vm); !err.IsOk() {
 		return err
 	} else if exists {
@@ -91,13 +105,13 @@ func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *resource.VM) errors.
 	return errors.Created
 }
 
-func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *resource.VM) errors.Error {
+func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.Error {
 	existingVM := &v1beta1.Instance{}
 	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, existingVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierID.VM))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.Subnetwork))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.VM))
 	}
 	gcpVM := gcp.toGCPVM(ctx, vm)
 	existingVM.Spec = gcpVM.Spec
@@ -111,18 +125,25 @@ func (gcp *gcpRepository) UpdateVM(ctx context.Context, vm *resource.VM) errors.
 	return errors.NoContent
 }
 
-func (gcp *gcpRepository) DeleteVM(ctx context.Context, vm *resource.VM) errors.Error {
-	gcpVM := gcp.toGCPVM(ctx, vm)
+func (gcp *gcpRepository) DeleteVM(ctx context.Context, vm *instance.VM) errors.Error {
+	gcpVM := &v1beta1.Instance{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, gcpVM); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierID.VM))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.VM))
+	}
 	if err := kubernetes.Client().Client.Delete(ctx, gcpVM); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierName.VM))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete vm %s in namespace %s", vm.IdentifierName.VM, vm.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete vm %s", vm.IdentifierName.VM))
 	}
+
 	return errors.NoContent
 }
 
-func (gcp *gcpRepository) VMExists(ctx context.Context, vm *resource.VM) (bool, errors.Error) {
+func (gcp *gcpRepository) VMExists(ctx context.Context, vm *instance.VM) (bool, errors.Error) {
 	gcpVMs := &v1beta1.InstanceList{}
 	parentID := identifier.Subnetwork{
 		Provider:   vm.IdentifierID.Provider,
@@ -140,7 +161,7 @@ func (gcp *gcpRepository) VMExists(ctx context.Context, vm *resource.VM) (bool, 
 	return len(gcpVMs.Items) > 0, errors.OK
 }
 
-func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.Error) {
+func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*instance.VM, errors.Error) {
 	id := identifier.VM{}
 	name := identifier.VM{}
 	if err := id.IDFromLabels(vm.Labels); !err.IsOk() {
@@ -166,11 +187,11 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 	if err != nil {
 		return nil, errors.InternalError.WithMessage("unable to parse public ip label")
 	}
-	vmOS := resource.VMOS{}
+	vmOS := instance.VMOS{}
 	if vm.Spec.ForProvider.BootDisk != nil {
 		vmOS = toVmOS(&vm.Spec.ForProvider.BootDisk[0])
 	}
-	return &resource.VM{
+	return &instance.VM{
 		Metadata: metadata.Metadata{
 			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 			Tags:    tags,
@@ -187,7 +208,7 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*resource.VM, errors.
 	}, errors.OK
 }
 
-func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1.Instance {
+func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *instance.VM) *v1beta1.Instance {
 	sshKeysLabels := crossplane.ToSSHKeySecretLabels(vm.Auths)
 	asPublicIPLabel := map[string]string{crossplane.VMPublicIPLabel: strconv.FormatBool(vm.AssignPublicIP)}
 	instanceLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
@@ -211,9 +232,8 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1
 	return &v1beta1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        vm.IdentifierID.VM,
-			Namespace:   vm.Metadata.Namespace,
 			Labels:      instanceLabels,
-			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.Network),
+			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.VM),
 		},
 		Spec: v1beta1.InstanceSpec{
 			ResourceSpec: v1.ResourceSpec{
@@ -236,8 +256,8 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *resource.VM) *v1beta1
 	}
 }
 
-func (gcp *gcpRepository) toModelVMCollection(instanceList *v1beta1.InstanceList) (*resource.VMCollection, errors.Error) {
-	items := resource.VMCollection{}
+func (gcp *gcpRepository) toModelVMCollection(instanceList *v1beta1.InstanceList) (*instance.VMCollection, errors.Error) {
+	items := instance.VMCollection{}
 	for _, item := range instanceList.Items {
 		vm, err := gcp.toModelVM(&item)
 		if !err.IsOk() {
@@ -248,26 +268,26 @@ func (gcp *gcpRepository) toModelVMCollection(instanceList *v1beta1.InstanceList
 	return &items, errors.OK
 }
 
-func toVmOS(disk *v1beta1.BootDiskParameters) resource.VMOS {
+func toVmOS(disk *v1beta1.BootDiskParameters) instance.VMOS {
 	if disk == nil {
-		return resource.VMOS{}
+		return instance.VMOS{}
 	}
-	return resource.VMOS{
+	return instance.VMOS{
 		ID:   *disk.InitializeParams[0].Image,
 		Name: *disk.InitializeParams[0].Image,
 	}
 }
 
-func (gcp *gcpRepository) toVMDiskCollection(disks []v1beta1.BootDiskParameters) []resource.VMDisk {
-	var ret []resource.VMDisk
+func (gcp *gcpRepository) toVMDiskCollection(disks []v1beta1.BootDiskParameters) []instance.VMDisk {
+	var ret []instance.VMDisk
 	for _, disk := range disks {
 		ret = append(ret, gcp.toVMDisk(&disk))
 	}
 	return ret
 }
 
-func (gcp *gcpRepository) toVMDisk(disk *v1beta1.BootDiskParameters) resource.VMDisk {
-	return resource.VMDisk{
+func (gcp *gcpRepository) toVMDisk(disk *v1beta1.BootDiskParameters) instance.VMDisk {
+	return instance.VMDisk{
 		AutoDelete: *disk.AutoDelete,
 		SizeGib:    int(*disk.InitializeParams[0].Size),
 		Type:       fromGCPDiskType(*disk.InitializeParams[0].Type),
@@ -275,7 +295,7 @@ func (gcp *gcpRepository) toVMDisk(disk *v1beta1.BootDiskParameters) resource.VM
 	}
 }
 
-func (gcp *gcpRepository) toGCPVMDiskList(disks []resource.VMDisk, os resource.VMOS) []v1beta1.BootDiskParameters {
+func (gcp *gcpRepository) toGCPVMDiskList(disks []instance.VMDisk, os instance.VMOS) []v1beta1.BootDiskParameters {
 	var bootDisks []v1beta1.BootDiskParameters
 	for _, disk := range disks {
 		bootDisks = append(bootDisks, gcp.toGCPVMDisk(disk, os))
@@ -283,7 +303,7 @@ func (gcp *gcpRepository) toGCPVMDiskList(disks []resource.VMDisk, os resource.V
 	return bootDisks
 }
 
-func (gcp *gcpRepository) toGCPVMDisk(disk resource.VMDisk, os resource.VMOS) v1beta1.BootDiskParameters {
+func (gcp *gcpRepository) toGCPVMDisk(disk instance.VMDisk, os instance.VMOS) v1beta1.BootDiskParameters {
 	diskSize := float64(disk.SizeGib)
 	diskType := toGCPDiskType(disk.Type)
 	diskMode := toGCPDiskMode(disk.Mode)
@@ -307,40 +327,4 @@ func sshKeysToString(sshKeys model.SSHKeyList) *string {
 	}
 	ret = strings.TrimSuffix(ret, "\n")
 	return &ret
-}
-
-func toGCPDiskType(diskType resource.DiskType) string {
-	switch diskType {
-	case resource.DiskTypeSSD:
-		return "pd-ssd"
-	default:
-		return "pd-standard"
-	}
-}
-
-func fromGCPDiskType(diskType string) resource.DiskType {
-	switch diskType {
-	case "pd-ssd":
-		return resource.DiskTypeSSD
-	default:
-		return resource.DiskTypeHDD
-	}
-}
-
-func toGCPDiskMode(diskMode resource.DiskMode) string {
-	switch diskMode {
-	case resource.DiskModeReadWrite:
-		return "READ_WRITE"
-	default:
-		return "READ_ONLY"
-	}
-}
-
-func fromGCPDiskMode(diskMode string) resource.DiskMode {
-	switch diskMode {
-	case "READ_WRITE":
-		return resource.DiskModeReadWrite
-	default:
-		return resource.DiskModeReadOnly
-	}
 }

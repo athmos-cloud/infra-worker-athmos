@@ -8,6 +8,7 @@ const (
 	NetworkIdentifierKey    = "identifier.network"
 	SubnetworkIdentifierKey = "identifier.subnetwork"
 	VMIdentifierKey         = "identifier.vm"
+	SqlDBIdentifierKey      = "identifier.sqldb"
 	FirewallIdentifierKey   = "identifier.firewall"
 	ProviderNameKey         = "name.provider"
 	VpcNameKey              = "name.vpc"
@@ -15,6 +16,7 @@ const (
 	SubnetworkNameKey       = "name.subnetwork"
 	VMNameKey               = "name.vm"
 	FirewallNameKey         = "name.firewall"
+	SqlDBNameKey            = "name.sqldb"
 )
 
 type ID interface {

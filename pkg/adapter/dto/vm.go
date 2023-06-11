@@ -1,57 +1,57 @@
 package dto
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 )
 
 type GetVMRequest struct {
-	IdentifierID identifier.VM `json:"identifierID"`
+	IdentifierID identifier.VM `json:"identifier_id"`
 }
 
 type GetVMResponse struct {
-	ProjectID string      `json:"projectID"`
-	Payload   resource.VM `json:"payload"`
+	ProjectID string      `json:"project_id"`
+	Payload   instance.VM `json:"payload"`
 }
 
 type CreateVMRequest struct {
-	ParentID       identifier.Subnetwork `json:"parentID"`
+	ParentID       identifier.Subnetwork `json:"parent_id"`
 	Name           string                `json:"name"`
-	AssignPublicIP bool                  `json:"assignPublicIP" default:"false"`
+	AssignPublicIP bool                  `json:"assign_public_ip" default:"false"`
 	Zone           string                `json:"zone"`
-	MachineType    string                `json:"machineType"`
+	MachineType    string                `json:"machine_type"`
 	Auths          []VMAuth              `json:"auths"`
-	Disks          resource.VMDiskList   `json:"disks"`
-	OS             resource.VMOS         `json:"os"`
+	Disks          instance.VMDiskList   `json:"disks"`
+	OS             instance.VMOS         `json:"os"`
 	Managed        bool                  `json:"managed" default:"true"`
 	Tags           map[string]string     `json:"tags"`
 }
 
 type VMAuth struct {
 	Username     string `json:"username"`
-	RSAKeyLength int    `json:"rsaKeyLength"`
+	RSAKeyLength int    `json:"rsa_key_length"`
 }
 
 type CreateVMResponse struct {
-	ProjectID string      `json:"projectID"`
-	Payload   resource.VM `json:"payload"`
+	ProjectID string      `json:"project_id"`
+	Payload   instance.VM `json:"payload"`
 }
 
 type UpdateVMRequest struct {
-	IdentifierID   identifier.VM        `json:"identifierID"`
+	IdentifierID   identifier.VM        `json:"identifier_id"`
 	Name           *string              `json:"name"`
-	AssignPublicIP *bool                `json:"assignPublicIP"`
+	AssignPublicIP *bool                `json:"assign_public_ip"`
 	Zone           *string              `json:"zone"`
-	MachineType    *string              `json:"machineType"`
+	MachineType    *string              `json:"machine_type"`
 	Auths          *[]VMAuth            `json:"auths"`
-	UpdateSSHKeys  bool                 `json:"updateSSHKeys" default:"false"`
-	Disks          *resource.VMDiskList `json:"disks"`
-	OS             *resource.VMOS       `json:"os"`
+	UpdateSSHKeys  bool                 `json:"update_ssh_keys" default:"false"`
+	Disks          *instance.VMDiskList `json:"disks"`
+	OS             *instance.VMOS       `json:"os"`
 	Managed        *bool                `json:"managed"`
 	Tags           *map[string]string   `json:"tags"`
 }
 
 type DeleteVMRequest struct {
-	IdentifierID identifier.VM `json:"identifierID"`
+	IdentifierID identifier.VM `json:"identifier_id"`
 	Cascade      *bool         `json:"cascade" default:"false"`
 }
