@@ -20,6 +20,7 @@ func getScheme() *runtime.Scheme {
 	newScheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(newScheme))
 	registerGCPResources(newScheme)
+	registerAWSResources(newScheme)
 
 	return newScheme
 }
