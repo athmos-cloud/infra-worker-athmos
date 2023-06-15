@@ -2,7 +2,7 @@ package resourceOutput
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 )
 
 type SubnetworkPort interface {

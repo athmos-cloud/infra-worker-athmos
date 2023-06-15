@@ -4,7 +4,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	errorCtrl "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
 	resource2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 )

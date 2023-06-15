@@ -4,8 +4,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -36,7 +36,7 @@ func initFirewall(t *testing.T) (context.Context, *testResource.TestResource, us
 		Managed:          false,
 	}
 	ctx.Set(context.RequestKey, req)
-	net := &resource.Network{}
+	net := &network.Network{}
 	err := nuc.Create(ctx, net)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.NetworkIDKey, net.IdentifierID)
@@ -68,7 +68,7 @@ func Test_firewallUseCase_Create(t *testing.T) {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clearFirewall(ctx)
 	}()
-	t.Run("Create a valid firewall", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a valid firewall", func(t *testing.T) {
 		firewall := FirewallFixture(ctx, t, fuc)
 
 		kubeResource := &v1beta1.Firewall{}
@@ -113,7 +113,6 @@ func Test_firewallUseCase_Create(t *testing.T) {
 				ProviderConfigReference: &v1.Reference{
 					Name: firewall.IdentifierID.Provider,
 				},
-				ManagementPolicy: "FullControl",
 			},
 			ForProvider: v1beta1.FirewallParameters{
 				Network: &firewall.IdentifierID.Network,
@@ -135,7 +134,7 @@ func Test_firewallUseCase_Create(t *testing.T) {
 		assertFirewallEqual(t, want, got)
 	})
 
-	t.Run("Create a firewall with an already existing name should fail", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a firewall with an already existing name should fail", func(t *testing.T) {
 		firewall := FirewallFixture(ctx, t, fuc)
 		err := fuc.Create(ctx, firewall)
 		require.Equal(t, errors.Conflict.Code, err.Code)
@@ -152,7 +151,7 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 	t.Run("Delete a valid firewall should succeed", func(t *testing.T) {
 		firewall := FirewallFixture(ctx, t, fuc)
 		ctx.Set(context.RequestKey, dto.DeleteFirewallRequest{IdentifierID: firewall.IdentifierID})
-		delFirewall := &resource.Firewall{}
+		delFirewall := &network.Firewall{}
 		err := fuc.Delete(ctx, delFirewall)
 		require.Equal(t, errors.NoContent.Code, err.Code)
 	})
@@ -163,7 +162,7 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 			Firewall: "this-firewall-does-not-exist",
 		}
 		ctx.Set(context.RequestKey, dto.DeleteFirewallRequest{IdentifierID: id})
-		delFirewall := &resource.Firewall{}
+		delFirewall := &network.Firewall{}
 		err := fuc.Delete(ctx, delFirewall)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -181,7 +180,7 @@ func Test_firewallUseCase_Get(t *testing.T) {
 
 		getReq := dto.GetFirewallRequest{IdentifierID: firewall.IdentifierID}
 		ctx.Set(context.RequestKey, getReq)
-		getFirewall := &resource.Firewall{}
+		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, firewall.IdentifierName, getFirewall.IdentifierName)
@@ -196,7 +195,7 @@ func Test_firewallUseCase_Get(t *testing.T) {
 			Firewall: "this-firewall-does-not-exist",
 		}}
 		ctx.Set(context.RequestKey, getReq)
-		getFirewall := &resource.Firewall{}
+		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
 		require.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -217,7 +216,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 		protocol := "tcp"
 		updateReq := dto.UpdateFirewallRequest{
 			IdentifierID: firewall.IdentifierID,
-			AllowRules: &resource.FirewallRuleList{
+			AllowRules: &network.FirewallRuleList{
 				{
 					Protocol: protocol,
 					Ports:    []string{port},
@@ -225,7 +224,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, updateReq)
-		updateFirewall := &resource.Firewall{}
+		updateFirewall := &network.Firewall{}
 		err := fuc.Update(ctx, updateFirewall)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 		kubeResource := &v1beta1.Firewall{}
@@ -250,7 +249,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, updateReq)
-		updateFirewall := &resource.Firewall{}
+		updateFirewall := &network.Firewall{}
 		err := fuc.Update(ctx, updateFirewall)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})

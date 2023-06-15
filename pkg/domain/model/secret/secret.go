@@ -14,16 +14,12 @@ type Secret struct {
 	mgm.DefaultModel `bson:",inline"`
 	Name             string         `bson:"name"`
 	Description      string         `bson:"description,omitempty"`
-	ProviderType     types.Provider `bson:"providerType"`
-	Kubernetes       Kubernetes     `bson:"secretAuth,omitempty"`
+	ProviderType     types.Provider `bson:"provider_type"`
+	Kubernetes       Kubernetes     `bson:"secret_auth,omitempty"`
 	Prerequisites    Prerequisites  `bson:"prerequisites,omitempty"`
 }
 
 type List map[string]Secret
-
-func (s *Secret) Equals(other Secret) bool {
-	return s.Name == other.Name && s.Description == other.Description && s.Kubernetes.Equals(other.Kubernetes)
-}
 
 func NewSecret(name string, description string, secretAuth Kubernetes, forProvider types.Provider) *Secret {
 	return &Secret{
@@ -47,10 +43,4 @@ func NewKubernetesSecret(secretName string, secretKey string, namespace string) 
 		SecretKey:  secretKey,
 		Namespace:  namespace,
 	}
-}
-
-func (s *Kubernetes) Equals(auth Kubernetes) bool {
-	return s.SecretName == auth.SecretName &&
-		s.SecretKey == auth.SecretKey &&
-		s.Namespace == auth.Namespace
 }

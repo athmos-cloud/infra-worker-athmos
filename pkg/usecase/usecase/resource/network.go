@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -51,16 +51,9 @@ func (nuc *networkUseCase) Get(ctx context.Context, network *model.Network) erro
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetNetworkRequest)
-	project, errProject := nuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundNetwork, err := repo.FindNetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network},
 	})
 	if !err.IsOk() {
 		return err
@@ -77,56 +70,25 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 	req := ctx.Value(context.RequestKey).(dto.CreateNetworkRequest)
 	defaults.SetDefaults(&req)
 
-	project, err := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !err.IsOk() {
-		return err
+	parId := req.ParentIDProvider
+	provider, errProvider := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: parId.Provider}})
+	if !errProvider.IsOk() {
+		return errProvider
 	}
-
-	var id identifier.Network
-	var name identifier.Network
-
-	if req.ParentIDProvider != nil {
-		parId := req.ParentIDProvider
-		provider, errProvider := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: parId.Provider}})
-		if !errProvider.IsOk() {
-			return errProvider
-		}
-		id = identifier.Network{
-			Provider: provider.IdentifierID.Provider,
-			VPC:      provider.IdentifierID.VPC,
-			Network:  idFromName(req.Name),
-		}
-
-		name = identifier.Network{
-			Network:  req.Name,
-			VPC:      provider.IdentifierName.VPC,
-			Provider: provider.IdentifierName.Provider,
-		}
-	} else if req.ParentIDVPC != nil {
-		parId := req.ParentIDVPC
-		id = identifier.Network{
-			Provider: parId.Provider,
-			VPC:      parId.VPC,
-			Network:  idFromName(req.Name),
-		}
-		vpc, errProvider := repo.FindVPC(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: parId.VPC, Namespace: ""}})
-		if !errProvider.IsOk() {
-			return errProvider
-		}
-		name = identifier.Network{
-			Network:  req.Name,
-			VPC:      vpc.IdentifierName.VPC,
-			Provider: vpc.IdentifierName.Provider,
-		}
-	} else {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("at least one parent id (vpc or provider) must be provided"))
+	id := identifier.Network{
+		Provider: provider.IdentifierID.Provider,
+		VPC:      provider.IdentifierID.VPC,
+		Network:  idFromName(req.Name),
 	}
-
+	name := identifier.Network{
+		Network:  req.Name,
+		VPC:      provider.IdentifierName.VPC,
+		Provider: provider.IdentifierName.Provider,
+	}
 	createdNetwork := &model.Network{
 		Metadata: metadata.Metadata{
-			Namespace: project.Namespace,
-			Managed:   req.Managed,
-			Tags:      req.Tags,
+			Managed: req.Managed,
+			Tags:    req.Tags,
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
@@ -146,12 +108,7 @@ func (nuc *networkUseCase) Update(ctx context.Context, network *model.Network) e
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateNetworkRequest)
 
-	project, err := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !err.IsOk() {
-		return err
-	}
-
-	curNetwork, err := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace}})
+	curNetwork, err := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network}})
 	if !err.IsOk() {
 		return err
 	}
@@ -168,7 +125,6 @@ func (nuc *networkUseCase) Update(ctx context.Context, network *model.Network) e
 	}
 
 	return errors.NoContent
-
 }
 
 func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network) errors.Error {
@@ -177,11 +133,8 @@ func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteNetworkRequest)
-	project, errProj := nuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !errProj.IsOk() {
-		return errProj
-	}
-	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network, Namespace: project.Namespace}})
+
+	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network}})
 	if !errNet.IsOk() {
 		return errNet
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/config"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output"
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +47,5 @@ func (p *Project) RenderAll(ctx context.Context, projects *[]model.Project) {
 			RedirectionURL: fmt.Sprintf("%s/projects/%s", config.Current.RedirectionURL, project.ID.Hex()),
 		}
 	}
-	logger.Info.Printf("resp: %v", resp)
 	ctx.JSON(200, gin.H{"payload": resp})
 }

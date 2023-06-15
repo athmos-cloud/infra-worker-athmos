@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -51,16 +51,9 @@ func (fuc *firewallUseCase) Get(ctx context.Context, firewall *model.Firewall) e
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s firewall not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetFirewallRequest)
-	project, errProject := fuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall},
 	})
 	if !err.IsOk() {
 		return err
@@ -77,13 +70,8 @@ func (fuc *firewallUseCase) Create(ctx context.Context, firewall *model.Firewall
 	req := ctx.Value(context.RequestKey).(dto.CreateFirewallRequest)
 	defaults.SetDefaults(&req)
 
-	project, errRepo := fuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-	if !errRepo.IsOk() {
-		return errRepo
-	}
-
 	network, errNet := repo.FindNetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Network, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Network},
 	})
 	if !errNet.IsOk() {
 		return errNet
@@ -91,9 +79,8 @@ func (fuc *firewallUseCase) Create(ctx context.Context, firewall *model.Firewall
 
 	toCreateFirewall := &model.Firewall{
 		Metadata: metadata.Metadata{
-			Namespace: project.Namespace,
-			Managed:   req.Managed,
-			Tags:      req.Tags,
+			Managed: req.Managed,
+			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.Firewall{
 			Provider: req.ParentID.Provider,
@@ -125,16 +112,8 @@ func (fuc *firewallUseCase) Update(ctx context.Context, firewall *model.Firewall
 	}
 	req := ctx.Value(context.RequestKey).(dto.UpdateFirewallRequest)
 
-	project, errProject := fuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall},
 	})
 	if !err.IsOk() {
 		return err
@@ -169,16 +148,8 @@ func (fuc *firewallUseCase) Delete(ctx context.Context, firewall *model.Firewall
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteFirewallRequest)
 
-	project, errProject := fuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall},
 	})
 	if !err.IsOk() {
 		return err

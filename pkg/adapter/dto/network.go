@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 )
 
 type GetNetworkRequest struct {
@@ -10,8 +10,8 @@ type GetNetworkRequest struct {
 }
 
 type GetNetworkResponse struct {
-	ProjectID string           `json:"project_id"`
-	Payload   resource.Network `json:"payload"`
+	ProjectID string          `json:"project_id"`
+	Payload   network.Network `json:"payload"`
 }
 
 type CreateNetworkRequest struct {
@@ -23,8 +23,8 @@ type CreateNetworkRequest struct {
 }
 
 type CreateNetworkResponse struct {
-	ProjectID string           `json:"project_id"`
-	Payload   resource.Network `json:"payload"`
+	ProjectID string          `json:"project_id"`
+	Payload   network.Network `json:"payload"`
 }
 
 type UpdateNetworkRequest struct {

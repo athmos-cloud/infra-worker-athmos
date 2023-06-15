@@ -5,8 +5,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -39,7 +39,7 @@ func initSubnetwork(t *testing.T) (context.Context, *testResource.TestResource, 
 		Managed:          false,
 	}
 	ctx.Set(context.RequestKey, req)
-	net := &resource.Network{}
+	net := &network.Network{}
 	err := nuc.Create(ctx, net)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.NetworkIDKey, net.IdentifierID)
@@ -73,7 +73,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		clearSubnetwork(ctx)
 	}()
 
-	t.Run("Create a valid subnetwork", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a valid subnetwork", func(t *testing.T) {
 		subnet := SubnetworkFixture(ctx, t, suc)
 		region := "europe-west1"
 		ipCIDR := "10.0.0.1/26"
@@ -121,9 +121,9 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 		assertSubnetworkEqual(t, wantNet, gotNet)
 	})
 
-	t.Run("Create a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
+	t.Run("_createSqlPasswordSecret a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
 		_ = SubnetworkFixture(ctx, t, suc)
-		newSubnet := &resource.Subnetwork{}
+		newSubnet := &network.Subnetwork{}
 		err := suc.Create(ctx, newSubnet)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
@@ -142,7 +142,7 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 			IdentifierID: subnet.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, delReq)
-		delSubnet := &resource.Subnetwork{}
+		delSubnet := &network.Subnetwork{}
 		err := suc.Delete(ctx, delSubnet)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
@@ -156,15 +156,9 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, delReq)
-		subnet := &resource.Subnetwork{}
+		subnet := &network.Subnetwork{}
 		err := suc.Delete(ctx, subnet)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
-	})
-	t.Run("Delete a subnetwork with children should fail", func(t *testing.T) {
-		t.Skip("TODO")
-	})
-	t.Run("Delete cascade a subnetwork should succeed", func(t *testing.T) {
-		t.Skip("TODO")
 	})
 }
 
@@ -188,14 +182,14 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 			Managed:     false,
 		}
 		ctx.Set(context.RequestKey, req)
-		subnet := &resource.Subnetwork{}
+		subnet := &network.Subnetwork{}
 		err := suc.Create(ctx, subnet)
 		assert.Equal(t, errors.Created.Code, err.Code)
 		getReq := dto.GetSubnetworkRequest{
 			IdentifierID: subnet.IdentifierID,
 		}
 		ctx.Set(context.RequestKey, getReq)
-		getSubnet := &resource.Subnetwork{}
+		getSubnet := &network.Subnetwork{}
 		err = suc.Get(ctx, getSubnet)
 		assert.Equal(t, errors.OK.Code, err.Code)
 		assert.Equal(t, subnet.IdentifierID, getReq.IdentifierID)
@@ -212,7 +206,7 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 			},
 		}
 		ctx.Set(context.RequestKey, getReq)
-		subnet := &resource.Subnetwork{}
+		subnet := &network.Subnetwork{}
 		err := suc.Get(ctx, subnet)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -238,7 +232,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 			Managed:     false,
 		}
 		ctx.Set(context.RequestKey, req)
-		subnet := &resource.Subnetwork{}
+		subnet := &network.Subnetwork{}
 		err := suc.Create(ctx, subnet)
 		assert.Equal(t, errors.Created.Code, err.Code)
 		newRegion := "europe-west2"
@@ -253,7 +247,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 
 		kubeSubnet := &v1beta1.Subnetwork{}
-		errKube := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: subnet.IdentifierID.Subnetwork, Namespace: subnet.Metadata.Namespace}, kubeSubnet)
+		errKube := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: subnet.IdentifierID.Subnetwork}, kubeSubnet)
 		assert.NoError(t, errKube)
 		assert.Equal(t, newRegion, *kubeSubnet.Spec.ForProvider.Region)
 		assert.Equal(t, newIPCIDR, *kubeSubnet.Spec.ForProvider.IPCidrRange)
@@ -272,7 +266,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 			IPCIDRRange: &newIPCIDR,
 		}
 		ctx.Set(context.RequestKey, updReq)
-		subnet := &resource.Subnetwork{}
+		subnet := &network.Subnetwork{}
 		err := suc.Update(ctx, subnet)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})

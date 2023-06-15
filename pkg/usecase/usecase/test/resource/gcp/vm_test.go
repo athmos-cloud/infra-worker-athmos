@@ -6,8 +6,9 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -45,7 +46,7 @@ func initVM(t *testing.T) (context.Context, *testResource.TestResource, usecase.
 		Managed:     false,
 	}
 	ctx.Set(context.RequestKey, req)
-	subnet := &resource.Subnetwork{}
+	subnet := &network.Subnetwork{}
 	err := suc.Create(ctx, subnet)
 	require.True(t, err.IsOk())
 	ctx.Set(testResource.SubnetworkIDKey, subnet.IdentifierID)
@@ -69,60 +70,21 @@ func clearVM(ctx context.Context) {
 		}
 	}
 }
-func createVM(t *testing.T, ctx context.Context, vuc usecase.VM) *resource.VM {
-	machineType := "e2-medium"
-	zone := "europe-west9-b"
-	osName := "ubuntu-1804-bionic-v20210223"
-	autoDelete := true
-
-	req := dto.CreateVMRequest{
-		ParentID:       ctx.Value(testResource.SubnetworkIDKey).(identifier.Subnetwork),
-		Name:           "test-vm",
-		AssignPublicIP: true,
-		Zone:           zone,
-		MachineType:    machineType,
-		Auths: []dto.VMAuth{
-			{
-				Username: "admin",
-			}, {
-				Username:     "test",
-				RSAKeyLength: 1024,
-			},
-		},
-		OS: resource.VMOS{
-			ID: osName,
-		},
-		Disks: []resource.VMDisk{
-			{
-				AutoDelete: autoDelete,
-				Mode:       resource.DiskModeReadWrite,
-				Type:       resource.DiskTypeHDD,
-				SizeGib:    10,
-			},
-		},
-		Managed: true,
-	}
-	ctx.Set(context.RequestKey, req)
-	vm := &resource.VM{}
-	err := vuc.Create(ctx, vm)
-	require.Equal(t, errors.Created, err)
-
-	return vm
-}
 
 func Test_vmUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, _, vuc := initVM(t)
+	vm := VMFixture(ctx, t, vuc)
+
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
 		clearVM(ctx)
 	}()
-	t.Run("Create a valid vm", func(t *testing.T) {
+	t.Run("Create a valid vm should succeed", func(t *testing.T) {
 		machineType := "e2-medium"
 		zone := "europe-west9-b"
 		osName := "ubuntu-1804-bionic-v20210223"
 		autoDelete := true
-		vm := createVM(t, ctx, vuc)
 		kubeResource := &v1beta1.Instance{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, kubeResource)
 		require.NoError(t, errk)
@@ -224,7 +186,6 @@ func Test_vmUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a vm with an already existing name should fail", func(t *testing.T) {
-		vm := createVM(t, ctx, vuc)
 		ctx.Set(context.RequestKey, dto.CreateVMRequest{
 			Name: vm.IdentifierName.VM,
 			ParentID: identifier.Subnetwork{
@@ -234,7 +195,7 @@ func Test_vmUseCase_Create(t *testing.T) {
 				Subnetwork: vm.IdentifierID.Subnetwork,
 			},
 		})
-		toCreate := &resource.VM{}
+		toCreate := &instance.VM{}
 		err := vuc.Create(ctx, toCreate)
 		require.Equal(t, errors.Conflict.Code, err.Code)
 	})
@@ -248,11 +209,11 @@ func Test_vmUseCase_Delete(t *testing.T) {
 		clearVM(ctx)
 	}()
 	t.Run("Delete a valid vm should succeed", func(t *testing.T) {
-		vm := createVM(t, ctx, vuc)
+		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.DeleteVMRequest{
 			IdentifierID: vm.IdentifierID,
 		})
-		foundVM := &resource.VM{}
+		foundVM := &instance.VM{}
 		err := vuc.Delete(ctx, foundVM)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
@@ -265,7 +226,7 @@ func Test_vmUseCase_Delete(t *testing.T) {
 				VM:         "this-vm-does-not-exist",
 			},
 		})
-		foundVM := &resource.VM{}
+		foundVM := &instance.VM{}
 		err := vuc.Delete(ctx, foundVM)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -279,11 +240,11 @@ func Test_vmUseCase_Get(t *testing.T) {
 		clearVM(ctx)
 	}()
 	t.Run("Get a valid vm should succeed", func(t *testing.T) {
-		vm := createVM(t, ctx, vuc)
+		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.GetVMRequest{
 			IdentifierID: vm.IdentifierID,
 		})
-		foundVM := &resource.VM{}
+		foundVM := &instance.VM{}
 		err := vuc.Get(ctx, foundVM)
 		vm.Metadata.Tags = map[string]string{}
 		for _, auth := range vm.Auths {
@@ -301,7 +262,7 @@ func Test_vmUseCase_Get(t *testing.T) {
 				VM:         "this-vm-does-not-exist",
 			},
 		})
-		delVM := &resource.VM{}
+		delVM := &instance.VM{}
 		err := vuc.Get(ctx, delVM)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
@@ -316,7 +277,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 	}()
 
 	t.Run("Update an existing vm should succeed", func(t *testing.T) {
-		vm := createVM(t, ctx, vuc)
+		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
 			IdentifierID: vm.IdentifierID,
 			Auths: &[]dto.VMAuth{
@@ -328,7 +289,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 				},
 			},
 		})
-		updatedVM := &resource.VM{}
+		updatedVM := &instance.VM{}
 		err := vuc.Update(ctx, updatedVM)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 		expectedUserList := []string{"admin", "some-new-user"}
@@ -336,7 +297,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 			assert.Contains(t, expectedUserList, auth.Username)
 		}
 	})
-	t.Run("Update a non-existing VM should return not found error", func(t *testing.T) {
+	t.Run("Update a non-existing SqlDB should return not found error", func(t *testing.T) {
 		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
 			IdentifierID: identifier.VM{
 				Provider:   "provider-test",
@@ -345,7 +306,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 				VM:         "this-vm-does-not-exist",
 			},
 		})
-		delVM := &resource.VM{}
+		delVM := &instance.VM{}
 		err := vuc.Update(ctx, delVM)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})

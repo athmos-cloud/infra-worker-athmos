@@ -5,8 +5,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
-	resourceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	resourceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
@@ -53,16 +53,9 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetVMRequest)
-	project, errProject := vuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM},
 	})
 	if !err.IsOk() {
 		return err
@@ -89,7 +82,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 	}
 
 	subnetwork, errNet := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Subnetwork, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Subnetwork},
 	})
 	if !errNet.IsOk() {
 		return errNet
@@ -250,16 +243,9 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteVMRequest)
 	defaults.SetDefaults(&req)
-	project, errProject := vuc.projectRepo.Find(ctx, option.Option{
-		Value: repository.FindProjectByIDRequest{
-			ID: ctx.Value(context.ProjectIDKey).(string),
-		},
-	})
-	if !errProject.IsOk() {
-		return errProject
-	}
+
 	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM, Namespace: project.Namespace},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM},
 	})
 	if !err.IsOk() {
 		return err
