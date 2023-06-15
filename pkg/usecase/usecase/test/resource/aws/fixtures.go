@@ -6,6 +6,8 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	instanceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	networkModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
@@ -33,7 +35,7 @@ func ProviderFixture(ctx context.Context, t *testing.T, puc usecase.Provider) *r
 	return provider
 }
 
-func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *resource.Network {
+func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *networkModel.Network {
 	parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
 	netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 	req := dto.CreateNetworkRequest{
@@ -43,7 +45,7 @@ func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *res
 	}
 	ctx.Set(context.RequestKey, req)
 
-	network := &resource.Network{}
+	network := &networkModel.Network{}
 	err := nuc.Create(ctx, network)
 
 	ctx.Set(testResource.NetworkIDKey, network.IdentifierID)
@@ -52,7 +54,7 @@ func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *res
 	return network
 }
 
-func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork) *resource.Subnetwork {
+func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork) *networkModel.Subnetwork {
 	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
 	subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 	region := "europe-west1"
@@ -66,7 +68,7 @@ func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork
 	}
 	ctx.Set(context.RequestKey, req)
 
-	subnetwork := &resource.Subnetwork{}
+	subnetwork := &networkModel.Subnetwork{}
 	err := suc.Create(ctx, subnetwork)
 	ctx.Set(testResource.SubnetworkIDKey, subnetwork.IdentifierID)
 	require.Equal(t, errors.Created.Code, err.Code)
@@ -74,7 +76,7 @@ func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork
 	return subnetwork
 }
 
-func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *resource.VM {
+func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *instanceModel.VM {
 	machineType := "e2-medium"
 	zone := "europe-west9-b"
 	osName := "ubuntu-1804-bionic-v20210223"
@@ -94,14 +96,14 @@ func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *resource.VM {
 				RSAKeyLength: 1024,
 			},
 		},
-		OS: resource.VMOS{
+		OS: instanceModel.VMOS{
 			ID: osName,
 		},
-		Disks: []resource.VMDisk{
+		Disks: []instanceModel.VMDisk{
 			{
 				AutoDelete: autoDelete,
-				Mode:       resource.DiskModeReadWrite,
-				Type:       resource.DiskTypeHDD,
+				Mode:       instanceModel.DiskModeReadWrite,
+				Type:       instanceModel.DiskTypeHDD,
 				SizeGib:    10,
 			},
 		},
@@ -109,21 +111,21 @@ func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *resource.VM {
 	}
 	ctx.Set(context.RequestKey, req)
 
-	vm := &resource.VM{}
+	vm := &instanceModel.VM{}
 	err := vuc.Create(ctx, vm)
 	require.Equal(t, errors.Created, err)
 
 	return vm
 }
 
-func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *resource.Firewall {
+func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *networkModel.Firewall {
 	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
 	firewallName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 
 	req := dto.CreateFirewallRequest{
 		ParentID: parentID,
 		Name:     firewallName,
-		AllowRules: resource.FirewallRuleList{
+		AllowRules: networkModel.FirewallRuleList{
 			{
 				Protocol: "tcp",
 				Ports:    []string{"80", "443"},
@@ -133,7 +135,7 @@ func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *r
 			//	Ports:    []string{"53"},
 			//},
 		},
-		DenyRules: resource.FirewallRuleList{
+		DenyRules: networkModel.FirewallRuleList{
 			{
 				Protocol: "tcp",
 				Ports:    []string{"65"},
@@ -142,7 +144,7 @@ func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *r
 		Managed: false,
 	}
 	ctx.Set(context.RequestKey, req)
-	firewall := &resource.Firewall{}
+	firewall := &networkModel.Firewall{}
 	err := fuc.Create(ctx, firewall)
 	require.Equal(t, errors.Created.Code, err.Code)
 	return firewall

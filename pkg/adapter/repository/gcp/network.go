@@ -48,7 +48,7 @@ func (gcp *gcpRepository) FindNetwork(ctx context.Context, opt option.Option) (*
 	return mod, errors.OK
 }
 
-func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option) (*networkModels.Collection, errors.Error) {
+func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option) (*networkModels.NetworkCollection, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
 	}
@@ -68,7 +68,7 @@ func (gcp *gcpRepository) FindAllNetworks(ctx context.Context, opt option.Option
 
 }
 
-func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*networkModels.Collection, errors.Error) {
+func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*networkModels.NetworkCollection, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
 	}
@@ -154,7 +154,7 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 			}
 		}
 	}
-	networks := &networkModels.Collection{}
+	networks := &networkModels.NetworkCollection{}
 	for _, network := range *modNetworks {
 		getNested(&network)
 		(*networks)[network.IdentifierName.Network] = network
@@ -310,8 +310,8 @@ func (gcp *gcpRepository) toGCPNetwork(ctx context.Context, network *networkMode
 	}
 }
 
-func (gcp *gcpRepository) toModelNetworkCollection(list *v1beta1.NetworkList) (*networkModels.Collection, errors.Error) {
-	res := networkModels.Collection{}
+func (gcp *gcpRepository) toModelNetworkCollection(list *v1beta1.NetworkList) (*networkModels.NetworkCollection, errors.Error) {
+	res := networkModels.NetworkCollection{}
 	for _, item := range list.Items {
 		network, err := gcp.toModelNetwork(&item)
 		if !err.IsOk() {

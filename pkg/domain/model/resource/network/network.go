@@ -15,4 +15,4 @@ type Network struct {
 	SqlDbs         instance.SqlDBCollection `json:"sqlDbs,omitempty"`
 }
 
-type Collection map[string]Network
+type NetworkCollection map[string]Network

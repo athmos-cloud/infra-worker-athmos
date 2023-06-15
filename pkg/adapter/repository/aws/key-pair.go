@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
-	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/samber/lo"
@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (aws *awsRepository) _createKeyPair(ctx context.Context, vm *model.VM) errors.Error {
+func (aws *awsRepository) _createKeyPair(ctx context.Context, vm *instance.VM) errors.Error {
 	awsKeyPair, keyErr := aws._toAwsKeyPair(ctx, vm)
 	if !keyErr.IsOk() {
 		return keyErr
@@ -32,7 +32,7 @@ func (aws *awsRepository) _createKeyPair(ctx context.Context, vm *model.VM) erro
 func (aws *awsRepository) _getKeyPair(ctx context.Context, vm *v1beta1.Instance) (*v1beta1.KeyPair, errors.Error) {
 	awsKeyPair := &v1beta1.KeyPair{}
 	name := fmt.Sprintf("%s-keypair", vm.Name)
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: name, Namespace: vm.Namespace}, awsKeyPair); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: name}, awsKeyPair); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, errors.NotFound.WithMessage(fmt.Sprintf(
 				"key pair %s not found in namespace %s",
@@ -48,7 +48,7 @@ func (aws *awsRepository) _getKeyPair(ctx context.Context, vm *v1beta1.Instance)
 	return awsKeyPair, errors.OK
 }
 
-func (aws *awsRepository) _updateKeyPair(ctx context.Context, vm *model.VM) errors.Error {
+func (aws *awsRepository) _updateKeyPair(ctx context.Context, vm *instance.VM) errors.Error {
 	awsKeyPair, keyErr := aws._toAwsKeyPair(ctx, vm)
 	if !keyErr.IsOk() {
 		return keyErr
@@ -63,7 +63,7 @@ func (aws *awsRepository) _updateKeyPair(ctx context.Context, vm *model.VM) erro
 	return errors.NoContent
 }
 
-func (aws *awsRepository) _deleteKeyPair(ctx context.Context, vm *model.VM) errors.Error {
+func (aws *awsRepository) _deleteKeyPair(ctx context.Context, vm *instance.VM) errors.Error {
 	awsKeyPair, keyPairErr := aws._toAwsKeyPair(ctx, vm)
 	if !keyPairErr.IsOk() {
 		return keyPairErr
@@ -85,7 +85,7 @@ func (aws *awsRepository) _deleteKeyPair(ctx context.Context, vm *model.VM) erro
 	return errors.NoContent
 }
 
-func (aws *awsRepository) _toAwsKeyPair(ctx context.Context, vm *model.VM) (*v1beta1.KeyPair, errors.Error) {
+func (aws *awsRepository) _toAwsKeyPair(ctx context.Context, vm *instance.VM) (*v1beta1.KeyPair, errors.Error) {
 	if len(vm.Auths) == 0 {
 		return &v1beta1.KeyPair{}, errors.BadRequest.WithMessage("Missing SSH key pair")
 	}
@@ -101,7 +101,6 @@ func (aws *awsRepository) _toAwsKeyPair(ctx context.Context, vm *model.VM) (*v1b
 	return &v1beta1.KeyPair{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-keypair", vm.IdentifierID.VM),
-			Namespace:   vm.Metadata.Namespace,
 			Labels:      keyPairLabels,
 			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.Network),
 		},

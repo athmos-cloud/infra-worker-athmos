@@ -10,14 +10,14 @@ import (
 
 type NetworkChannel struct {
 	WaitGroup    *sync.WaitGroup
-	Channel      chan *network.Collection
+	Channel      chan *network.NetworkCollection
 	ErrorChannel chan errors.Error
 }
 
 type Network interface {
 	FindNetwork(context.Context, option.Option) (*network.Network, errors.Error)
-	FindAllNetworks(context.Context, option.Option) (*network.Collection, errors.Error)
-	FindAllRecursiveNetworks(context.Context, option.Option, *NetworkChannel) (*network.Collection, errors.Error)
+	FindAllNetworks(context.Context, option.Option) (*network.NetworkCollection, errors.Error)
+	FindAllRecursiveNetworks(context.Context, option.Option, *NetworkChannel) (*network.NetworkCollection, errors.Error)
 	CreateNetwork(context.Context, *network.Network) errors.Error
 	UpdateNetwork(context.Context, *network.Network) errors.Error
 	DeleteNetwork(context.Context, *network.Network) errors.Error

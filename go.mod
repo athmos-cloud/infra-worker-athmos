@@ -18,6 +18,7 @@ require (
 	github.com/spf13/viper v1.8.1
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.2
+	github.com/upbound/provider-aws v0.35.0
 	github.com/upbound/provider-gcp v0.31.0
 	go.mongodb.org/mongo-driver v1.11.4
 	golang.org/x/crypto v0.7.0
@@ -121,7 +122,6 @@ require (
 	github.com/tmccombs/hcl2json v0.3.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
-	github.com/upbound/provider-aws v0.35.0 // indirect
 	github.com/upbound/upjet v0.9.0-rc.0.0.20230502154751-645d7260d814 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect

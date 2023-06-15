@@ -3,7 +3,7 @@ package aws
 import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -16,17 +16,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (aws *awsRepository) FindFirewall(ctx context.Context, opt option.Option) (*resource.Firewall, errors.Error) {
+func (aws *awsRepository) FindFirewall(ctx context.Context, opt option.Option) (*network.Firewall, errors.Error) {
 	if !opt.SetType(reflect.TypeOf(resourceRepo.FindResourceOption{}).String()).Validate() {
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	awsFirewall := &v1beta1.Firewall{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, awsFirewall); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, awsFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", req.Name, req.Namespace))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", req.Name))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get firewall %s in namespace %s", req.Name, req.Namespace))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get firewall %s", req.Name))
 	}
 	mod, err := aws.toModelFirewall(awsFirewall)
 	if !err.IsOk() {
@@ -35,10 +35,10 @@ func (aws *awsRepository) FindFirewall(ctx context.Context, opt option.Option) (
 	return mod, errors.OK
 }
 
-func (aws *awsRepository) FindAllFirewalls(ctx context.Context, opt option.Option) (*resource.FirewallCollection, errors.Error) {
+func (aws *awsRepository) FindAllFirewalls(ctx context.Context, opt option.Option) (*network.FirewallCollection, errors.Error) {
 	//TODO implement me
 	//panic("implement me")
-	return &resource.FirewallCollection{}, errors.OK
+	return &network.FirewallCollection{}, errors.OK
 }
 
 func (aws *awsRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option, ch *resourceRepo.FirewallChannel) {
@@ -52,7 +52,7 @@ func (aws *awsRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, gcpFirewallList, listOpt); err != nil {
-		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list firewalls in namespace %s", req.Namespace))
+		ch.ErrorChannel <- errors.KubernetesError.WithMessage("unable to list firewalls in namespace")
 		return
 	}
 	if firewalls, err := aws.toModelFirewallCollection(gcpFirewallList); !err.IsOk() {
@@ -62,25 +62,25 @@ func (aws *awsRepository) FindAllRecursiveFirewalls(ctx context.Context, opt opt
 	}
 }
 
-func (aws *awsRepository) CreateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
+func (aws *awsRepository) CreateFirewall(ctx context.Context, firewall *network.Firewall) errors.Error {
 	if exists, err := aws.FirewallExists(ctx, firewall); !err.IsOk() {
 		return err
 	} else if exists {
-		return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+		return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists", firewall.IdentifierName.Firewall))
 	}
 	gcpFirewall := aws.toAWSFirewall(ctx, firewall)
 	if err := kubernetes.Client().Client.Create(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+			return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists", firewall.IdentifierName.Firewall))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s", firewall.IdentifierName.Firewall))
 	}
 	return errors.Created
 }
 
-func (aws *awsRepository) UpdateFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
+func (aws *awsRepository) UpdateFirewall(ctx context.Context, firewall *network.Firewall) errors.Error {
 	existingFirewall := &v1beta1.Firewall{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall, Namespace: firewall.Metadata.Namespace}, existingFirewall); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall}, existingFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", firewall.IdentifierID.Firewall))
 		}
@@ -91,25 +91,25 @@ func (aws *awsRepository) UpdateFirewall(ctx context.Context, firewall *resource
 	existingFirewall.Labels = gcpFirewall.Labels
 	if err := kubernetes.Client().Client.Update(ctx, existingFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", firewall.IdentifierName.Firewall))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update firewall %s in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update firewall %s", firewall.IdentifierName.Firewall))
 	}
 	return errors.NoContent
 }
 
-func (aws *awsRepository) DeleteFirewall(ctx context.Context, firewall *resource.Firewall) errors.Error {
+func (aws *awsRepository) DeleteFirewall(ctx context.Context, firewall *network.Firewall) errors.Error {
 	gcpFirewall := aws.toAWSFirewall(ctx, firewall)
 	if err := kubernetes.Client().Client.Delete(ctx, gcpFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", firewall.IdentifierName.Firewall))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete firewall %s in namespace %s", firewall.IdentifierName.Firewall, firewall.Metadata.Namespace))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete firewall %s", firewall.IdentifierName.Firewall))
 	}
 	return errors.NoContent
 }
 
-func (aws *awsRepository) FirewallExists(ctx context.Context, firewall *resource.Firewall) (bool, errors.Error) {
+func (aws *awsRepository) FirewallExists(ctx context.Context, firewall *network.Firewall) (bool, errors.Error) {
 	/*	searchLabels := map[string]string{
 			model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
 			identifier.ProviderIdentifierKey: firewall.IdentifierID.Provider,
@@ -127,7 +127,7 @@ func (aws *awsRepository) FirewallExists(ctx context.Context, firewall *resource
 	return false, errors.OK
 }
 
-func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource.Firewall, errors.Error) {
+func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*network.Firewall, errors.Error) {
 	/*	id := identifier.Firewall{}
 		name := identifier.Firewall{}
 		if err := id.IDFromLabels(firewall.Labels); !err.IsOk() {
@@ -136,7 +136,7 @@ func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 		if err := name.NameFromLabels(firewall.Labels); !err.IsOk() {
 			return nil, err
 		}
-		allow := resource.FirewallRuleList{}
+		allow := network.FirewallRuleList{}
 		mapAllow := make(map[string][]string)
 		for _, a := range firewall.Spec.ForProvider.Allow {
 			var portsA []string
@@ -146,14 +146,14 @@ func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 			mapAllow[*a.Protocol] = append(mapAllow[*a.Protocol], portsA...)
 		}
 		for k, v := range mapAllow {
-			rule := resource.FirewallRule{
+			rule := network.FirewallRule{
 				Protocol: k,
 				Ports:    v,
 			}
 			allow = append(allow, rule)
 		}
 
-		deny := resource.FirewallRuleList{}
+		deny := network.FirewallRuleList{}
 		mapDeny := make(map[string][]string)
 		for _, d := range firewall.Spec.ForProvider.Deny {
 			var portsD []string
@@ -163,14 +163,14 @@ func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 			mapDeny[*d.Protocol] = append(mapDeny[*d.Protocol], portsD...)
 		}
 		for k, v := range mapDeny {
-			rule := resource.FirewallRule{
+			rule := network.FirewallRule{
 				Protocol: k,
 				Ports:    v,
 			}
 			deny = append(deny, rule)
 		}
 
-		return &resource.Firewall{
+		return &network.Firewall{
 			Metadata: metadata.Metadata{
 				Managed:   firewall.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 				Namespace: firewall.ObjectMeta.Namespace,
@@ -180,10 +180,10 @@ func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall) (*resource
 			Allow:          allow,
 			Deny:           deny,
 		}, errors.OK*/
-	return &resource.Firewall{}, errors.OK
+	return &network.Firewall{}, errors.OK
 }
 
-func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *resource.Firewall) *v1beta1.Firewall {
+func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *network.Firewall) *v1beta1.Firewall {
 	/*	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToIDLabels(), firewall.IdentifierName.ToNameLabels())
 		var allow []v1beta1.AllowParameters
 		for _, a := range firewall.Allow {
@@ -224,8 +224,8 @@ func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *resource.
 
 }
 
-func (aws *awsRepository) toModelFirewallCollection(firewallList *v1beta1.FirewallList) (*resource.FirewallCollection, errors.Error) {
-	items := resource.FirewallCollection{}
+func (aws *awsRepository) toModelFirewallCollection(firewallList *v1beta1.FirewallList) (*network.FirewallCollection, errors.Error) {
+	items := network.FirewallCollection{}
 	for _, item := range firewallList.Items {
 		firewall, err := aws.toModelFirewall(&item)
 		if !err.IsOk() {

@@ -9,6 +9,8 @@ import (
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	resourceInstance "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	resourceNetwork "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -297,42 +299,42 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-1",
 		})
-		net1 := &resource.Network{}
+		net1 := &resourceNetwork.Network{}
 		err := nuc.Create(ctx, net1)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-2",
 		})
-		net2 := &resource.Network{}
+		net2 := &resourceNetwork.Network{}
 		err = nuc.Create(ctx, net2)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-11",
 		})
-		subnet11 := &resource.Subnetwork{}
+		subnet11 := &resourceNetwork.Subnetwork{}
 		err = suc.Create(ctx, subnet11)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-12",
 		})
-		subnet12 := &resource.Subnetwork{}
+		subnet12 := &resourceNetwork.Subnetwork{}
 		err = suc.Create(ctx, subnet12)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateFirewallRequest{
 			ParentID: net2.IdentifierID,
 			Name:     "test-firewall-21",
 		})
-		fw21 := &resource.Firewall{}
+		fw21 := &resourceNetwork.Firewall{}
 		err = fuc.Create(ctx, fw21)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateVMRequest{
 			ParentID: subnet11.IdentifierID,
 			Name:     "test-vm-111",
 		})
-		vm111 := &resource.VM{}
+		vm111 := &resourceInstance.VM{}
 		err = vuc.Create(ctx, vm111)
 		require.True(t, err.IsOk())
 

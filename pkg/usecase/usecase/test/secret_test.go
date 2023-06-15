@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"testing"
 )
 
@@ -45,7 +46,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 			ForProvider: domainTypes.ProviderGCP,
 			Name:        secretName,
 			Description: "A test secret",
-			Value:       []byte(secretData),
+			Value:       secretData,
 		})
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
@@ -75,7 +76,7 @@ func Test_secretUseCase_Create(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: "A test secret",
-			Value:       []byte(secretData),
+			Value:       secretData,
 		})
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
@@ -105,7 +106,7 @@ func Test_secretUseCase_Delete(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: "A test secret",
-			Value:       []byte("test"),
+			Value:       "test",
 		})
 		errCreate := su.Create(ctx, secret)
 		assert.True(t, errCreate.IsOk())
@@ -156,7 +157,7 @@ func Test_secretUseCase_Get(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        secretName,
 			Description: description,
-			Value:       []byte(secretData),
+			Value:       secretData,
 		})
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
@@ -214,7 +215,7 @@ func Test_secretUseCase_List(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
 			Description: "A test secret 1",
-			Value:       []byte("test1"),
+			Value:       "test1",
 		})
 		secret1 := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret1)
@@ -225,7 +226,7 @@ func Test_secretUseCase_List(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-2",
 			Description: "A test secret 2",
-			Value:       []byte("test2"),
+			Value:       "test2",
 		})
 		secret2 := &secretModel.Secret{}
 		errCreate2 := su.Create(ctx, secret2)
@@ -237,7 +238,7 @@ func Test_secretUseCase_List(t *testing.T) {
 		assert.True(t, errList.IsOk())
 		assert.Equal(t, 2, len(*secrets))
 		for _, s := range *secrets {
-			assert.True(t, s.Equals(*secret1) || s.Equals(*secret2))
+			assert.True(t, reflect.DeepEqual(s, *secret1) || reflect.DeepEqual(s, *secret2))
 		}
 
 	})
@@ -265,7 +266,7 @@ func Test_secretUseCase_Update(t *testing.T) {
 			ProjectID:   curProject.ID.Hex(),
 			Name:        "test-secret-1",
 			Description: "A test secret 1",
-			Value:       []byte("test1"),
+			Value:       "test1",
 		})
 		secret := &secretModel.Secret{}
 		errCreate := su.Create(ctx, secret)
