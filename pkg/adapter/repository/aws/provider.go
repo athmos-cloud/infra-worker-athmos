@@ -72,8 +72,8 @@ func (aws *awsRepository) CreateProvider(ctx context.Context, provider *resource
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", provider.IdentifierName.Provider))
 	}
-	gcpProvider := aws.toAWSProvider(ctx, provider)
-	if err := kubernetes.Client().Client.Create(ctx, gcpProvider); err != nil {
+	awsProvider := aws.toAWSProvider(ctx, provider)
+	if err := kubernetes.Client().Client.Create(ctx, awsProvider); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("provider %s already exists", provider.IdentifierID.Provider))
 		}
@@ -92,9 +92,9 @@ func (aws *awsRepository) UpdateProvider(ctx context.Context, provider *resource
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", provider.IdentifierID.Provider))
 	}
 
-	gcpProvider := aws.toAWSProvider(ctx, provider)
-	existingProvider.Spec = gcpProvider.Spec
-	existingProvider.Labels = gcpProvider.Labels
+	awsProvider := aws.toAWSProvider(ctx, provider)
+	existingProvider.Spec = awsProvider.Spec
+	existingProvider.Labels = awsProvider.Labels
 
 	if err := kubernetes.Client().Client.Update(ctx, existingProvider); err != nil {
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
@@ -122,12 +122,12 @@ func (aws *awsRepository) DeleteProviderCascade(ctx context.Context, provider *r
 
 func (aws *awsRepository) ProviderExists(ctx context.Context, name identifier.Provider) (bool, errors.Error) {
 	providerLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, name.ToNameLabels())
-	gcpProviders := &v1beta1.ProviderConfigList{}
+	awsProviders := &v1beta1.ProviderConfigList{}
 
-	if err := kubernetes.Client().Client.List(ctx, gcpProviders, client.MatchingLabels(providerLabels)); err != nil {
+	if err := kubernetes.Client().Client.List(ctx, awsProviders, client.MatchingLabels(providerLabels)); err != nil {
 		return false, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list providers"))
 	}
-	return len(gcpProviders.Items) > 0, errors.OK
+	return len(awsProviders.Items) > 0, errors.OK
 }
 
 func (aws *awsRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*resource.Provider, errors.Error) {
