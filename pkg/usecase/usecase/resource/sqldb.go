@@ -50,10 +50,10 @@ func (suc *sqlDBUseCase) Get(ctx context.Context, db *instance.SqlDB) errors.Err
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s db not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetSqlDBRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 
 	foundDB, err := repo.FindSqlDB(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.SqlDB},
+		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
 	})
 	if !err.IsOk() {
 		return err

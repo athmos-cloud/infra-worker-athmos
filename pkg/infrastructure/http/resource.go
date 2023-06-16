@@ -20,6 +20,12 @@ func (server *Server) WithResourceController() *Server {
 		c.Set(context.RequestKey, dto.GetProviderStackRequest{ProviderID: c.Param("providerId")})
 		server.ResourceController.ListResources(c)
 	})
-
+	server.Engine.GET("/resources/:projectId/:providerType/:resourceType/:resourceId", func(c *gin.Context) {
+		c.Set(context.ProjectIDKey, c.Param("projectId"))
+		c.Set(context.ProviderTypeKey, c.Param("providerType"))
+		c.Set(context.ResourceTypeKey, c.Param("resourceType"))
+		c.Set(context.RequestKey, dto.GetResourceRequest{Identifier: c.Param("resourceId")})
+		server.ResourceController.GetResource(c)
+	})
 	return server
 }

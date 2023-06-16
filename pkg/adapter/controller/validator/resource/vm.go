@@ -17,9 +17,9 @@ func GetVM(ctx context.Context) errors.Error {
 	if errMarshall != nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
 	}
-	dtoRequest := dto.GetVMRequest{}
+	dtoRequest := dto.GetResourceRequest{}
 	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.GetVMRequest{}, req))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.GetResourceRequest{}, req))
 	}
 	ctx.Set(context.RequestKey, dtoRequest)
 

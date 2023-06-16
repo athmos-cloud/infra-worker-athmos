@@ -5,10 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 )
 
-type GetVMRequest struct {
-	IdentifierID identifier.VM `json:"identifier_id"`
-}
-
 type GetVMResponse struct {
 	ProjectID string      `json:"project_id"`
 	Payload   instance.VM `json:"payload"`

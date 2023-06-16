@@ -14,19 +14,21 @@ const (
 	SubnetworkResource Resource = "subnetwork"
 	FirewallResource   Resource = "firewall"
 	VMResource         Resource = "vm"
+	SqlDBResource      Resource = "sqldb"
 )
 
-var ResourcesMapping = map[string]Resource{
+var resourcesMapping = map[string]Resource{
 	"provider":   ProviderResource,
 	"vpc":        VPCResource,
 	"network":    NetworkResource,
 	"subnetwork": SubnetworkResource,
 	"firewall":   FirewallResource,
 	"vm":         VMResource,
+	"sqldb":      SqlDBResource,
 }
 
-func StringToResource(s string) (Resource, errors.Error) {
-	if val, ok := ResourcesMapping[s]; ok {
+func ResourceFromString(s string) (Resource, errors.Error) {
+	if val, ok := resourcesMapping[s]; ok {
 		return val, errors.OK
 	}
 	return "", errors.BadRequest.WithMessage(fmt.Sprintf("resource %s is not supported", s))

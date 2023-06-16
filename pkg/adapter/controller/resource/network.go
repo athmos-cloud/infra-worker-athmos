@@ -29,11 +29,11 @@ func (nc *networkController) GetNetwork(ctx context.Context) {
 	if err := resourceValidator.GetNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	}
-	network := &network.Network{}
-	if err := nc.networkUseCase.Get(ctx, network); !err.IsOk() {
+	net := &network.Network{}
+	if err := nc.networkUseCase.Get(ctx, net); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
-		nc.networkOutput.Render(ctx, network)
+		nc.networkOutput.Render(ctx, net)
 	}
 }
 
@@ -41,11 +41,11 @@ func (nc *networkController) CreateNetwork(ctx context.Context) {
 	if err := resourceValidator.CreateNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	}
-	network := &network.Network{}
-	if err := nc.networkUseCase.Create(ctx, network); !err.IsOk() {
+	net := &network.Network{}
+	if err := nc.networkUseCase.Create(ctx, net); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
 	} else {
-		nc.networkOutput.RenderCreate(ctx, network)
+		nc.networkOutput.RenderCreate(ctx, net)
 	}
 }
 

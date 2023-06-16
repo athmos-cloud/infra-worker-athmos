@@ -5,10 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 )
 
-type GetSqlDBRequest struct {
-	IdentifierID identifier.SqlDB `json:"identifier_id"`
-}
-
 type GetSqlDBResponse struct {
 	ProjectID string         `json:"projectID"`
 	Payload   instance.SqlDB `json:"payload"`

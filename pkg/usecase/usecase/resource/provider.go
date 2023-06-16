@@ -89,10 +89,10 @@ func (puc *providerUseCase) Get(ctx context.Context, provider *resourceModel.Pro
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetProviderRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 	defaults.SetDefaults(&req)
 
-	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider}})
+	foundProvider, err := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.Identifier}})
 	if !err.IsOk() {
 		return err
 	}
