@@ -2,7 +2,6 @@ package rabbitmq
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 )
 
 const (
@@ -23,11 +22,11 @@ type messageReceived struct {
 }
 
 type dataMessage struct {
-	Verb         Verb           `json:"verb"`
-	ProjectID    string         `json:"project_id"`
-	ProviderType types.Provider `json:"provider_type"`
-	ResourceType types.Resource `json:"resource_type"`
-	Payload      any            `json:"payload"`
+	Verb         Verb   `json:"verb"`
+	ProjectID    string `json:"project_id"`
+	ProviderType string `json:"provider_type"`
+	ResourceType string `json:"resource_type"`
+	Payload      any    `json:"payload"`
 }
 type eventType string
 
