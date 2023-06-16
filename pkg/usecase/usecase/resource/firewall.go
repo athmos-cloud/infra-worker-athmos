@@ -50,10 +50,10 @@ func (fuc *firewallUseCase) Get(ctx context.Context, firewall *model.Firewall) e
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s firewall not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetFirewallRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall},
+		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
 	})
 	if !err.IsOk() {
 		return err

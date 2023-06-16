@@ -8,7 +8,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 )
 
-func GetFirewall(ctx context.Context) errors.Error {
+func GetSqlDB(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
@@ -22,10 +22,11 @@ func GetFirewall(ctx context.Context) errors.Error {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.GetResourceRequest{}, req))
 	}
 	ctx.Set(context.RequestKey, dtoRequest)
+
 	return errors.OK
 }
 
-func CreateFirewall(ctx context.Context) errors.Error {
+func CreateSqlDB(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
@@ -34,15 +35,16 @@ func CreateFirewall(ctx context.Context) errors.Error {
 	if errMarshall != nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
 	}
-	dtoRequest := dto.CreateFirewallRequest{}
+	dtoRequest := dto.CreateSqlDBRequest{}
 	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.CreateFirewallRequest{}, req))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.CreateSqlDBRequest{}, req))
 	}
 	ctx.Set(context.RequestKey, dtoRequest)
+
 	return errors.OK
 }
 
-func UpdateFirewall(ctx context.Context) errors.Error {
+func UpdateSqlDB(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
@@ -51,15 +53,16 @@ func UpdateFirewall(ctx context.Context) errors.Error {
 	if errMarshall != nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
 	}
-	dtoRequest := dto.UpdateFirewallRequest{}
+	dtoRequest := dto.UpdateSqlDBRequest{}
 	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.UpdateFirewallRequest{}, req))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.UpdateSqlDBRequest{}, req))
 	}
 	ctx.Set(context.RequestKey, dtoRequest)
+
 	return errors.OK
 }
 
-func DeleteFirewall(ctx context.Context) errors.Error {
+func DeleteSqlDB(ctx context.Context) errors.Error {
 	if _, ok := ctx.Value(context.RequestKey).(map[string]interface{}); !ok {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("expected a map got %v", ctx.Value(context.RequestKey)))
 	}
@@ -68,10 +71,11 @@ func DeleteFirewall(ctx context.Context) errors.Error {
 	if errMarshall != nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("Invalid JSON : %v", req))
 	}
-	dtoRequest := dto.DeleteFirewallRequest{}
+	dtoRequest := dto.DeleteSqlDBRequest{}
 	if errUnmarshall := json.Unmarshal(jsonbody, &dtoRequest); errUnmarshall != nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.DeleteFirewallRequest{}, req))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("Expected request %+v, got %v", dto.DeleteSqlDBRequest{}, req))
 	}
 	ctx.Set(context.RequestKey, dtoRequest)
+
 	return errors.OK
 }

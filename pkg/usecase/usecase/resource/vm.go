@@ -52,10 +52,10 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetVMRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 
 	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM},
+		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
 	})
 	if !err.IsOk() {
 		return err

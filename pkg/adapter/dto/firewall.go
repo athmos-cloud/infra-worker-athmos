@@ -5,10 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 )
 
-type GetFirewallRequest struct {
-	IdentifierID identifier.Firewall `json:"identifier_id"`
-}
-
 type GetFirewallResponse struct {
 	ProjectID string           `json:"project_id"`
 	Payload   network.Firewall `json:"payload"`

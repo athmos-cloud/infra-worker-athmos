@@ -50,11 +50,11 @@ func (suc *subnetworkUseCase) Get(ctx context.Context, subnetwork *model.Subnetw
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s subnetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetSubnetworkRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 	defaults.SetDefaults(&req)
 
 	findSubnetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork},
+		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
 	})
 	if !err.IsOk() {
 		return err

@@ -5,10 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 )
 
-type GetProviderRequest struct {
-	IdentifierID identifier.Provider `json:"identifier_id"`
-}
-
 type GetProviderResponse struct {
 	ProjectID string            `json:"project_id"`
 	Payload   resource.Provider `json:"payload"`

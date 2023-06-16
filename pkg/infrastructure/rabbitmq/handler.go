@@ -3,7 +3,10 @@ package rabbitmq
 import (
 	"encoding/json"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
+	"github.com/gin-gonic/gin"
 	"github.com/streadway/amqp"
 )
 
@@ -16,9 +19,24 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	if err != nil {
 		logger.Error.Printf("Wrong message format: %s", err)
 	}
+	errorType := func(err errors.Error) {
+		ctx.Set(context.ResponseCodeKey, 400)
+		ctx.Set(context.ResponseKey, gin.H{"error": err.ToString()})
+		rq.handleResponse(ctx, Error)
+	}
+	providerType, errProvider := types.ProviderFromString(message.Data.ProviderType)
+	if !errProvider.IsOk() {
+		errorType(errProvider)
+		return
+	}
+	resourceType, errResource := types.ResourceFromString(message.Data.ResourceType)
+	if !errResource.IsOk() {
+		errorType(errResource)
+		return
+	}
 	ctx.Set(context.ProjectIDKey, message.Data.ProjectID)
-	ctx.Set(context.ProviderTypeKey, message.Data.ProviderType)
-	ctx.Set(context.ResourceTypeKey, message.Data.ResourceType)
+	ctx.Set(context.ProviderTypeKey, providerType)
+	ctx.Set(context.ResourceTypeKey, resourceType)
 	ctx.Set(context.RequestKey, message.Data.Payload)
 
 	switch message.Data.Verb {

@@ -5,10 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 )
 
-type GetSubnetworkRequest struct {
-	IdentifierID identifier.Subnetwork `json:"identifier_id"`
-}
-
 type GetSubnetworkResponse struct {
 	ProjectID string             `json:"project_id"`
 	Payload   network.Subnetwork `json:"payload"`

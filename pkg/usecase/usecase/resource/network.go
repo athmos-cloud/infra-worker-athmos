@@ -50,10 +50,10 @@ func (nuc *networkUseCase) Get(ctx context.Context, network *model.Network) erro
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
-	req := ctx.Value(context.RequestKey).(dto.GetNetworkRequest)
+	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 
 	foundNetwork, err := repo.FindNetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network},
+		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
 	})
 	if !err.IsOk() {
 		return err
