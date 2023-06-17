@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	managedByLabel           = "app.kubernetes.io/managed-by"
-	managedByValue           = "athmos"
+	ManagedByLabel           = "app.kubernetes.io/managed-by"
+	ManagedByValue           = "athmos"
 	VMSSHKeysSecretNamespace = "vm-ssh-keys-secret-namespace"
 	VMSSHKeysNamePrefix      = "vm-ssh-keys_"
 	VMSSHKeysNameSeparator   = "_"
@@ -16,7 +16,7 @@ const (
 
 func GetBaseLabels(projectID string) map[string]string {
 	return map[string]string{
-		managedByLabel:          managedByValue,
+		ManagedByLabel:          ManagedByValue,
 		model.ProjectIDLabelKey: projectID,
 	}
 }
