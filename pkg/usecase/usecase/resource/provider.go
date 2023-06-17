@@ -181,9 +181,14 @@ func (puc *providerUseCase) Delete(ctx context.Context, provider *resourceModel.
 	if !errFind.IsOk() {
 		return errFind
 	}
-	errDelete := repo.DeleteProvider(ctx, provider)
-	if !errDelete.IsOk() {
-		return errDelete
+	if req.Cascade {
+		if errDelete := repo.DeleteProviderCascade(ctx, provider); !errDelete.IsOk() {
+			return errDelete
+		}
+	} else {
+		if errDelete := repo.DeleteProvider(ctx, provider); !errDelete.IsOk() {
+			return errDelete
+		}
 	}
 
 	return errors.NoContent

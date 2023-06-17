@@ -213,12 +213,26 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *networkMod
 	if subnets, err := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
 		return err
 	} else if len(*subnets) > 0 {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("can't delete networkModels %s without cascade option", network.IdentifierName.Network))
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s still has subnetworks", network.IdentifierID.Network))
+	}
+	if dbs, err := gcp.FindAllSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else if len(*dbs) > 0 {
+		return errors.BadRequest.WithMessage(fmt.Sprintf("network %s still has dbs", network.IdentifierID.Network))
+	}
+	firewalls, err := gcp.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	if !err.IsOk() {
+		return err
+	}
+	for _, firewall := range *firewalls {
+		if errFirewall := gcp.DeleteFirewall(ctx, &firewall); !errFirewall.IsOk() {
+			return errFirewall
+		}
 	}
 	gcpSubnetwork := gcp.toGCPNetwork(ctx, network)
-	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
-		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", network.IdentifierName.Network))
+	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); errSubnet != nil {
+		if k8serrors.IsNotFound(errSubnet) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s", network.IdentifierName.Network))
 	}
@@ -229,12 +243,15 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
 	subnets, subnetsErr := gcp.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	firewalls, firewallsErr := gcp.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
-
+	sqldbs, sqldbsErr := gcp.FindAllSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	if !subnetsErr.IsOk() {
 		return subnetsErr
 	}
 	if !firewallsErr.IsOk() {
 		return firewallsErr
+	}
+	if !sqldbsErr.IsOk() {
+		return sqldbsErr
 	}
 
 	for _, subnet := range *subnets {
@@ -242,10 +259,14 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *net
 			return subnetErr
 		}
 	}
-
 	for _, firewall := range *firewalls {
 		if firewallErr := gcp.DeleteFirewall(ctx, &firewall); !firewallErr.IsOk() {
 			return firewallErr
+		}
+	}
+	for _, sqlDB := range *sqldbs {
+		if sqlDBErr := gcp.DeleteSqlDB(ctx, &sqlDB); !sqlDBErr.IsOk() {
+			return sqlDBErr
 		}
 	}
 	return gcp.DeleteNetwork(ctx, network)
