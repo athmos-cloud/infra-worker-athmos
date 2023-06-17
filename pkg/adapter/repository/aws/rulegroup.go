@@ -31,15 +31,14 @@ func (aws *awsRepository) _createRuleGroup(ctx context.Context, firewall *model.
 	return errors.Created
 }
 
-func (aws *awsRepository) _getRuleGroup(ctx context.Context, firewall *model.Firewall) (*v1beta1.RuleGroup, errors.Error) {
-	name := fmt.Sprintf("%s-rule-group", firewall.IdentifierID.Firewall)
+func (aws *awsRepository) _getRuleGroup(ctx context.Context, ruleGroupName *string) (*v1beta1.RuleGroup, errors.Error) {
 
 	awsRuleGroup := &v1beta1.RuleGroup{}
-	if err := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: name}, awsRuleGroup); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, client.ObjectKey{Name: *ruleGroupName}, awsRuleGroup); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("rule group %s not found", name))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("rule group %s not found", *ruleGroupName))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get rule group %s", name))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get rule group %s", *ruleGroupName))
 	}
 	return awsRuleGroup, errors.OK
 }
@@ -84,12 +83,12 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 	allowAction := "aws:pass"
 	denyAction := "aws:drop"
 
-	allowParameters, errA := aws._toAwsRuleList(firewall.Allow)
+	allowParameters, errA := _toAwsMatchAttributesParameters(firewall.Allow)
 	if !errA.IsOk() {
 		return nil, errA
 	}
 
-	denyParameters, errD := aws._toAwsRuleList(firewall.Deny)
+	denyParameters, errD := _toAwsMatchAttributesParameters(firewall.Deny)
 	if !errD.IsOk() {
 		return nil, errD
 	}
@@ -140,27 +139,116 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 	}, errors.OK
 }
 
-func (aws *awsRepository) _toAwsRuleList(ruleList model.FirewallRuleList) (*[]v1beta1.MatchAttributesParameters, errors.Error) {
-	var res []v1beta1.MatchAttributesParameters
-	toFloatTable := func(entry []string) ([]*float64, errors.Error) {
-		var res []*float64
-		for _, port := range entry {
-			porti, err := strconv.Atoi(port)
-			if err != nil {
-				return nil, errors.BadRequest.WithMessage(fmt.Sprintf("%s is not a valid port", port))
-			}
-			portf := float64(porti)
-			res = append(res, &portf)
-		}
-		return res, errors.OK
+func (aws *awsRepository) _toFirewallRuleList(ruleGroup *v1beta1.RuleGroup) (*model.FirewallRuleList, *model.FirewallRuleList, errors.Error) {
+	ruleDefinitions, errRD := _extractRuleDefinitionParametersArray(ruleGroup)
+	if !errRD.IsOk() {
+		return nil, nil, errRD
 	}
+
+	return _toAllowAndDenyRuleList(ruleDefinitions)
+}
+
+func _extractRuleDefinitionParametersArray(ruleGroup *v1beta1.RuleGroup) (*[]v1beta1.RuleDefinitionParameters, errors.Error) {
+	internalError := errors.InternalError.WithMessage("Invalid rule group parameters received from kubernetes.")
+
+	params := (*ruleGroup).Spec.ForProvider.RuleGroup
+	if len(params) == 0 {
+		return nil, internalError
+	}
+
+	sources := params[0].RulesSource
+	if len(sources) == 0 {
+		return nil, internalError
+	}
+
+	statelessRCA := sources[0].StatelessRulesAndCustomActions
+	if len(statelessRCA) == 0 {
+		return nil, internalError
+	}
+
+	stateless := statelessRCA[0].StatelessRule
+	if len(stateless) == 0 {
+		return nil, internalError
+	}
+
+	ruleDefinitions := stateless[0].RuleDefinition
+	if len(ruleDefinitions) != 2 {
+		return nil, internalError
+	}
+
+	return &ruleDefinitions, errors.OK
+}
+
+func _toAllowAndDenyRuleList(ruleDefinitions *[]v1beta1.RuleDefinitionParameters) (*model.FirewallRuleList, *model.FirewallRuleList, errors.Error) {
+	var allow model.FirewallRuleList
+	var deny model.FirewallRuleList
+
+	for _, ruleDefinition := range *ruleDefinitions {
+		if len(ruleDefinition.Actions) == 0 {
+			return nil, nil, errors.InternalError.WithMessage("Invalid rule definition received from kubernetes.")
+		}
+
+		action := *ruleDefinition.Actions[0]
+
+		switch action {
+		case "aws:pass":
+			a, errA := _toModelRuleLists(&ruleDefinition.MatchAttributes)
+			allow = *a
+			if !errA.IsOk() {
+				return nil, nil, errA
+			}
+			break
+		case "aws:drop":
+			d, errD := _toModelRuleLists(&ruleDefinition.MatchAttributes)
+			deny = *d
+			if !errD.IsOk() {
+				return nil, nil, errD
+			}
+			break
+		default:
+			return nil, nil, errors.InternalError.WithMessage("Invalid rule definition received from kubernetes.")
+		}
+	}
+
+	return &allow, &deny, errors.OK
+}
+
+func _toModelRuleLists(awsMatchAttributes *[]v1beta1.MatchAttributesParameters) (*model.FirewallRuleList, errors.Error) {
+	var ruleList model.FirewallRuleList
+
+	for _, match := range *awsMatchAttributes {
+		if len(match.Protocols) == 0 {
+			return nil, errors.InternalError.WithMessage("Invalid port rule received from kubernetes.")
+		}
+		strProtocol, errP := _protocolIANAToString(*match.Protocols[0])
+		if !errP.IsOk() {
+			return nil, errors.InternalError.WithMessage("Invalid port received from kubernetes.")
+		}
+
+		var strPorts []string
+		for _, port := range match.DestinationPort {
+			strPorts = append(strPorts, fmt.Sprintf("%.0f", *port.FromPort))
+		}
+
+		ruleList = append(ruleList, model.FirewallRule{
+			Protocol: strProtocol,
+			Ports:    strPorts,
+		})
+	}
+
+	return &ruleList, errors.OK
+}
+
+func _toAwsMatchAttributesParameters(ruleList model.FirewallRuleList) (*[]v1beta1.MatchAttributesParameters, errors.Error) {
+	var res []v1beta1.MatchAttributesParameters
+
 	for _, rule := range ruleList {
 		protocolf, errP := _protocolIANAFromString(rule.Protocol)
 		if !errP.IsOk() {
 			return nil, errP
 		}
 
-		portsf, errPorts := toFloatTable(rule.Ports)
+		portsf, errPorts := _floatSliceFromStringPorts(rule.Ports)
 		if !errPorts.IsOk() {
 			return nil, errPorts
 		}
@@ -179,6 +267,19 @@ func (aws *awsRepository) _toAwsRuleList(ruleList model.FirewallRuleList) (*[]v1
 		res = append(res, newPort)
 	}
 	return &res, errors.OK
+}
+
+func _floatSliceFromStringPorts(ports []string) ([]*float64, errors.Error) {
+	var res []*float64
+	for _, port := range ports {
+		portI, err := strconv.Atoi(port)
+		if err != nil {
+			return nil, errors.BadRequest.WithMessage(fmt.Sprintf("%s is not a valid port", port))
+		}
+		portF := float64(portI)
+		res = append(res, &portF)
+	}
+	return res, errors.OK
 }
 
 func _protocolIANAFromString(protocol string) (*float64, errors.Error) {
@@ -206,4 +307,24 @@ func _protocolIANAFromString(protocol string) (*float64, errors.Error) {
 		return &protocolf, errors.OK
 	}
 	return nil, errors.InvalidArgument.WithMessage(fmt.Sprintf("protocol %s is not handled", protocol))
+}
+
+func _protocolIANAToString(protocol float64) (string, errors.Error) {
+	switch protocol {
+	case float64(6):
+		return "tcp", errors.OK
+	case float64(17):
+		return "udp", errors.OK
+	case float64(1):
+		return "icmp", errors.OK
+	case float64(50):
+		return "esp", errors.OK
+	case float64(51):
+		return "ah", errors.OK
+	case float64(132):
+		return "sctp", errors.OK
+	case float64(94):
+		return "ipip", errors.OK
+	}
+	return "", errors.InvalidArgument.WithMessage(fmt.Sprintf("protocol %.0f is not handled", protocol))
 }

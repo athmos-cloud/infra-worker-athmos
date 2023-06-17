@@ -15,7 +15,7 @@ import (
 )
 
 func (aws *awsRepository) _createFirewallPolicy(ctx context.Context, firewall *model.Firewall, region *string) errors.Error {
-	awsFirewallPolicy, fpErr := aws._toAWSFirewallPolicy(ctx, firewall)
+	awsFirewallPolicy, fpErr := aws._toAWSFirewallPolicy(ctx, firewall, region)
 	if !fpErr.IsOk() {
 		return fpErr
 	}
@@ -30,8 +30,8 @@ func (aws *awsRepository) _createFirewallPolicy(ctx context.Context, firewall *m
 	return errors.Created
 }
 
-func (aws *awsRepository) _deleteFirewallPolicy(ctx context.Context, firewall *model.Firewall) errors.Error {
-	awsFirewallPolicy, fpErr := aws._toAWSFirewallPolicy(ctx, firewall)
+func (aws *awsRepository) _deleteFirewallPolicy(ctx context.Context, firewall *model.Firewall, region *string) errors.Error {
+	awsFirewallPolicy, fpErr := aws._toAWSFirewallPolicy(ctx, firewall, region)
 	if !fpErr.IsOk() {
 		return fpErr
 	}
@@ -46,7 +46,7 @@ func (aws *awsRepository) _deleteFirewallPolicy(ctx context.Context, firewall *m
 	return errors.NoContent
 }
 
-func (aws *awsRepository) _toAWSFirewallPolicy(ctx context.Context, firewall *model.Firewall) (*v1beta1.FirewallPolicy, errors.Error) {
+func (aws *awsRepository) _toAWSFirewallPolicy(ctx context.Context, firewall *model.Firewall, region *string) (*v1beta1.FirewallPolicy, errors.Error) {
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToIDLabels(), firewall.IdentifierName.ToNameLabels())
 
 	var srgRef []v1beta1.StatelessRuleGroupReferenceParameters
@@ -76,6 +76,7 @@ func (aws *awsRepository) _toAWSFirewallPolicy(ctx context.Context, firewall *mo
 			},
 			ForProvider: v1beta1.FirewallPolicyParameters{
 				FirewallPolicy: fpfPolicy,
+				Region:         region,
 			},
 		},
 	}, errors.BadRequest
