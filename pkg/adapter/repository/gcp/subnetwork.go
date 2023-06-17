@@ -157,6 +157,14 @@ func (gcp *gcpRepository) UpdateSubnetwork(ctx context.Context, subnetwork *netw
 
 func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *network.Subnetwork) errors.Error {
 	gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
+	vms, errVMs := gcp.FindAllVMs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	if !errVMs.IsOk() {
+		return errVMs
+	}
+	if len(*vms) > 0 {
+		return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s still has VMs", subnetwork.IdentifierName.Subnetwork))
+	}
 	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", subnetwork.IdentifierName.Subnetwork))

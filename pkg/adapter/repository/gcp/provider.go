@@ -130,20 +130,27 @@ func (gcp *gcpRepository) UpdateProvider(ctx context.Context, provider *resource
 
 func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource.Provider) errors.Error {
 	gcpSubnetwork := gcp.toGCPProvider(ctx, provider)
+
 	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
 	}
-
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
+	networks, networksErr := gcp.FindAllNetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	if !networksErr.IsOk() {
+		return networksErr
+	}
+	if len(*networks) > 0 {
+		return errors.Conflict.WithMessage(fmt.Sprintf("provider %s still has networks", provider.IdentifierID.Provider))
+	}
 	return errors.NoContent
 }
 
 func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *resource.Provider) errors.Error {
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
 	networks, networksErr := gcp.FindAllNetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
-
 	if !networksErr.IsOk() {
 		return networksErr
 	}
