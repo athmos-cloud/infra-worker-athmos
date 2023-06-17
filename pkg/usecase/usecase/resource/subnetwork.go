@@ -156,9 +156,14 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subn
 		return err
 	}
 	*subnetwork = *foundNetwork
-
-	if delErr := repo.DeleteSubnetwork(ctx, subnetwork); !delErr.IsOk() {
-		return delErr
+	if req.Cascade {
+		if delErr := repo.DeleteSubnetworkCascade(ctx, subnetwork); !delErr.IsOk() {
+			return delErr
+		}
+	} else {
+		if delErr := repo.DeleteSubnetwork(ctx, subnetwork); !delErr.IsOk() {
+			return delErr
+		}
 	}
 
 	return errors.NoContent

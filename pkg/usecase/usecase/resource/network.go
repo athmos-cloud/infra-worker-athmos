@@ -139,9 +139,14 @@ func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network
 		return errNet
 	}
 	*subnetwork = *foundNetwork
-	errDel := repo.DeleteNetworkCascade(ctx, foundNetwork)
-	if !errDel.IsOk() {
-		return errDel
+	if req.Cascade {
+		if errCascade := repo.DeleteNetworkCascade(ctx, foundNetwork); !errCascade.IsOk() {
+			return errCascade
+		}
+	} else {
+		if errDel := repo.DeleteNetwork(ctx, foundNetwork); !errDel.IsOk() {
+			return errDel
+		}
 	}
 
 	return errors.NoContent
