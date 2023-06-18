@@ -69,12 +69,6 @@ func FromPayload(payload Payload) ID {
 			Network:  payload.Network,
 		}
 	}
-	if payload.Provider != "" && payload.VPC != "" {
-		return &VPC{
-			Provider: payload.Provider,
-			VPC:      payload.VPC,
-		}
-	}
 	if payload.Provider != "" {
 		return &Provider{
 			Provider: payload.Provider,
