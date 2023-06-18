@@ -2,6 +2,11 @@ apiVersion: gcp.upbound.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: gcp-test
+  labels:
+    app.kubernetes.io/managed-by: "athmos"
+    athmos.cloud/project-id: "test-project"
+    identifier.provider: "gcp"
+
 spec:
   projectID: plugin-playground
   credentials:
@@ -19,6 +24,11 @@ metadata:
   namespace: crossplane
   labels:
     name.network: "default-net-1"
+    app.kubernetes.io/managed-by: "athmos"
+    athmos.cloud/project-id: "test-project"
+    identifier.provider: "gcp"
+    identifier.network: "default-net-1"
+
 spec:
   deletionPolicy: Delete
   providerConfigRef:
@@ -35,7 +45,12 @@ metadata:
   name: subnet-test
   namespace: crossplane
   labels:
-      name.subnetwork: "subnet-test"
+    name.subnetwork: "subnet-test"
+    app.kubernetes.io/managed-by: "athmos"
+    athmos.cloud/project-id: "test-project"
+    identifier.provider: "gcp"
+    identifier.network: "default-net-1"
+    identifier.subnetwork: "subnet-test"
 spec:
   deletionPolicy: Delete
   providerConfigRef:
@@ -53,6 +68,13 @@ kind: Instance
 metadata:
   name: vm-test
   namespace: crossplane
+  labels:
+    app.kubernetes.io/managed-by: "athmos"
+    athmos.cloud/project-id: "test-project"
+    identifier.provider: "gcp"
+    identifier.network: "default-net-1"
+    identifier.subnetwork: "subnet-test"
+    identifier.vm: "vm-test"
 spec:
   deletionPolicy: Delete
   providerConfigRef:

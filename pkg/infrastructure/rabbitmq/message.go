@@ -31,16 +31,16 @@ type dataMessage struct {
 type eventType string
 
 const (
-	eventTypeCreateRequestSent eventType = "CREATE_REQUEST_SENT"
-	eventTypeUpdateRequestSent eventType = "UPDATE_REQUEST_SENT"
-	eventTypeDeleteRequestSent eventType = "DELETE_REQUEST_SENT"
+	EventTypeCreateRequestSent eventType = "CREATE_REQUEST_SENT"
+	EventTypeUpdateRequestSent eventType = "UPDATE_REQUEST_SENT"
+	EventTypeDeleteRequestSent eventType = "DELETE_REQUEST_SENT"
 
 	// Error CreateRequestTreated eventType = "CREATE_REQUEST_TREATED"
 	//ResourceCreated      eventType = "RESOURCE_CREATED"
 	Error eventType = "ERROR"
 )
 
-type messageSend struct {
+type MessageSend struct {
 	ProjectID  string             `json:"project_id"`
 	Code       int                `json:"code"`
 	Type       eventType          `json:"type"`
@@ -53,7 +53,7 @@ type nestMessageWrap struct {
 	Data    any    `json:"data"`
 }
 
-func (ms *messageSend) WithNestWrapper() nestMessageWrap {
+func (ms *MessageSend) WithNestWrapper() nestMessageWrap {
 	return nestMessageWrap{
 		Pattern: nestPatternValue,
 		Data:    ms,

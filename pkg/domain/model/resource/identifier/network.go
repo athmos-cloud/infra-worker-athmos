@@ -61,10 +61,7 @@ func (id *Network) IDFromLabels(labels map[string]string) errors.Error {
 	if !ok {
 		return errors.InternalError.WithMessage("missing provider identifier")
 	}
-	vpcID, ok := labels[VpcIdentifierKey]
-	if !ok {
-		return errors.InternalError.WithMessage("missing vpc identifier")
-	}
+	vpcID := labels[VpcIdentifierKey]
 	*id = Network{
 		Network:  networkID,
 		Provider: providerID,

@@ -16,8 +16,8 @@ func main() {
 	logger.Info.Printf(config.Current.Queue.URI)
 	rabbitMQ := rabbitmq.New(
 		config.Current.Queue.URI,
-		config.Current.Queue.Queue,
-		config.Current.Queue.Exchange,
+		config.Current.Queue.IncomingQueue,
+		config.Current.Queue.OutcomingQueue,
 		ctrl.Resource,
 	)
 	go rabbitMQ.StartConsumer(ctx)

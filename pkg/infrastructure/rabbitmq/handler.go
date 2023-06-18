@@ -42,13 +42,13 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	switch message.Data.Verb {
 	case CREATE:
 		rq.ResourceController.CreateResource(ctx)
-		rq.handleResponse(ctx, eventTypeCreateRequestSent)
+		rq.handleResponse(ctx, EventTypeCreateRequestSent)
 	case UPDATE:
 		rq.ResourceController.UpdateResource(ctx)
-		rq.handleResponse(ctx, eventTypeUpdateRequestSent)
+		rq.handleResponse(ctx, EventTypeUpdateRequestSent)
 	case DELETE:
 		rq.ResourceController.DeleteResource(ctx)
-		rq.handleResponse(ctx, eventTypeDeleteRequestSent)
+		rq.handleResponse(ctx, EventTypeDeleteRequestSent)
 	default:
 		return
 	}
@@ -57,7 +57,7 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
 	code := ctx.Value(context.ResponseCodeKey).(int)
 	if code%100 == 2 {
-		msg := messageSend{
+		msg := MessageSend{
 			ProjectID: ctx.Value(context.ProjectIDKey).(string),
 			Type:      eventType,
 			Code:      code,
@@ -71,7 +71,7 @@ func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
 }
 
 func (rq *RabbitMQ) handleError(ctx context.Context) {
-	msg := messageSend{
+	msg := MessageSend{
 		ProjectID: ctx.Value(context.ProjectIDKey).(string),
 		Type:      Error,
 		Code:      ctx.Value(context.ResponseCodeKey).(int),

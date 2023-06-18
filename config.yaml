@@ -9,8 +9,8 @@ kubernetes:
   configPath: "/root/.kube/config"
 rabbitmq:
   uri: "amqp://user:password@rabbitmq:5672/"
-  exchange: "to-gateway-api"
-  queue: "to-infra-worker"
+  outcoming: "to-gateway-api"
+  incoming: "to-infra-worker"
 mongo:
   address: "mongodb"
   port: 27017

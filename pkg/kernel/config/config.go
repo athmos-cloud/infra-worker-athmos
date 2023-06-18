@@ -24,9 +24,9 @@ type Config struct {
 }
 
 type Queue struct {
-	URI      string `mapstructure:"uri"`
-	Exchange string `mapstructure:"exchange"`
-	Queue    string `mapstructure:"queue"`
+	URI            string `mapstructure:"uri"`
+	OutcomingQueue string `mapstructure:"outcoming"`
+	IncomingQueue  string `mapstructure:"incoming"`
 }
 
 type Http struct {

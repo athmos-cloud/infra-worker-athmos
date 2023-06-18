@@ -17,7 +17,7 @@ type RabbitMQ struct {
 	Channel            *amqp.Channel
 	ReceiveQueue       string
 	ResourceController controller.Resource
-	MessageHandler     func(*amqp.Channel, string, messageSend)
+	MessageHandler     func(*amqp.Channel, string, MessageSend)
 }
 
 func New(uri string, receiveQueue string, sendQueue string, resourceController controller.Resource) *RabbitMQ {
@@ -35,7 +35,7 @@ func New(uri string, receiveQueue string, sendQueue string, resourceController c
 		Channel:            ch,
 		ResourceController: resourceController,
 		ReceiveQueue:       receiveQueue,
-		MessageHandler: func(channel *amqp.Channel, queue string, msg messageSend) {
+		MessageHandler: func(channel *amqp.Channel, queue string, msg MessageSend) {
 			publish(channel, sendQueue, msg.WithNestWrapper())
 		},
 	}
@@ -52,7 +52,7 @@ func (rq *RabbitMQ) Close() {
 }
 
 func (rq *RabbitMQ) StartConsumer(ctx context.Context) {
-	queueName := config.Current.Queue.Queue
+	queueName := config.Current.Queue.IncomingQueue
 	q, err := rq.Channel.QueueDeclare(
 		queueName, // name
 		true,      // durable
@@ -106,5 +106,4 @@ func publish(channel *amqp.Channel, queue string, payload any) {
 	); err != nil {
 		logger.Error.Printf("Error publishing a message to the rabbitmq: %s", err)
 	}
-
 }
