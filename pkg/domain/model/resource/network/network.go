@@ -10,6 +10,7 @@ type Network struct {
 	Metadata       metadata.Metadata        `json:"metadata"`
 	IdentifierID   identifier.Network       `json:"identifier_id"`
 	IdentifierName identifier.Network       `json:"identifier_name"`
+	Region         string                   `json:"region,omitempty"`
 	Subnetworks    SubnetworkCollection     `json:"subnetworks,omitempty"`
 	Firewalls      FirewallCollection       `json:"firewalls,omitempty"`
 	SqlDbs         instance.SqlDBCollection `json:"sqlDbs,omitempty"`

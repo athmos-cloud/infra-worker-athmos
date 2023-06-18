@@ -78,7 +78,11 @@ func (aws *awsRepository) CreateNetwork(ctx context.Context, network *networkMod
 	} else if exist {
 		return errors.Conflict.WithMessage(fmt.Sprintf("networkModels %s already exists", network.IdentifierName.Network))
 	}
-	awsNetwork := aws.toAWSNetwork(ctx, network)
+	awsNetwork, err := aws.toAWSNetwork(ctx, network)
+	if !err.IsOk() {
+		return err
+	}
+
 	if err := kubernetes.Client().Client.Create(ctx, awsNetwork); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists", network.IdentifierName.Network))
@@ -96,7 +100,12 @@ func (aws *awsRepository) UpdateNetwork(ctx context.Context, network *networkMod
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
 	}
-	awsNetwork := aws.toAWSNetwork(ctx, network)
+
+	awsNetwork, err := aws.toAWSNetwork(ctx, network)
+	if !err.IsOk() {
+		return err
+	}
+
 	existingNetwork.Spec = awsNetwork.Spec
 	existingNetwork.Labels = awsNetwork.Labels
 
@@ -116,8 +125,13 @@ func (aws *awsRepository) DeleteNetwork(ctx context.Context, network *networkMod
 	} else if len(*subnets) > 0 {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("can't delete networkModels %s without cascade option", network.IdentifierName.Network))
 	}
-	gcpSubnetwork := aws.toAWSNetwork(ctx, network)
-	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
+
+	awsNetwork, err := aws.toAWSNetwork(ctx, network)
+	if !err.IsOk() {
+		return err
+	}
+
+	if err := kubernetes.Client().Client.Delete(ctx, awsNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
 		}
@@ -184,11 +198,15 @@ func (aws *awsRepository) toModelNetwork(network *v1beta1.VPC) (*networkModels.N
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
+		Region:         *network.Spec.ForProvider.Region,
 	}, errors.OK
 }
 
-func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkModels.Network) *v1beta1.VPC {
+func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkModels.Network) (*v1beta1.VPC, errors.Error) {
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), network.IdentifierID.ToIDLabels(), network.IdentifierName.ToNameLabels())
+	if network.Region == "" {
+		return nil, errors.BadRequest.WithMessage("Region is a required field.")
+	}
 
 	return &v1beta1.VPC{
 		ObjectMeta: metav1.ObjectMeta{
@@ -204,11 +222,10 @@ func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkMode
 				},
 			},
 			ForProvider: v1beta1.VPCParameters_2{
-				//Project:               &networkModels.IdentifierName.VPC,
-				//AutoCreateSubnetworks: &autoCreateSubnetworks,
+				Region: &network.Region,
 			},
 		},
-	}
+	}, errors.OK
 }
 
 func (aws *awsRepository) toModelNetworkCollection(list *v1beta1.VPCList) (*networkModels.NetworkCollection, errors.Error) {

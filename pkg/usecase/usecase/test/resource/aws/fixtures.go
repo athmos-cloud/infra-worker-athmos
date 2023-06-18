@@ -41,6 +41,7 @@ func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *net
 	req := dto.CreateNetworkRequest{
 		ParentIDProvider: &parentID,
 		Name:             netName,
+		Region:           "eu-west-1",
 		Managed:          false,
 	}
 	ctx.Set(context.RequestKey, req)
@@ -77,14 +78,14 @@ func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork
 }
 
 func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *instanceModel.VM {
-	machineType := "e2-medium"
-	zone := "europe-west9-b"
-	osName := "ubuntu-1804-bionic-v20210223"
+	machineType := "t2.micro"
+	zone := "eu-west-1"
+	osName := "ami-0a5d9cd4e632d99c1"
 	autoDelete := true
 
 	req := dto.CreateVMRequest{
 		ParentID:       ctx.Value(testResource.SubnetworkIDKey).(identifier.Subnetwork),
-		Name:           "test-vm",
+		Name:           "fixture-vm",
 		AssignPublicIP: true,
 		Zone:           zone,
 		MachineType:    machineType,
