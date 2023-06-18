@@ -92,6 +92,8 @@ func Test_providerUseCase_Create(t *testing.T) {
 
 		assert.True(t, err.IsOk())
 
+		ctx.Set(testResource.ProviderIDKey, provider.IdentifierID)
+
 		kubeResource := &v1beta1.ProviderConfig{}
 		errK := kubernetes.Client().Client.Get(
 			ctx,
@@ -144,6 +146,8 @@ func Test_providerUseCase_Create(t *testing.T) {
 		ctx.Set(context.RequestKey, req)
 		provider := &resource.Provider{}
 		err := uc.Create(ctx, provider)
+
+		ctx.Set(testResource.ProviderIDKey, provider.IdentifierID)
 
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})

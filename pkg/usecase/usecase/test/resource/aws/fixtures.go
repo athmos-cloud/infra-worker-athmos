@@ -19,7 +19,7 @@ import (
 
 func ProviderFixture(ctx context.Context, t *testing.T, puc usecase.Provider) *resource.Provider {
 	req := dto.CreateProviderRequest{
-		Name:           "test",
+		Name:           "fixture-provider",
 		VPC:            testResource.SecretTestName,
 		SecretAuthName: testResource.SecretTestName,
 	}
