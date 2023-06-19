@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
@@ -156,11 +157,21 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 		err := suc.Delete(ctx, subnet)
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
-	t.Run("Delete a subnetwork with children should fail", func(t *testing.T) {
-		t.Skip("TODO")
-	})
+
 	t.Run("Delete cascade a subnetwork should succeed", func(t *testing.T) {
-		t.Skip("TODO")
+		sshRepo := repository.NewSSHKeyRepository()
+		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, sshRepo, nil, awsRepo, nil)
+
+		subnetwork := SubnetworkFixture(ctx, t, suc)
+		VMFixture(ctx, t, vuc)
+
+		delReq := dto.DeleteSubnetworkRequest{
+			IdentifierID: subnetwork.IdentifierID,
+		}
+		ctx.Set(context.RequestKey, delReq)
+		err := suc.Delete(ctx, subnetwork)
+
+		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 }
 

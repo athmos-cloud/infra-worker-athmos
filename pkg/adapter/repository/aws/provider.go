@@ -116,8 +116,19 @@ func (aws *awsRepository) DeleteProvider(ctx context.Context, provider *resource
 }
 
 func (aws *awsRepository) DeleteProviderCascade(ctx context.Context, provider *resource.Provider) errors.Error {
-	//TODO
-	panic("Implement me")
+	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
+	networks, err := aws.FindAllNetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	if !err.IsOk() {
+		return err
+	}
+
+	for _, network := range *networks {
+		if err := aws.DeleteNetworkCascade(ctx, &network); !err.IsOk() {
+			return err
+		}
+	}
+
+	return aws.DeleteProvider(ctx, provider)
 }
 
 func (aws *awsRepository) ProviderExists(ctx context.Context, name identifier.Provider) (bool, errors.Error) {

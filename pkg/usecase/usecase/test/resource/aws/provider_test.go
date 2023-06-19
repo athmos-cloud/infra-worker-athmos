@@ -5,7 +5,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	repository2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -44,25 +43,6 @@ type wantProvider struct {
 	Labels map[string]string
 	Spec   v1beta1.ProviderConfigSpec
 }
-
-/*
-	func clearProvider(ctx context.Context) {
-		clear(ctx)
-		providers := &v1beta1.ProviderConfigList{}
-
-		err := kubernetes.Client().Client.List(ctx, providers)
-		if err != nil {
-			return
-		}
-		for _, provider := range providers.Items {
-			err = kubernetes.Client().Client.Delete(ctx, &provider)
-			if err != nil {
-				logger.Warning.Printf("Error deleting provider %s: %v", provider.Name, err)
-				continue
-			}
-		}
-	}
-*/
 
 func Test_providerUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
@@ -214,12 +194,11 @@ func Test_providerUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete cascade a provider should succeed", func(t *testing.T) {
-		gcpRepo := gcp.NewRepository()
 		sshRepo := repository2.NewSSHKeyRepository()
 
-		nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, gcpRepo, nil, nil)
-		suc := usecase.NewSubnetworkUseCase(resourceTest.ProjectRepo, gcpRepo, nil, nil)
-		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, sshRepo, gcpRepo, nil, nil)
+		nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, nil, awsRepo, nil)
+		suc := usecase.NewSubnetworkUseCase(resourceTest.ProjectRepo, nil, awsRepo, nil)
+		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, sshRepo, nil, awsRepo, nil)
 
 		provider := ProviderFixture(ctx, t, uc)
 		NetworkFixture(ctx, t, nuc)
