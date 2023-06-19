@@ -101,13 +101,14 @@ func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *instanceModel
 			},
 		},
 		OS: instanceModel.VMOS{
-			ID: osName,
+			ID:   osName,
+			Name: osName,
 		},
 		Disks: []instanceModel.VMDisk{
 			{
 				AutoDelete: autoDelete,
 				Mode:       instanceModel.DiskModeReadWrite,
-				Type:       instanceModel.DiskTypeHDD,
+				Type:       instanceModel.DiskTypeSSD,
 				SizeGib:    10,
 			},
 		},
@@ -117,6 +118,7 @@ func VMFixture(ctx context.Context, t *testing.T, vuc usecase.VM) *instanceModel
 
 	vm := &instanceModel.VM{}
 	err := vuc.Create(ctx, vm)
+
 	require.Equal(t, errors.Created, err)
 
 	return vm
@@ -159,6 +161,34 @@ func ClearFixtures(ctx context.Context) {
 	ClearNetworksFixtures(ctx)
 	ClearProviderFixtures(ctx)
 	clear(ctx)
+}
+
+func ClearVMFixtures(ctx context.Context) {
+	keyPairs := &awsCompute.KeyPairList{}
+	err := kubernetes.Client().Client.List(ctx, keyPairs)
+	if err != nil {
+		return
+	}
+	for _, keyPair := range keyPairs.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &keyPair)
+		if err != nil {
+			logger.Warning.Printf("Error deleting key pair %s: %v", keyPair.Name, err)
+			continue
+		}
+	}
+
+	ec2Instances := &awsCompute.InstanceList{}
+	err = kubernetes.Client().Client.List(ctx, ec2Instances)
+	if err != nil {
+		return
+	}
+	for _, ec2Instance := range ec2Instances.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &ec2Instance)
+		if err != nil {
+			logger.Warning.Printf("Error deleting ec2 instance %s: %v", ec2Instance.Name, err)
+			continue
+		}
+	}
 }
 
 func ClearSubnetworkFixtures(ctx context.Context) {

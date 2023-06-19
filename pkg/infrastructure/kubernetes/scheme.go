@@ -58,6 +58,7 @@ func registerAWSResources(runtimeScheme *runtime.Scheme) {
 	UpboundComputeSchemeBuilder.Register(&computeAWS.VPC{}, &computeAWS.VPCList{})
 	UpboundComputeSchemeBuilder.Register(&computeAWS.Subnet{}, &computeAWS.SubnetList{})
 	UpboundComputeSchemeBuilder.Register(&computeAWS.Instance{}, &computeAWS.InstanceList{})
+	UpboundComputeSchemeBuilder.Register(&computeAWS.KeyPair{}, &computeAWS.KeyPairList{})
 	if err := UpboundComputeSchemeBuilder.AddToScheme(runtimeScheme); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error registering AWS resources: %v", err)))
 	}

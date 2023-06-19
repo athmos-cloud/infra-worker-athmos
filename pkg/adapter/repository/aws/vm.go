@@ -87,7 +87,10 @@ func (aws *awsRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", vm.IdentifierName.VM, vm.IdentifierID.Subnetwork))
 	}
-	awsVM := aws.toAWSVM(ctx, vm)
+	awsVM, err := aws.toAWSVM(ctx, vm)
+	if !err.IsOk() {
+		return err
+	}
 	if err := kubernetes.Client().Client.Create(ctx, awsVM); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists", vm.IdentifierName.VM))
@@ -109,7 +112,10 @@ func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.Subnetwork))
 	}
-	awsVM := aws.toAWSVM(ctx, vm)
+	awsVM, err := aws.toAWSVM(ctx, vm)
+	if !err.IsOk() {
+		return err
+	}
 	existingVM.Spec = awsVM.Spec
 	existingVM.Labels = awsVM.Labels
 	if err := kubernetes.Client().Client.Update(ctx, existingVM); err != nil {
@@ -126,7 +132,10 @@ func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.
 }
 
 func (aws *awsRepository) DeleteVM(ctx context.Context, vm *instance.VM) errors.Error {
-	awsVM := aws.toAWSVM(ctx, vm)
+	awsVM, err := aws.toAWSVM(ctx, vm)
+	if !err.IsOk() {
+		return err
+	}
 	if err := kubernetes.Client().Client.Delete(ctx, awsVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierName.VM))
@@ -206,12 +215,17 @@ func (aws *awsRepository) toModelVM(vm *v1beta1.Instance, keyPair *v1beta1.KeyPa
 	}, errors.OK
 }
 
-func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) *v1beta1.Instance {
+func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta1.Instance, errors.Error) {
 	sshKeysLabels := crossplane.ToSSHKeySecretLabels(vm.Auths)
 	asPublicIPLabel := map[string]string{crossplane.VMPublicIPLabel: strconv.FormatBool(vm.AssignPublicIP)}
 	instanceLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
 	subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
 	keyName := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
+
+	awsDiskList, err := aws.toAWSVMDiskList(vm.Disks, vm.OS)
+	if !err.IsOk() {
+		return nil, err
+	}
 
 	return &v1beta1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
@@ -227,17 +241,18 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) *v1beta1
 				},
 			},
 			ForProvider: v1beta1.InstanceParameters{
+				AMI:                      &vm.OS.Name,
 				AssociatePublicIPAddress: &vm.AssignPublicIP,
 				InstanceType:             &vm.MachineType,
 				KeyName:                  &keyName,
 				Region:                   &vm.Zone,
-				RootBlockDevice:          aws.toAWSVMDiskList(vm.Disks, vm.OS),
+				RootBlockDevice:          *awsDiskList,
 				SubnetIDSelector: &v1.Selector{
 					MatchLabels: subnetID.ToIDLabels(),
 				},
 			},
 		},
-	}
+	}, errors.OK
 }
 
 func (aws *awsRepository) toModelVMCollection(ctx context.Context, instanceList *v1beta1.InstanceList) (*instance.VMCollection, errors.Error) {
@@ -284,23 +299,31 @@ func (aws *awsRepository) toVMDisk(disk *v1beta1.RootBlockDeviceParameters) inst
 	}
 }
 
-func (aws *awsRepository) toAWSVMDiskList(disks []instance.VMDisk, os instance.VMOS) []v1beta1.RootBlockDeviceParameters {
+func (aws *awsRepository) toAWSVMDiskList(disks []instance.VMDisk, os instance.VMOS) (*[]v1beta1.RootBlockDeviceParameters, errors.Error) {
 	var bootDisks []v1beta1.RootBlockDeviceParameters
 	for _, disk := range disks {
-		bootDisks = append(bootDisks, aws.toAWSVMDisk(disk))
+		awsDisk, err := aws.toAWSVMDisk(disk)
+		if !err.IsOk() {
+			return nil, err
+		}
+		bootDisks = append(bootDisks, *awsDisk)
 	}
-	return bootDisks
+	return &bootDisks, errors.OK
 }
 
-func (aws *awsRepository) toAWSVMDisk(disk instance.VMDisk) v1beta1.RootBlockDeviceParameters {
+func (aws *awsRepository) toAWSVMDisk(disk instance.VMDisk) (*v1beta1.RootBlockDeviceParameters, errors.Error) {
+	if disk.Type != instance.DiskTypeSSD {
+		return nil, errors.BadRequest.WithMessage("Root block requires an SSD disk in aws.")
+	}
+
 	diskSize := float64(disk.SizeGib)
 	diskType := "gp2"
 	//diskMode := toAWSDiskMode(disk.Mode)
-	return v1beta1.RootBlockDeviceParameters{
+	return &v1beta1.RootBlockDeviceParameters{
 		DeleteOnTermination: &disk.AutoDelete,
 		VolumeSize:          &diskSize,
 		VolumeType:          &diskType,
-	}
+	}, errors.OK
 }
 
 func sshKeysToString(sshKeys model.SSHKeyList) *string {

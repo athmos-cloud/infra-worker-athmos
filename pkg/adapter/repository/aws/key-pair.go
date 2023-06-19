@@ -49,12 +49,28 @@ func (aws *awsRepository) _getKeyPair(ctx context.Context, vm *v1beta1.Instance)
 }
 
 func (aws *awsRepository) _updateKeyPair(ctx context.Context, vm *instance.VM) errors.Error {
+	name := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
+	existingAwsKeyPair := &v1beta1.KeyPair{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: name}, existingAwsKeyPair); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf(
+				"key pair %s not found",
+				name))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf(
+			"unable to get key pair %s",
+			name))
+	}
+
 	awsKeyPair, keyErr := aws._toAwsKeyPair(ctx, vm)
 	if !keyErr.IsOk() {
 		return keyErr
 	}
 
-	if err := kubernetes.Client().Client.Update(ctx, awsKeyPair); err != nil {
+	existingAwsKeyPair.Labels = awsKeyPair.Labels
+	existingAwsKeyPair.Spec = awsKeyPair.Spec
+
+	if err := kubernetes.Client().Client.Update(ctx, existingAwsKeyPair); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("key pair %s not found", awsKeyPair.Name))
 		}
