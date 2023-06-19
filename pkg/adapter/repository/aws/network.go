@@ -96,9 +96,9 @@ func (aws *awsRepository) UpdateNetwork(ctx context.Context, network *networkMod
 	existingNetwork := &v1beta1.VPC{}
 	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, existingNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
+			return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found", network.IdentifierID.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get network %s", network.IdentifierID.Network))
 	}
 
 	awsNetwork, err := aws.toAWSNetwork(ctx, network)
@@ -111,9 +111,9 @@ func (aws *awsRepository) UpdateNetwork(ctx context.Context, network *networkMod
 
 	if err := kubernetes.Client().Client.Update(ctx, existingNetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
+			return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found", network.IdentifierName.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", network.IdentifierName.Network))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update network %s", network.IdentifierName.Network))
 	}
 	return errors.NoContent
 }
