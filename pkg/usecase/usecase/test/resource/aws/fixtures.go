@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
@@ -11,7 +10,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	"github.com/stretchr/testify/assert"
@@ -62,12 +60,12 @@ func NetworkFixture(ctx context.Context, t *testing.T, nuc usecase.Network) *net
 
 func SubnetworkFixture(ctx context.Context, t *testing.T, suc usecase.Subnetwork) *networkModel.Subnetwork {
 	parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-	subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-	region := "europe-west1"
+	//subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
+	region := "eu-west-1"
 	ipCIDR := "10.0.0.1/26"
 	req := dto.CreateSubnetworkRequest{
 		ParentID:    parentID,
-		Name:        subnetName,
+		Name:        "fixture-subnet",
 		Region:      region,
 		IPCIDRRange: ipCIDR,
 		Managed:     false,
@@ -156,10 +154,26 @@ func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *n
 }
 
 func ClearFixtures(ctx context.Context) {
+	ClearSubnetworkFixtures(ctx)
 	ClearFirewallFixtures(ctx)
 	ClearNetworksFixtures(ctx)
 	ClearProviderFixtures(ctx)
 	clear(ctx)
+}
+
+func ClearSubnetworkFixtures(ctx context.Context) {
+	subnetworks := &awsCompute.SubnetList{}
+	err := kubernetes.Client().Client.List(ctx, subnetworks)
+	if err != nil {
+		return
+	}
+	for _, subnetwork := range subnetworks.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &subnetwork)
+		if err != nil {
+			logger.Warning.Printf("Error deleting subnetwork %s: %v", subnetwork.Name, err)
+			continue
+		}
+	}
 }
 
 func ClearFirewallFixtures(ctx context.Context) {

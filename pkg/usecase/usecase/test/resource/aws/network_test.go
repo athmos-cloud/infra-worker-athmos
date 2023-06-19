@@ -6,8 +6,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/gcp"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	networkModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
@@ -31,31 +29,6 @@ type wantNetwork struct {
 	Name   string
 	Labels map[string]string
 	Spec   v1beta1.VPCSpec
-}
-
-func initNetwork(t *testing.T) (context.Context, *testResource.TestResource, usecase.Network) {
-	ctx, resourceTest := initTest(t)
-	awsRepo := aws.NewRepository()
-	puc := usecase.NewProviderUseCase(
-		resourceTest.ProjectRepo,
-		resourceTest.SecretRepo,
-		nil,
-		awsRepo,
-		nil)
-
-	req := dto.CreateProviderRequest{
-		Name:           "test",
-		VPC:            testResource.SecretTestName,
-		SecretAuthName: testResource.SecretTestName,
-	}
-	ctx.Set(context.RequestKey, req)
-	provider := &resource.Provider{}
-	err := puc.Create(ctx, provider)
-	require.True(t, err.IsOk())
-	ctx.Set(testResource.ProviderIDKey, provider.IdentifierID)
-
-	nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, gcp.NewRepository(), nil, nil)
-	return ctx, resourceTest, nuc
 }
 
 func suiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
