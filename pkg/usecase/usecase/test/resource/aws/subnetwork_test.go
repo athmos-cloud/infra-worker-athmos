@@ -108,6 +108,8 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		_ = SubnetworkFixture(ctx, t, suc)
 		newSubnet := &network.Subnetwork{}
 		err := suc.Create(ctx, newSubnet)
@@ -134,6 +136,8 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 	defer subSuiteTeardown(ctx, t, mongoC)
 
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		subnet := SubnetworkFixture(ctx, t, suc)
 		delReq := dto.DeleteSubnetworkRequest{
 			IdentifierID: subnet.IdentifierID,
@@ -144,6 +148,8 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		delReq := dto.DeleteSubnetworkRequest{
 			IdentifierID: identifier.Subnetwork{
 				Provider:   "test",
@@ -159,6 +165,8 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete cascade a subnetwork should succeed", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		sshRepo := repository.NewSSHKeyRepository()
 		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, sshRepo, nil, awsRepo, nil)
 
@@ -194,6 +202,8 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 	defer subSuiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid subnetwork should succeed", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
 		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
 		region := "europe-west1"
@@ -221,6 +231,8 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 		assert.Equal(t, subnet.Region, region)
 	})
 	t.Run("Get a non-existing subnetwork should fail", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		getReq := dto.GetSubnetworkRequest{
 			IdentifierID: identifier.Subnetwork{
 				Provider:   "test",
@@ -255,21 +267,9 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 	defer subSuiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update a valid subnetwork should succeed", func(t *testing.T) {
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		region := "eu-west-1"
-		ipCIDR := "10.0.0.1/26"
-		req := dto.CreateSubnetworkRequest{
-			ParentID:    parentID,
-			Name:        subnetName,
-			Region:      region,
-			IPCIDRRange: ipCIDR,
-			Managed:     false,
-		}
-		ctx.Set(context.RequestKey, req)
-		subnet := &network.Subnetwork{}
-		err := suc.Create(ctx, subnet)
-		assert.Equal(t, errors.Created.Code, err.Code)
+		defer subTeardown(ctx)
+
+		subnet := SubnetworkFixture(ctx, t, suc)
 		newRegion := "eu-west-2"
 		newIPCIDR := "10.1.0.1/26"
 		updReq := dto.UpdateSubnetworkRequest{
@@ -278,7 +278,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 			IPCIDRRange:  &newIPCIDR,
 		}
 		ctx.Set(context.RequestKey, updReq)
-		err = suc.Update(ctx, subnet)
+		err := suc.Update(ctx, subnet)
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 
 		kubeSubnet := &v1beta1.Subnet{}
@@ -288,6 +288,8 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 		assert.Equal(t, newIPCIDR, *kubeSubnet.Spec.ForProvider.CidrBlock)
 	})
 	t.Run("Update a non-existing subnetwork should fail", func(t *testing.T) {
+		defer subTeardown(ctx)
+
 		newRegion := "europe-west2"
 		newIPCIDR := "10.1.0.1/26"
 		updReq := dto.UpdateSubnetworkRequest{

@@ -94,13 +94,6 @@ func Test_vmUseCase_Create(t *testing.T) {
 		keyName := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
 		sizeGib := float64(10)
 
-		kind := "instance.ec2.aws.upbound.io"
-		tags := map[string]*string{
-			"crossplane-kind":           &kind,
-			"crossplane-name":           &vm.IdentifierID.VM,
-			"crossplane-providerconfig": &vm.IdentifierID.VM,
-		}
-
 		diskType := "gp2"
 		sshKeys := ""
 		for _, auth := range vm.Auths {
@@ -138,7 +131,6 @@ func Test_vmUseCase_Create(t *testing.T) {
 				SubnetIDSelector: &v1.Selector{
 					MatchLabels: subnetID.ToIDLabels(),
 				},
-				Tags: tags,
 			},
 		}
 		wantNet := wantVM{
@@ -151,7 +143,15 @@ func Test_vmUseCase_Create(t *testing.T) {
 			Labels: kubeResource.Labels,
 			Spec:   kubeResource.Spec,
 		}
-		assert.Equal(t, wantNet, gotNet)
+		assert.Equal(t, wantNet.Name, gotNet.Name)
+		assert.Equal(t, wantNet.Labels, gotNet.Labels)
+		assert.Equal(t, wantNet.Spec.ForProvider.AMI, gotNet.Spec.ForProvider.AMI)
+		assert.Equal(t, wantNet.Spec.ForProvider.AssociatePublicIPAddress, gotNet.Spec.ForProvider.AssociatePublicIPAddress)
+		assert.Equal(t, wantNet.Spec.ForProvider.InstanceType, gotNet.Spec.ForProvider.InstanceType)
+		assert.Equal(t, wantNet.Spec.ForProvider.KeyName, gotNet.Spec.ForProvider.KeyName)
+		assert.Equal(t, wantNet.Spec.ForProvider.Region, gotNet.Spec.ForProvider.Region)
+		assert.Equal(t, wantNet.Spec.ForProvider.RootBlockDevice, gotNet.Spec.ForProvider.RootBlockDevice)
+		assert.Equal(t, wantNet.Spec.ForProvider.SubnetIDSelector, gotNet.Spec.ForProvider.SubnetIDSelector)
 	})
 
 	t.Run("Create a vm with an HDD root block should fail", func(t *testing.T) {

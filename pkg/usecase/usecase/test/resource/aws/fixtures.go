@@ -156,6 +156,7 @@ func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *n
 }
 
 func ClearFixtures(ctx context.Context) {
+	ClearVMFixtures(ctx)
 	ClearSubnetworkFixtures(ctx)
 	ClearFirewallFixtures(ctx)
 	ClearNetworksFixtures(ctx)
