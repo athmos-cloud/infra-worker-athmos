@@ -16,7 +16,6 @@ import (
 	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
@@ -46,22 +45,25 @@ type wantProvider struct {
 	Spec   v1beta1.ProviderConfigSpec
 }
 
-func clearProvider(ctx context.Context) {
-	clear(ctx)
-	providers := &v1beta1.ProviderConfigList{}
+/*
+	func clearProvider(ctx context.Context) {
+		clear(ctx)
+		providers := &v1beta1.ProviderConfigList{}
 
-	err := kubernetes.Client().Client.List(ctx, providers)
-	if err != nil {
-		return
-	}
-	for _, provider := range providers.Items {
-		err = kubernetes.Client().Client.Delete(ctx, &provider)
+		err := kubernetes.Client().Client.List(ctx, providers)
 		if err != nil {
-			logger.Warning.Printf("Error deleting provider %s: %v", provider.Name, err)
-			continue
+			return
+		}
+		for _, provider := range providers.Items {
+			err = kubernetes.Client().Client.Delete(ctx, &provider)
+			if err != nil {
+				logger.Warning.Printf("Error deleting provider %s: %v", provider.Name, err)
+				continue
+			}
 		}
 	}
-}
+*/
+
 func Test_providerUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, resourceTest := initTest(t)
@@ -75,22 +77,17 @@ func Test_providerUseCase_Create(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearFixtures(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 	t.Run("Create a valid provider", func(t *testing.T) {
-		req := dto.CreateProviderRequest{
-			Name:           "test",
-			VPC:            testResource.SecretTestName,
-			SecretAuthName: testResource.SecretTestName,
-		}
-		ctx.Set(context.RequestKey, req)
+		defer func() {
+			ClearProviderFixtures(ctx)
+			clear(ctx)
+		}()
 
-		provider := &resource.Provider{}
-		err := uc.Create(ctx, provider)
-
-		assert.True(t, err.IsOk())
+		provider := ProviderFixture(ctx, t, uc)
 
 		ctx.Set(testResource.ProviderIDKey, provider.IdentifierID)
 
@@ -107,7 +104,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 			"identifier.provider":          provider.IdentifierID.Provider,
 			"identifier.vpc":               provider.IdentifierID.VPC,
 			"name.vpc":                     provider.IdentifierID.VPC,
-			"name.provider":                "test",
+			"name.provider":                "fixture-provider",
 			"name.secret":                  testResource.SecretTestName,
 		}
 		usedSecret := ctx.Value(test.TestSecretContextKey).(secret.Secret)
@@ -138,6 +135,11 @@ func Test_providerUseCase_Create(t *testing.T) {
 		assertProviderEqual(t, want, got)
 	})
 	t.Run("Create a provider with a non-existing secret should fail", func(t *testing.T) {
+		defer func() {
+			ClearProviderFixtures(ctx)
+			clear(ctx)
+		}()
+
 		req := dto.CreateProviderRequest{
 			Name:           "test",
 			VPC:            testResource.SecretTestName,
@@ -152,6 +154,11 @@ func Test_providerUseCase_Create(t *testing.T) {
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Create a provider with an already existing name should fail", func(t *testing.T) {
+		defer func() {
+			ClearProviderFixtures(ctx)
+			clear(ctx)
+		}()
+
 		_ = ProviderFixture(ctx, t, uc)
 		newProvider := &resource.Provider{}
 		err := uc.Create(ctx, newProvider)
@@ -172,7 +179,8 @@ func Test_providerUseCase_Delete(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearProviderFixtures(ctx)
+		clear(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -244,7 +252,8 @@ func Test_providerUseCase_Get(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearProviderFixtures(ctx)
+		clear(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -290,8 +299,10 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearProviderFixtures(ctx)
+		clear(ctx)
 	}()
+
 	t.Run("Get a valid Provider Stack should succeed", func(t *testing.T) {
 		provider := ProviderFixture(ctx, t, uc)
 		nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
@@ -370,7 +381,8 @@ func Test_providerUseCase_List(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearProviderFixtures(ctx)
+		clear(ctx)
 	}()
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
@@ -419,7 +431,8 @@ func Test_providerUseCase_Update(t *testing.T) {
 
 	defer func() {
 		require.NoError(t, gnomock.Stop(mongoC))
-		clearProvider(ctx)
+		ClearProviderFixtures(ctx)
+		clear(ctx)
 	}()
 
 	t.Run("Update a valid provider should succeed", func(t *testing.T) {

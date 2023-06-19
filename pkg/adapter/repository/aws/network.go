@@ -85,9 +85,9 @@ func (aws *awsRepository) CreateNetwork(ctx context.Context, network *networkMod
 
 	if err := kubernetes.Client().Client.Create(ctx, awsNetwork); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			return errors.Conflict.WithMessage(fmt.Sprintf("subnetwork %s already exists", network.IdentifierName.Network))
+			return errors.Conflict.WithMessage(fmt.Sprintf("network %s already exists", network.IdentifierName.Network))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s", network.IdentifierName.Network))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create network %s", network.IdentifierName.Network))
 	}
 	return errors.Created
 }

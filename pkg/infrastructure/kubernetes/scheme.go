@@ -64,6 +64,8 @@ func registerAWSResources(runtimeScheme *runtime.Scheme) {
 
 	UpboundNetworkFirewallSchemeBuild := &scheme.Builder{GroupVersion: schema.GroupVersion{Group: "networkfirewall.aws.upbound.io", Version: "v1beta1"}}
 	UpboundNetworkFirewallSchemeBuild.Register(&networkFirewallAWS.RuleGroup{}, &networkFirewallAWS.RuleGroupList{})
+	UpboundNetworkFirewallSchemeBuild.Register(&networkFirewallAWS.FirewallPolicy{}, &networkFirewallAWS.FirewallPolicyList{})
+	UpboundNetworkFirewallSchemeBuild.Register(&networkFirewallAWS.Firewall{}, &networkFirewallAWS.FirewallList{})
 	if err := UpboundNetworkFirewallSchemeBuild.AddToScheme(runtimeScheme); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error registering AWS resources: %v", err)))
 	}

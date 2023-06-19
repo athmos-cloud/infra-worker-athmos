@@ -44,12 +44,20 @@ func (aws *awsRepository) _getRuleGroup(ctx context.Context, ruleGroupName *stri
 }
 
 func (aws *awsRepository) _updateRuleGroup(ctx context.Context, firewall *model.Firewall, region *string) errors.Error {
-	awsRuleGroup, rgErr := aws._toAwsRuleGroup(ctx, firewall, region)
-	if !rgErr.IsOk() {
-		return rgErr
+	name := fmt.Sprintf("%s-rule-group", firewall.IdentifierID.Firewall)
+	existingAwsRuleGroup, err := aws._getRuleGroup(ctx, &name)
+	if !err.IsOk() {
+		return err
 	}
 
-	if err := kubernetes.Client().Client.Update(ctx, awsRuleGroup); err != nil {
+	awsRuleGroup, err := aws._toAwsRuleGroup(ctx, firewall, region)
+	if !err.IsOk() {
+		return err
+	}
+
+	existingAwsRuleGroup.Labels = awsRuleGroup.Labels
+	existingAwsRuleGroup.Spec = awsRuleGroup.Spec
+	if err := kubernetes.Client().Client.Update(ctx, existingAwsRuleGroup); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("rule group %s not found", awsRuleGroup.Name))
 		}
@@ -59,9 +67,9 @@ func (aws *awsRepository) _updateRuleGroup(ctx context.Context, firewall *model.
 }
 
 func (aws *awsRepository) _deleteRuleGroup(ctx context.Context, firewall *model.Firewall, region *string) errors.Error {
-	awsRuleGroup, rgErr := aws._toAwsRuleGroup(ctx, firewall, region)
-	if !rgErr.IsOk() {
-		return rgErr
+	awsRuleGroup, err := aws._toAwsRuleGroup(ctx, firewall, region)
+	if !err.IsOk() {
+		return err
 	}
 
 	if err := kubernetes.Client().Client.Delete(ctx, awsRuleGroup); err != nil {
@@ -79,6 +87,10 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 		ctx.Value(context.ProjectIDKey).(string)),
 		firewall.IdentifierID.ToIDLabels(),
 		firewall.IdentifierName.ToNameLabels())
+
+	priority := float64(1)
+	ruleType := "STATELESS"
+	ruleGroupCapacity := float64(5000)
 
 	allowAction := "aws:pass"
 	denyAction := "aws:drop"
@@ -107,7 +119,9 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 				},
 			},
 			ForProvider: v1beta1.RuleGroupParameters{
-				Region: region,
+				Capacity: &ruleGroupCapacity,
+				Name:     &firewall.IdentifierID.Provider,
+				Region:   region,
 				RuleGroup: []v1beta1.RuleGroupRuleGroupParameters{
 					{
 						RulesSource: []v1beta1.RulesSourceParameters{
@@ -116,6 +130,7 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 									{
 										StatelessRule: []v1beta1.StatelessRuleParameters{
 											{
+												Priority: &priority,
 												RuleDefinition: []v1beta1.RuleDefinitionParameters{
 													{
 														Actions:         []*string{&allowAction},
@@ -134,6 +149,7 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 						},
 					},
 				},
+				Type: &ruleType,
 			},
 		},
 	}, errors.OK

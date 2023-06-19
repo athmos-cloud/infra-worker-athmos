@@ -104,26 +104,26 @@ func (aws *awsRepository) CreateFirewall(ctx context.Context, firewall *network.
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("firewall %s already exists", firewall.IdentifierName.Firewall))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create subnetwork %s", firewall.IdentifierName.Firewall))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create firewall %s", firewall.IdentifierName.Firewall))
 	}
 	return errors.Created
 }
 
 func (aws *awsRepository) UpdateFirewall(ctx context.Context, firewall *network.Firewall) errors.Error {
+	region, err := _regionForFirewall(ctx, firewall)
+	if !err.IsOk() {
+		return err
+	}
+	awsFirewall := aws.toAWSFirewall(ctx, firewall, region)
+
 	existingFirewall := &v1beta1.Firewall{}
 	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: firewall.IdentifierID.Firewall}, existingFirewall); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("firewall %s not found", firewall.IdentifierID.Firewall))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", firewall.IdentifierID.Firewall))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get firewall %s", firewall.IdentifierID.Firewall))
 	}
 
-	region, err := _regionForFirewall(ctx, firewall)
-	if !err.IsOk() {
-		return err
-	}
-
-	awsFirewall := aws.toAWSFirewall(ctx, firewall, region)
 	existingFirewall.Spec = awsFirewall.Spec
 	existingFirewall.Labels = awsFirewall.Labels
 	if err := kubernetes.Client().Client.Update(ctx, existingFirewall); err != nil {
@@ -228,8 +228,16 @@ func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *network.F
 				},
 			},
 			ForProvider: v1beta1.FirewallParameters{
-				VPCID:  &firewall.IdentifierID.Network,
+				Name:   &firewall.IdentifierID.Provider,
 				Region: region,
+				SubnetMapping: []v1beta1.SubnetMappingParameters{
+					{
+						SubnetIDSelector: &v1.Selector{
+							MatchLabels: resLabels,
+						},
+					},
+				},
+				VPCID: &firewall.IdentifierID.Network,
 			},
 		},
 	}

@@ -49,16 +49,21 @@ func (aws *awsRepository) _deleteFirewallPolicy(ctx context.Context, firewall *m
 func (aws *awsRepository) _toAWSFirewallPolicy(ctx context.Context, firewall *model.Firewall, region *string) (*v1beta1.FirewallPolicy, errors.Error) {
 	resLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), firewall.IdentifierID.ToIDLabels(), firewall.IdentifierName.ToNameLabels())
 
+	priority := float64(1)
 	var srgRef []v1beta1.StatelessRuleGroupReferenceParameters
 	srgRef = append(srgRef, v1beta1.StatelessRuleGroupReferenceParameters{
+		Priority: &priority,
 		ResourceArnSelector: &v1.Selector{
 			MatchLabels: resLabels,
 		},
 	})
 
+	defaultAction := "aws:drop"
 	var fpfPolicy []v1beta1.FirewallPolicyFirewallPolicyParameters
 	fpfPolicy = append(fpfPolicy, v1beta1.FirewallPolicyFirewallPolicyParameters{
-		StatelessRuleGroupReference: srgRef,
+		StatelessDefaultActions:         []*string{&defaultAction},
+		StatelessFragmentDefaultActions: []*string{&defaultAction},
+		StatelessRuleGroupReference:     srgRef,
 	})
 
 	return &v1beta1.FirewallPolicy{
@@ -79,5 +84,5 @@ func (aws *awsRepository) _toAWSFirewallPolicy(ctx context.Context, firewall *mo
 				Region:         region,
 			},
 		},
-	}, errors.BadRequest
+	}, errors.OK
 }

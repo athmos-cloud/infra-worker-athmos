@@ -37,8 +37,8 @@ func (fuc *firewallUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return fuc.gcpRepo
-		//case types.ProviderAWS:
-		//	return fuc.awsRepo
+	case types.ProviderAWS:
+		return fuc.awsRepo
 		//case types.ProviderAZURE:
 		//	return fuc.azureRepo
 	}
