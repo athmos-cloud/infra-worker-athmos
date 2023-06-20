@@ -28,7 +28,6 @@ metadata:
     athmos.cloud/project-id: "test-project"
     identifier.provider: "gcp"
     identifier.network: "default-net-1"
-
 spec:
   deletionPolicy: Delete
   providerConfigRef:
@@ -90,7 +89,7 @@ spec:
         initializeParams:
         - image: debian-cloud/debian-11
           size: 10
-    zone: europe-west9-a
+    zone: europe-west9-b
     metadata:
       ssh-keys: |
         admin: ssh-rsa AAAAB3NzaC1yc2EAAA
