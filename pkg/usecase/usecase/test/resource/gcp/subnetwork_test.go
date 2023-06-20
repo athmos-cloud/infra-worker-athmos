@@ -185,25 +185,25 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 		subnet := &network.Subnetwork{}
 		err := suc.Create(ctx, subnet)
 		assert.Equal(t, errors.Created.Code, err.Code)
-		getReq := dto.GetSubnetworkRequest{
-			IdentifierID: subnet.IdentifierID,
+		getReq := dto.GetResourceRequest{
+			Identifier: subnet.IdentifierID.Subnetwork,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getSubnet := &network.Subnetwork{}
 		err = suc.Get(ctx, getSubnet)
 		assert.Equal(t, errors.OK.Code, err.Code)
-		assert.Equal(t, subnet.IdentifierID, getReq.IdentifierID)
+		assert.Equal(t, subnet.IdentifierID, getReq.Identifier)
 		assert.Equal(t, subnet.IPCIDRRange, ipCIDR)
 		assert.Equal(t, subnet.Region, region)
 	})
 	t.Run("Get a non-existing subnetwork should fail", func(t *testing.T) {
-		getReq := dto.GetSubnetworkRequest{
-			IdentifierID: identifier.Subnetwork{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Subnetwork{
 				Provider:   "test",
 				VPC:        "test",
 				Network:    "test",
 				Subnetwork: "this-network-does-not-exist",
-			},
+			}.Subnetwork,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		subnet := &network.Subnetwork{}

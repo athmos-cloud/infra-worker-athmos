@@ -209,10 +209,10 @@ func Test_providerUseCase_Get(t *testing.T) {
 	t.Run("Get a valid provider should succeed", func(t *testing.T) {
 		provider := ProviderFixture(ctx, t, uc)
 
-		getReq := dto.GetProviderRequest{
-			IdentifierID: identifier.Provider{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Provider{
 				Provider: provider.IdentifierID.Provider,
-			},
+			}.Provider,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getProvider := &resource.Provider{}
@@ -223,10 +223,10 @@ func Test_providerUseCase_Get(t *testing.T) {
 		assert.Equal(t, provider.Auth, getProvider.Auth)
 	})
 	t.Run("Get a non-existing provider should fail", func(t *testing.T) {
-		getReq := dto.GetProviderRequest{
-			IdentifierID: identifier.Provider{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Provider{
 				Provider: "this-provider-does-not-exist",
-			},
+			}.Provider,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getProvider := &resource.Provider{}
@@ -393,8 +393,8 @@ func Test_providerUseCase_Update(t *testing.T) {
 		updatedProvider := &resource.Provider{}
 		err = uc.Update(ctx, updatedProvider)
 		assert.True(t, err.IsOk())
-		ctx.Set(context.RequestKey, dto.GetProviderRequest{
-			IdentifierID: provider.IdentifierID,
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: provider.IdentifierID.Provider,
 		})
 		err = uc.Get(ctx, updatedProvider)
 		kubeResource := &v1beta1.ProviderConfig{}

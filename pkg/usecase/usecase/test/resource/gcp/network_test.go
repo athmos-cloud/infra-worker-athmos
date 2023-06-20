@@ -183,8 +183,8 @@ func Test_networkUseCase_Get(t *testing.T) {
 
 	t.Run("Get a valid network should succeed", func(t *testing.T) {
 		net := NetworkFixture(ctx, t, nuc)
-		getReq := dto.GetNetworkRequest{
-			IdentifierID: net.IdentifierID,
+		getReq := dto.GetResourceRequest{
+			Identifier: net.IdentifierID.Network,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		gotNet := &network.Network{}
@@ -194,12 +194,12 @@ func Test_networkUseCase_Get(t *testing.T) {
 
 	})
 	t.Run("Delete a non-existing network should fail", func(t *testing.T) {
-		getReq := dto.GetNetworkRequest{
-			IdentifierID: identifier.Network{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Network{
 				Provider: "test",
 				VPC:      "test",
 				Network:  "this-network-does-not-exist",
-			},
+			}.Network,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		gotNet := &network.Network{}

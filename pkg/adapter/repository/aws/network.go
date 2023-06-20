@@ -6,10 +6,12 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	networkModels "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -64,12 +66,110 @@ func (aws *awsRepository) FindAllNetworks(ctx context.Context, opt option.Option
 		return nil, err
 	}
 	return modNetworks, errors.OK
-
 }
 
-func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, _ *resourceRepo.NetworkChannel) (*networkModels.NetworkCollection, errors.Error) {
-	//TODO
-	panic("Implement me")
+func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt option.Option, ch *resourceRepo.NetworkChannel) (*networkModels.NetworkCollection, errors.Error) {
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	awsVPCList := &v1beta1.VPCList{}
+	kubeOptions := &client.ListOptions{
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, awsVPCList, kubeOptions); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list networks"))
+	}
+
+	modNetworks, err := aws.toModelNetworkCollection(awsVPCList)
+	if !err.IsOk() {
+		return nil, err
+	}
+
+	subnetChannels := make([]resourceRepo.SubnetworkChannel, 0)
+	firewallChannels := make([]resourceRepo.FirewallChannel, 0)
+	dbChannels := make([]resourceRepo.SqlDBChannel, 0)
+
+	getNested := func(network *networkModels.Network) {
+		chFirewall := &resourceRepo.FirewallChannel{
+			Channel:      make(chan *networkModels.FirewallCollection),
+			ErrorChannel: make(chan errors.Error),
+		}
+		chSubnet := &resourceRepo.SubnetworkChannel{
+			Channel:      make(chan *networkModels.SubnetworkCollection),
+			ErrorChannel: make(chan errors.Error),
+		}
+		chDB := &resourceRepo.SqlDBChannel{
+			Channel:      make(chan *instance.SqlDBCollection),
+			ErrorChannel: make(chan errors.Error),
+		}
+		subnetChannels = append(subnetChannels, *chSubnet)
+		firewallChannels = append(firewallChannels, *chFirewall)
+		dbChannels = append(dbChannels, *chDB)
+
+		go aws.FindAllRecursiveFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chFirewall)
+		go aws.FindAllRecursiveSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chSubnet)
+		go aws.FindAllRecursiveSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chDB)
+
+		gotFirewalls := false
+		gotSubnets := false
+		gotDBs := false
+		for {
+			select {
+			case firewalls := <-chFirewall.Channel:
+				network.Firewalls = *firewalls
+				if gotSubnets {
+					return
+				}
+				gotFirewalls = true
+			case errCh := <-chFirewall.ErrorChannel:
+				logger.Error.Println("error while listing firewalls", errCh)
+				if gotSubnets {
+					return
+				}
+				gotFirewalls = true
+			case subnetworks := <-chSubnet.Channel:
+				network.Subnetworks = *subnetworks
+				if gotFirewalls {
+					return
+				}
+				gotSubnets = true
+			case errCh := <-chSubnet.ErrorChannel:
+				logger.Error.Println("error while listing subnetworks", errCh)
+				if gotFirewalls {
+					return
+				}
+				gotFirewalls = true
+			case dbs := <-chDB.Channel:
+				network.SqlDbs = *dbs
+				if gotDBs {
+					return
+				}
+				gotDBs = true
+			case errCh := <-chSubnet.ErrorChannel:
+				logger.Error.Println("error while listing dbs", errCh)
+				if gotDBs {
+					return
+				}
+				gotDBs = true
+			}
+		}
+	}
+	networks := &networkModels.NetworkCollection{}
+	for _, network := range *modNetworks {
+		getNested(&network)
+		(*networks)[network.IdentifierName.Network] = network
+	}
+	for _, ch := range subnetChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
+	for _, ch := range firewallChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
+
+	return networks, errors.OK
 }
 
 func (aws *awsRepository) CreateNetwork(ctx context.Context, network *networkModels.Network) errors.Error {

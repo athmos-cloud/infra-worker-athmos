@@ -16,7 +16,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-aws/apis/ec2/v1beta1"
@@ -29,15 +28,6 @@ type wantNetwork struct {
 	Name   string
 	Labels map[string]string
 	Spec   v1beta1.VPCSpec
-}
-
-func netSuiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
-	require.NoError(t, gnomock.Stop(container))
-	ClearFixtures(ctx)
-}
-
-func netTeardown(ctx context.Context) {
-	ClearNetworksFixtures(ctx)
 }
 
 func Test_networkUseCase_Create(t *testing.T) {
@@ -58,10 +48,10 @@ func Test_networkUseCase_Create(t *testing.T) {
 
 	ProviderFixture(ctx, t, puc)
 
-	defer netSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Create a valid network", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		net := NetworkFixture(ctx, t, nuc)
 
@@ -107,7 +97,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a network without specifying a region should raise a bad request error", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		parentID := ctx.Value(testResource.ProviderIDKey).(identifier.Provider)
 		netName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
@@ -127,7 +117,7 @@ func Test_networkUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a network with an already existing name should raise conflict error", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		net := NetworkFixture(ctx, t, nuc)
 		err := nuc.Create(ctx, net)
@@ -153,10 +143,10 @@ func Test_networkUseCase_Delete(t *testing.T) {
 
 	ProviderFixture(ctx, t, puc)
 
-	defer netSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Delete a valid network should succeed", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		net := NetworkFixture(ctx, t, nuc)
 		delReq := dto.DeleteNetworkRequest{
@@ -168,7 +158,7 @@ func Test_networkUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete a non-existing network should fail", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		delReq := dto.DeleteNetworkRequest{
 			IdentifierID: identifier.Network{
@@ -184,7 +174,7 @@ func Test_networkUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete a network with children should cascade", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		sshRepo := repository.NewSSHKeyRepository()
 		suc := usecase.NewSubnetworkUseCase(resourceTest.ProjectRepo, nil, awsRepo, nil)
@@ -196,10 +186,11 @@ func Test_networkUseCase_Delete(t *testing.T) {
 
 		delReq := dto.DeleteNetworkRequest{
 			IdentifierID: network.IdentifierID,
+			Cascade:      true,
 		}
 		ctx.Set(context.RequestKey, delReq)
 		err := nuc.Delete(ctx, network)
-
+		fmt.Println(err.Message)
 		require.Equal(t, errors.NoContent.Code, err.Code)
 	})
 }
@@ -222,14 +213,14 @@ func Test_networkUseCase_Get(t *testing.T) {
 
 	ProviderFixture(ctx, t, puc)
 
-	defer netSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid network should succeed", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		net := NetworkFixture(ctx, t, nuc)
-		getReq := dto.GetNetworkRequest{
-			IdentifierID: net.IdentifierID,
+		getReq := dto.GetResourceRequest{
+			Identifier: net.IdentifierID.Network,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		gotNet := &network.Network{}
@@ -239,14 +230,14 @@ func Test_networkUseCase_Get(t *testing.T) {
 	})
 
 	t.Run("Delete a non-existing network should fail", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
-		getReq := dto.GetNetworkRequest{
-			IdentifierID: identifier.Network{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Network{
 				Provider: "test",
 				VPC:      "test",
 				Network:  "this-network-does-not-exist",
-			},
+			}.Network,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		gotNet := &network.Network{}
@@ -274,10 +265,10 @@ func Test_networkUseCase_Update(t *testing.T) {
 
 	ProviderFixture(ctx, t, puc)
 
-	defer netSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update a valid network should succeed", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		net := NetworkFixture(ctx, t, nuc)
 		managed := false
@@ -298,7 +289,7 @@ func Test_networkUseCase_Update(t *testing.T) {
 	})
 
 	t.Run("Update a non-existing network should fail", func(t *testing.T) {
-		defer netTeardown(ctx)
+		defer ClearNetworksFixtures(ctx)
 
 		toUp := dto.UpdateNetworkRequest{
 			IdentifierID: identifier.Network{

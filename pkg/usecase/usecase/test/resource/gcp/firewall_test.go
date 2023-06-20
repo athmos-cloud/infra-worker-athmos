@@ -178,7 +178,7 @@ func Test_firewallUseCase_Get(t *testing.T) {
 	t.Run("Get a valid firewall should succeed", func(t *testing.T) {
 		firewall := FirewallFixture(ctx, t, fuc)
 
-		getReq := dto.GetFirewallRequest{IdentifierID: firewall.IdentifierID}
+		getReq := dto.GetResourceRequest{Identifier: firewall.IdentifierID.Firewall}
 		ctx.Set(context.RequestKey, getReq)
 		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
@@ -189,11 +189,11 @@ func Test_firewallUseCase_Get(t *testing.T) {
 		assert.Equal(t, firewall.Deny, getFirewall.Deny)
 	})
 	t.Run("Delete a non-existing firewall should fail", func(t *testing.T) {
-		getReq := dto.GetFirewallRequest{IdentifierID: identifier.Firewall{
+		getReq := dto.GetResourceRequest{Identifier: identifier.Firewall{
 			Provider: "test",
 			Network:  "test",
 			Firewall: "this-firewall-does-not-exist",
-		}}
+		}.Firewall}
 		ctx.Set(context.RequestKey, getReq)
 		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
