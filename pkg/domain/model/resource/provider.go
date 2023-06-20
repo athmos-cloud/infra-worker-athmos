@@ -8,11 +8,11 @@ import (
 )
 
 type Provider struct {
-	IdentifierID   identifier.Provider `json:"identifier_id"`
-	IdentifierName identifier.Provider `json:"identifier_name"`
-	Type           types.Provider      `json:"provider"`
-	Auth           ProviderAuth        `json:"auth"`
-	Networks       network.Collection  `json:"networks,omitempty"`
+	IdentifierID   identifier.Provider       `json:"identifier_id"`
+	IdentifierName identifier.Provider       `json:"identifier_name"`
+	Type           types.Provider            `json:"provider"`
+	Auth           ProviderAuth              `json:"auth"`
+	Networks       network.NetworkCollection `json:"networks,omitempty"`
 }
 
 type ProviderAuth struct {

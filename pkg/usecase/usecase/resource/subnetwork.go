@@ -37,8 +37,8 @@ func (suc *subnetworkUseCase) getRepo(ctx context.Context) resourceRepo.Resource
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return suc.gcpRepo
-		//case types.ProviderAWS:
-		//	return suc.awsRepo
+	case types.ProviderAWS:
+		return suc.awsRepo
 		//case types.ProviderAZURE:
 		//	return suc.azureRepo
 	}

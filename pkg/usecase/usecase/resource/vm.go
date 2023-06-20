@@ -39,8 +39,8 @@ func (vuc *vmUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return vuc.gcpRepo
-		//case types.ProviderAWS:
-		//	return vuc.awsRepo
+	case types.ProviderAWS:
+		return vuc.awsRepo
 		//case types.ProviderAZURE:
 		//	return vuc.azureRepo
 	}

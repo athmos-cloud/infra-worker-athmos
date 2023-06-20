@@ -37,8 +37,8 @@ func (nuc *networkUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return nuc.gcpRepo
-		//case types.ProviderAWS:
-		//	return nuc.awsRepo
+	case types.ProviderAWS:
+		return nuc.awsRepo
 		//case types.ProviderAZURE:
 		//	return nuc.azureRepo
 	}
@@ -92,6 +92,7 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
+		Region:         req.Region,
 	}
 	if errCreate := repo.CreateNetwork(ctx, createdNetwork); !errCreate.IsOk() {
 		return errCreate

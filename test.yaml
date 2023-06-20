@@ -106,5 +106,3 @@ spec:
           subnetworkSelector:
             matchLabels:
               name.subnetwork: "subnet-test"
-
-

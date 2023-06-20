@@ -14,6 +14,7 @@ type CreateNetworkRequest struct {
 	ParentIDProvider *identifier.Provider `json:"parent_id_provider"`
 	ParentIDVPC      *identifier.VPC      `json:"parent_id_vpc"`
 	Name             string               `json:"name"`
+	Region           string               `json:"region,omitempty"`
 	Managed          bool                 `json:"managed" default:"true"`
 	Tags             map[string]string    `json:"tags"`
 }

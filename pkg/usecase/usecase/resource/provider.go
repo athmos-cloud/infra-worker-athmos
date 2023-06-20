@@ -41,8 +41,8 @@ func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return puc.gcpRepo
-		//case types.ProviderAWS:
-		//	return puc.awsRepo
+	case types.ProviderAWS:
+		return puc.awsRepo
 		//case types.ProviderAZURE:
 		//	return puc.azureRepo
 	}
