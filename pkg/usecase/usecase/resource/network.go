@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -78,7 +79,7 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 	id := identifier.Network{
 		Provider: provider.IdentifierID.Provider,
 		VPC:      provider.IdentifierID.VPC,
-		Network:  idFromName(req.Name),
+		Network:  usecase.IdFromName(req.Name),
 	}
 	name := identifier.Network{
 		Network:  req.Name,

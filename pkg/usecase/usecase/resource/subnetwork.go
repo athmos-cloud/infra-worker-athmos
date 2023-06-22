@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -88,7 +89,7 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 			Provider:   req.ParentID.Provider,
 			VPC:        req.ParentID.VPC,
 			Network:    req.ParentID.Network,
-			Subnetwork: idFromName(req.Name),
+			Subnetwork: usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.Subnetwork{
 			Provider:   network.IdentifierName.Provider,

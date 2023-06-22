@@ -19,9 +19,10 @@ func NewSecretPresenter() output.SecretPort {
 
 func (s *Secret) Render(ctx context.Context, secretAuth *secret.Secret) {
 	resp := dto.GetSecretResponse{
-		ID:          secretAuth.IDField.ID.Hex(),
-		Name:        secretAuth.Name,
-		Description: secretAuth.Description,
+		ID:           secretAuth.IDField.ID.Hex(),
+		ProviderType: string(secretAuth.ProviderType),
+		Name:         secretAuth.Name,
+		Description:  secretAuth.Description,
 	}
 	ctx.JSON(200, gin.H{"payload": resp})
 }
@@ -30,9 +31,10 @@ func (s *Secret) RenderAll(ctx context.Context, secretAuths *[]secret.Secret) {
 	resp := make([]dto.ListSecretResponseItem, len(*secretAuths))
 	for i, secretAuth := range *secretAuths {
 		resp[i] = dto.ListSecretResponseItem{
-			ID:          secretAuth.IDField.ID.Hex(),
-			Name:        secretAuth.Name,
-			Description: secretAuth.Description,
+			ID:           secretAuth.IDField.ID.Hex(),
+			ProviderType: string(secretAuth.ProviderType),
+			Name:         secretAuth.Name,
+			Description:  secretAuth.Description,
 		}
 	}
 	ctx.JSON(200, gin.H{"payload": resp})

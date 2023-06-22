@@ -6,17 +6,19 @@ import (
 )
 
 type GetSecretResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID           string `json:"id"`
+	ProviderType string `json:"provider_type"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
 }
 
 type ListSecretResponse []ListSecretResponseItem
 
 type ListSecretResponseItem struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID           string `json:"id"`
+	ProviderType string `json:"provider_type"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
 }
 
 type CreateSecretRequest struct {

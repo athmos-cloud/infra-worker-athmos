@@ -13,6 +13,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -93,7 +94,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 		keyList = append(keyList, &model.SSHKey{
 			Username:        auth.Username,
 			KeyLength:       auth.RSAKeyLength,
-			SecretName:      idFromName(fmt.Sprintf("%s-%s", req.Name, auth.Username)),
+			SecretName:      usecase.IdFromName(fmt.Sprintf("%s-%s", req.Name, auth.Username)),
 			SecretNamespace: project.Namespace,
 		})
 	}
@@ -111,7 +112,7 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 			VPC:        req.ParentID.VPC,
 			Network:    req.ParentID.Network,
 			Subnetwork: req.ParentID.Subnetwork,
-			VM:         idFromName(req.Name),
+			VM:         usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.VM{
 			Provider:   subnetwork.IdentifierName.Provider,
@@ -217,7 +218,7 @@ func (vuc *vmUseCase) updateSSHKeys(ctx context.Context, vmName string, auths *m
 		key := &model.SSHKey{
 			Username:        auth.Username,
 			KeyLength:       auth.RSAKeyLength,
-			SecretName:      idFromName(fmt.Sprintf("%s-%s", vmName, auth.Username)),
+			SecretName:      usecase.IdFromName(fmt.Sprintf("%s-%s", vmName, auth.Username)),
 			SecretNamespace: projectNamespace,
 		}
 		if errSSH := vuc.sshKeysRepo.Create(ctx, key); !errSSH.IsOk() {

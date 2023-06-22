@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -86,7 +87,7 @@ func (fuc *firewallUseCase) Create(ctx context.Context, firewall *model.Firewall
 			Provider: req.ParentID.Provider,
 			VPC:      req.ParentID.VPC,
 			Network:  req.ParentID.Network,
-			Firewall: idFromName(req.Name),
+			Firewall: usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.Firewall{
 			Provider: network.IdentifierName.Provider,

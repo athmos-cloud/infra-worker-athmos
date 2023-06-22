@@ -1,14 +1,12 @@
 package usecase
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	secretRepos "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	secret2 "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 )
 
@@ -64,7 +62,8 @@ func (suc *secretUseCase) List(ctx context.Context, secretAuths *[]secret.Secret
 
 func (suc *secretUseCase) Create(ctx context.Context, secretAuth *secret.Secret) errors.Error {
 	req := ctx.Value(context.RequestKey).(dto.CreateSecretRequest)
-	secretName := fmt.Sprintf("%s-%s", req.Name, utils.RandomString(5))
+	secretName := IdFromName(req.Name)
+
 	createdSecret, err := suc.kubernetesSecretRepo.Create(ctx, option.Option{
 		Value: secret2.CreateKubernetesSecretRequest{
 			ProjectID:   req.ProjectID,

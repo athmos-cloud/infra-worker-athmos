@@ -12,6 +12,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -92,7 +93,7 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 			Provider: req.ParentID.Provider,
 			VPC:      req.ParentID.VPC,
 			Network:  req.ParentID.Network,
-			SqlDB:    idFromName(req.Name),
+			SqlDB:    usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.SqlDB{
 			Provider: network.IdentifierName.Provider,

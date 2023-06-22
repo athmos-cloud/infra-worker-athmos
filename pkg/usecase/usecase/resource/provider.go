@@ -13,6 +13,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -114,7 +115,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.
 	}
 	providerToCreate := &resourceModel.Provider{
 		IdentifierID: identifier.Provider{
-			Provider: idFromName(req.Name),
+			Provider: usecase.IdFromName(req.Name),
 			VPC:      req.VPC,
 		},
 		IdentifierName: identifier.Provider{
