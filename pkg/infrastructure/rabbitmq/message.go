@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"time"
 )
 
 const (
@@ -45,18 +46,19 @@ type MessageSend struct {
 	ProjectID  string             `json:"project_id"`
 	Code       int                `json:"code"`
 	Type       eventType          `json:"type"`
+	Date       time.Time          `json:"date"`
 	Message    string             `json:"message"`
 	Identifier identifier.Payload `json:"identifier,omitempty"`
 	Payload    interface{}        `json:"payload,omitempty"`
 }
 
-type nestMessageWrap struct {
+type NestMessageWrap struct {
 	Pattern string `json:"pattern"`
 	Data    any    `json:"data"`
 }
 
-func (ms *MessageSend) WithNestWrapper() nestMessageWrap {
-	return nestMessageWrap{
+func (ms *MessageSend) WithNestWrapper() NestMessageWrap {
+	return NestMessageWrap{
 		Pattern: nestPatternValue,
 		Data:    ms,
 	}
