@@ -33,6 +33,6 @@ type UpdateSubnetworkRequest struct {
 }
 
 type DeleteSubnetworkRequest struct {
-	IdentifierID identifier.Subnetwork `json:"identifier_id"`
-	Cascade      bool                  `json:"cascade" default:"false"`
+	IdentifierID string `json:"identifier_id"`
+	Cascade      bool   `json:"cascade" default:"true"`
 }

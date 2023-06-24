@@ -49,6 +49,6 @@ type UpdateProviderRequest struct {
 }
 
 type DeleteProviderRequest struct {
-	IdentifierID identifier.Provider `json:"identifier_id"`
-	Cascade      bool                `json:"cascade" default:"false"`
+	IdentifierID string `json:"identifier_id"`
+	Cascade      bool   `json:"cascade" default:"true"`
 }

@@ -41,6 +41,6 @@ type UpdateSqlDBRequest struct {
 }
 
 type DeleteSqlDBRequest struct {
-	IdentifierID identifier.SqlDB `json:"identifier_id"`
-	Cascade      *bool            `json:"cascade" default:"false"`
+	IdentifierID string `json:"identifier_id"`
+	Cascade      *bool  `json:"cascade" default:"true"`
 }

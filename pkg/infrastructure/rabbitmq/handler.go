@@ -14,6 +14,7 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	if err != nil {
 		logger.Error.Fatalf("Error occurred in RMQ consumer: %v", err)
 	}
+	logger.Info.Println(msg.Body)
 	message := messageReceived{}
 	err = json.Unmarshal(msg.Body, &message)
 	if err != nil {

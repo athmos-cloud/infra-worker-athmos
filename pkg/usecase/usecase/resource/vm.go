@@ -246,7 +246,7 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 	defaults.SetDefaults(&req)
 
 	foundVM, err := repo.FindVM(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.VM},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})
 	if !err.IsOk() {
 		return err

@@ -28,6 +28,7 @@ type dataMessage struct {
 	ResourceType string `json:"resource_type"`
 	Payload      any    `json:"payload"`
 }
+
 type eventType string
 
 const (

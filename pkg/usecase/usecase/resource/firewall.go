@@ -150,7 +150,7 @@ func (fuc *firewallUseCase) Delete(ctx context.Context, firewall *model.Firewall
 	req := ctx.Value(context.RequestKey).(dto.DeleteFirewallRequest)
 
 	foundFirewall, err := repo.FindFirewall(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Firewall},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})
 	if !err.IsOk() {
 		return err

@@ -151,7 +151,7 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subn
 	defaults.SetDefaults(&req)
 
 	foundNetwork, err := repo.FindSubnetwork(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Subnetwork},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})
 	if !err.IsOk() {
 		return err

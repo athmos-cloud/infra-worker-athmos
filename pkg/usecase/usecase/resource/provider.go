@@ -178,7 +178,7 @@ func (puc *providerUseCase) Delete(ctx context.Context, provider *resourceModel.
 	req := ctx.Value(context.RequestKey).(dto.DeleteProviderRequest)
 	defaults.SetDefaults(&req)
 
-	provider, errFind := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Provider}})
+	provider, errFind := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID}})
 	if !errFind.IsOk() {
 		return errFind
 	}

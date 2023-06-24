@@ -34,5 +34,5 @@ type UpdateFirewallRequest struct {
 }
 
 type DeleteFirewallRequest struct {
-	IdentifierID identifier.Firewall `json:"identifierID"`
+	IdentifierID string `json:"identifier_id"`
 }

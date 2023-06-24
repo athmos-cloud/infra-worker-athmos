@@ -136,7 +136,7 @@ func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteNetworkRequest)
 
-	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.Network}})
+	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID}})
 	if !errNet.IsOk() {
 		return errNet
 	}

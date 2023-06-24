@@ -174,7 +174,7 @@ func (suc *sqlDBUseCase) Delete(ctx context.Context, db *instance.SqlDB) errors.
 	defaults.SetDefaults(&req)
 
 	foundDB, err := repo.FindSqlDB(ctx, option.Option{
-		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.SqlDB},
+		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})
 	if !err.IsOk() {
 		return err
