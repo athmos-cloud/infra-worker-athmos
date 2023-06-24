@@ -45,6 +45,7 @@ type MessageSend struct {
 	ProjectID  string             `json:"project_id"`
 	Code       int                `json:"code"`
 	Type       eventType          `json:"type"`
+	Message    string             `json:"message"`
 	Identifier identifier.Payload `json:"identifier,omitempty"`
 	Payload    interface{}        `json:"payload,omitempty"`
 }
