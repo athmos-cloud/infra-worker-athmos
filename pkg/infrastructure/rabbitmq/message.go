@@ -20,8 +20,12 @@ const (
 )
 
 type messageReceived struct {
-	Pattern string      `json:"pattern"`
+	Pattern pattern     `json:"pattern"`
 	Data    dataMessage `json:"data"`
+}
+
+type pattern struct {
+	Pattern string `json:"pattern"`
 }
 
 type dataMessage struct {

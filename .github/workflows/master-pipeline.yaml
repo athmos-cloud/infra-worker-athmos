@@ -42,6 +42,6 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: .
-        dockerfile: Dockerfile_prod 
+        file: Dockerfile_prod
         push: true
         tags: registry.athmos-cloud.com/athmos/infra-worker-athmos:latest

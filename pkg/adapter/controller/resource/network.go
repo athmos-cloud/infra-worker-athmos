@@ -28,6 +28,7 @@ func NewNetworkController(networkUseCase resource2.Network, networkOutput output
 func (nc *networkController) GetNetwork(ctx context.Context) {
 	if err := resourceValidator.GetNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	net := &network.Network{}
 	if err := nc.networkUseCase.Get(ctx, net); !err.IsOk() {
@@ -40,6 +41,7 @@ func (nc *networkController) GetNetwork(ctx context.Context) {
 func (nc *networkController) CreateNetwork(ctx context.Context) {
 	if err := resourceValidator.CreateNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	net := &network.Network{}
 	if err := nc.networkUseCase.Create(ctx, net); !err.IsOk() {
@@ -52,6 +54,7 @@ func (nc *networkController) CreateNetwork(ctx context.Context) {
 func (nc *networkController) UpdateNetwork(ctx context.Context) {
 	if err := resourceValidator.UpdateNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	network := &network.Network{}
 	if err := nc.networkUseCase.Update(ctx, network); !err.IsOk() {
@@ -64,6 +67,7 @@ func (nc *networkController) UpdateNetwork(ctx context.Context) {
 func (nc *networkController) DeleteNetwork(ctx context.Context) {
 	if err := resourceValidator.DeleteNetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	network := &network.Network{}
 	if err := nc.networkUseCase.Delete(ctx, network); !err.IsOk() {

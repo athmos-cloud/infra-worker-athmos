@@ -30,6 +30,7 @@ func NewProviderController(providerUseCase usecase.Provider, providerOutput outp
 func (pc *providerController) GetProvider(ctx context.Context) {
 	if err := resourceValidator.GetProvider(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	provider := &model.Provider{}
 	if err := pc.providerUseCase.Get(ctx, provider); !err.IsOk() {
@@ -42,6 +43,7 @@ func (pc *providerController) GetProvider(ctx context.Context) {
 func (pc *providerController) GetStack(ctx context.Context) {
 	if err := resourceValidator.Stack(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	stack := &model.Provider{}
 	if err := pc.providerUseCase.GetStack(ctx, stack); !err.IsOk() {
@@ -55,6 +57,7 @@ func (pc *providerController) ListProviders(ctx context.Context) {
 	providers := &model.ProviderCollection{}
 	if err := pc.providerUseCase.List(ctx, providers); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		pc.providerOutput.RenderAll(ctx, providers)
 	}
@@ -63,6 +66,7 @@ func (pc *providerController) ListProviders(ctx context.Context) {
 func (pc *providerController) CreateProvider(ctx context.Context) {
 	if err := resourceValidator.CreateProvider(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	provider := &model.Provider{}
 	if err := pc.providerUseCase.Create(ctx, provider); !err.IsOk() {
@@ -75,6 +79,7 @@ func (pc *providerController) CreateProvider(ctx context.Context) {
 func (pc *providerController) UpdateProvider(ctx context.Context) {
 	if err := resourceValidator.UpdateProvider(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	provider := &model.Provider{}
 	if err := pc.providerUseCase.Update(ctx, provider); !err.IsOk() {
@@ -87,6 +92,7 @@ func (pc *providerController) UpdateProvider(ctx context.Context) {
 func (pc *providerController) DeleteProvider(ctx context.Context) {
 	if err := resourceValidator.DeleteProvider(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	provider := &model.Provider{}
 	if err := pc.providerUseCase.Delete(ctx, provider); !err.IsOk() {
