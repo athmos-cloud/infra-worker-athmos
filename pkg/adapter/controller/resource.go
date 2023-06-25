@@ -13,6 +13,7 @@ import (
 type Resource interface {
 	GetResource(context.Context)
 	ListResources(context.Context)
+	GetResourceStack(context.Context)
 	CreateResource(context.Context)
 	UpdateResource(context.Context)
 	DeleteResource(context.Context)
@@ -40,6 +41,13 @@ func NewResourceController(
 		firewallController:   firewallController,
 		vmController:         vmController,
 	}
+}
+
+func (rc *resourceController) GetResourceStack(ctx context.Context) {
+	if err := validator.Resource(ctx); !err.IsOk() {
+		errorCtrl.RaiseError(ctx, err)
+	}
+	rc.providerController.GetStack(ctx)
 }
 
 func (rc *resourceController) GetResource(ctx context.Context) {
