@@ -1,0 +1,40 @@
+name: Pull request App CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.20
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+      if: steps.cache.outputs.cache-hit != 'true'
+
+    - name: Build
+      run: go build -v .
+
+    # - name: Test
+    #   run: go test -v ./...
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        dockerfile: Dockerfile_prod 
+        push: false
+        tags: registry.athmos-cloud.com/athmos/infra-worker-athmos:latest
+
+
