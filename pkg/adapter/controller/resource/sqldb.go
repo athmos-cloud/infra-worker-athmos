@@ -40,6 +40,7 @@ func (dc *sqlDBController) GetSqlDB(ctx context.Context) {
 func (dc *sqlDBController) CreateSqlDB(ctx context.Context) {
 	if err := resourceValidator.CreateSqlDB(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	net := &instance.SqlDB{}
 	if err := dc.dbUseCase.Create(ctx, net); !err.IsOk() {
@@ -56,6 +57,7 @@ func (dc *sqlDBController) UpdateSqlDB(ctx context.Context) {
 	network := &instance.SqlDB{}
 	if err := dc.dbUseCase.Update(ctx, network); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		dc.dbOutput.RenderUpdate(ctx, network)
 	}
@@ -64,6 +66,7 @@ func (dc *sqlDBController) UpdateSqlDB(ctx context.Context) {
 func (dc *sqlDBController) DeleteSqlDB(ctx context.Context) {
 	if err := resourceValidator.DeleteSqlDB(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	network := &instance.SqlDB{}
 	if err := dc.dbUseCase.Delete(ctx, network); !err.IsOk() {

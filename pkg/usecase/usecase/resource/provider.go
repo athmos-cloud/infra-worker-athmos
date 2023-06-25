@@ -108,7 +108,6 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateProviderRequest)
 	defaults.SetDefaults(&req)
-
 	secret, errSecret := puc.secretRepo.Find(ctx, option.Option{Value: secret.GetSecretByProjectIdAndName{ProjectId: ctx.Value(context.ProjectIDKey).(string), Name: req.SecretAuthName}})
 	if !errSecret.IsOk() {
 		return errSecret

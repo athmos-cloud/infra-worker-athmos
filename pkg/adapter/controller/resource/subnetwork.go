@@ -28,6 +28,7 @@ func NewSubnetworkController(subnetworkUseCase usecase.Subnetwork, subnetworkOut
 func (sc *subnetworkController) GetSubnetwork(ctx context.Context) {
 	if err := resourceValidator.GetSubnetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	subnetwork := &network.Subnetwork{}
 	if err := sc.subnetworkUseCase.Get(ctx, subnetwork); !err.IsOk() {
@@ -40,6 +41,7 @@ func (sc *subnetworkController) GetSubnetwork(ctx context.Context) {
 func (sc *subnetworkController) CreateSubnetwork(ctx context.Context) {
 	if err := resourceValidator.CreateSubnetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	subnetwork := &network.Subnetwork{}
 	if err := sc.subnetworkUseCase.Create(ctx, subnetwork); !err.IsOk() {
@@ -52,6 +54,7 @@ func (sc *subnetworkController) CreateSubnetwork(ctx context.Context) {
 func (sc *subnetworkController) UpdateSubnetwork(ctx context.Context) {
 	if err := resourceValidator.UpdateSubnetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	subnetwork := &network.Subnetwork{}
 	if err := sc.subnetworkUseCase.Update(ctx, subnetwork); !err.IsOk() {
@@ -64,6 +67,7 @@ func (sc *subnetworkController) UpdateSubnetwork(ctx context.Context) {
 func (sc *subnetworkController) DeleteSubnetwork(ctx context.Context) {
 	if err := resourceValidator.DeleteSubnetwork(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	subnetwork := &network.Subnetwork{}
 	if err := sc.subnetworkUseCase.Delete(ctx, subnetwork); !err.IsOk() {

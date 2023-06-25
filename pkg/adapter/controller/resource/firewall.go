@@ -28,6 +28,7 @@ func NewFirewallController(firewallUseCase resource2.Firewall, firewallOutput ou
 func (nc *firewallController) GetFirewall(ctx context.Context) {
 	if err := resourceValidator.GetFirewall(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	firewall := &model.Firewall{}
 	if err := nc.firewallUseCase.Get(ctx, firewall); !err.IsOk() {
@@ -40,6 +41,7 @@ func (nc *firewallController) GetFirewall(ctx context.Context) {
 func (nc *firewallController) CreateFirewall(ctx context.Context) {
 	if err := resourceValidator.CreateFirewall(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	firewall := &model.Firewall{}
 	if err := nc.firewallUseCase.Create(ctx, firewall); !err.IsOk() {
@@ -52,6 +54,7 @@ func (nc *firewallController) CreateFirewall(ctx context.Context) {
 func (nc *firewallController) UpdateFirewall(ctx context.Context) {
 	if err := resourceValidator.UpdateFirewall(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	firewall := &model.Firewall{}
 	if err := nc.firewallUseCase.Update(ctx, firewall); !err.IsOk() {
@@ -64,6 +67,7 @@ func (nc *firewallController) UpdateFirewall(ctx context.Context) {
 func (nc *firewallController) DeleteFirewall(ctx context.Context) {
 	if err := resourceValidator.DeleteFirewall(ctx); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	}
 	firewall := &model.Firewall{}
 	if err := nc.firewallUseCase.Delete(ctx, firewall); !err.IsOk() {

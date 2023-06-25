@@ -2,7 +2,7 @@ package secret
 
 type Prerequisites struct {
 	Variables []Variable `json:"variables" yaml:"variables"`
-	Steps     []Command  `json:"commands" yaml:"steps"`
+	Steps     []Command  `json:"steps" yaml:"steps"`
 }
 
 type Variable struct {

@@ -30,6 +30,7 @@ func (vc *vmController) GetVM(ctx context.Context) {
 	vm := &model.VM{}
 	if err := vc.vmUseCase.Get(ctx, vm); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		vc.vmOutput.Render(ctx, vm)
 	}
@@ -40,6 +41,7 @@ func (vc *vmController) CreateVM(ctx context.Context) {
 	vm := &model.VM{}
 	if err := vc.vmUseCase.Create(ctx, vm); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		vc.vmOutput.RenderCreate(ctx, vm)
 	}
@@ -50,6 +52,7 @@ func (vc *vmController) UpdateVM(ctx context.Context) {
 	vm := &model.VM{}
 	if err := vc.vmUseCase.Update(ctx, vm); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		vc.vmOutput.RenderUpdate(ctx, vm)
 	}
@@ -60,6 +63,7 @@ func (vc *vmController) DeleteVM(ctx context.Context) {
 	vm := &model.VM{}
 	if err := vc.vmUseCase.Delete(ctx, vm); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
+		return
 	} else {
 		vc.vmOutput.RenderDelete(ctx, vm)
 	}
