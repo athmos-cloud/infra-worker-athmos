@@ -6,8 +6,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
-	"reflect"
 )
 
 func GetProvider(ctx context.Context) errors.Error {
