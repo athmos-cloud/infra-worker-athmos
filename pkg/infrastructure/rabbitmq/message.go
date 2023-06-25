@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"time"
 )
 
@@ -31,22 +32,10 @@ type dataMessage struct {
 	Payload      any    `json:"payload"`
 }
 
-type eventType string
-
-const (
-	EventTypeCreateRequestSent eventType = "CREATE_REQUEST_SENT"
-	EventTypeUpdateRequestSent eventType = "UPDATE_REQUEST_SENT"
-	EventTypeDeleteRequestSent eventType = "DELETE_REQUEST_SENT"
-
-	// Error CreateRequestTreated eventType = "CREATE_REQUEST_TREATED"
-	//ResourceCreated      eventType = "RESOURCE_CREATED"
-	Error eventType = "ERROR"
-)
-
 type MessageSend struct {
 	ProjectID    string              `json:"project_id"`
-	ResourceType string              `json:"resource_type"`
-	ProviderType string              `json:"provider_type"`
+	ResourceType types.Resource      `json:"resource_type"`
+	ProviderType types.Provider      `json:"provider_type"`
 	Code         int                 `json:"code"`
 	Type         metadata.StatusType `json:"type"`
 	Date         time.Time           `json:"date"`
