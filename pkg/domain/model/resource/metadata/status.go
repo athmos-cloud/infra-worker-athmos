@@ -38,6 +38,9 @@ func StatusTypeFromKubernetesStatus(status []cpv1.Condition) StatusType {
 	if s.Reason == cpv1.ReasonAvailable {
 		return StatusTypeCreated
 	}
+	if s.Reason == cpv1.ReasonReconcileSuccess && s.Type == cpv1.TypeSynced {
+		return StatusTypeCreated
+	}
 	if s.Reason == cpv1.ReasonDeleting {
 		return StatusTypeDeleting
 	}

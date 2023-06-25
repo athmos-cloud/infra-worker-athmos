@@ -44,13 +44,15 @@ const (
 )
 
 type MessageSend struct {
-	ProjectID  string              `json:"project_id"`
-	Code       int                 `json:"code"`
-	Type       metadata.StatusType `json:"type"`
-	Date       time.Time           `json:"date"`
-	Message    string              `json:"message"`
-	Identifier identifier.Payload  `json:"identifier,omitempty"`
-	Payload    interface{}         `json:"payload,omitempty"`
+	ProjectID    string              `json:"project_id"`
+	ResourceType string              `json:"resource_type"`
+	ProviderType string              `json:"provider_type"`
+	Code         int                 `json:"code"`
+	Type         metadata.StatusType `json:"type"`
+	Date         time.Time           `json:"date"`
+	Message      string              `json:"message"`
+	Identifier   identifier.Payload  `json:"identifier,omitempty"`
+	Payload      interface{}         `json:"payload,omitempty"`
 }
 
 type NestMessageWrap struct {
