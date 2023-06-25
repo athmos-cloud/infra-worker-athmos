@@ -34,6 +34,7 @@ type Payload struct {
 	Subnetwork string `json:"subnetwork"`
 	VM         string `json:"vm"`
 	Firewall   string `json:"firewall"`
+	SqlDB      string `json:"sqldb"`
 }
 
 func FromPayload(payload Payload) ID {
