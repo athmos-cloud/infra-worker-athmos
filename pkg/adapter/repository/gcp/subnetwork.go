@@ -217,6 +217,7 @@ func (gcp *gcpRepository) toModelSubnetwork(subnet *v1beta1.Subnetwork) (*networ
 	}
 	return &network.Subnetwork{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(subnet.Status.Conditions),
 			Managed: subnet.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 		},
 		IdentifierID:   id,

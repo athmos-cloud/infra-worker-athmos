@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"encoding/json"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
@@ -23,7 +24,7 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	errorType := func(err errors.Error) {
 		ctx.Set(context.ResponseCodeKey, 400)
 		ctx.Set(context.ResponseKey, gin.H{"error": err.ToString()})
-		rq.handleResponse(ctx, Error)
+		rq.handleResponse(ctx, metadata.StatusTypeError)
 	}
 	providerType, errProvider := types.ProviderFromString(message.Data.ProviderType)
 	if !errProvider.IsOk() {
@@ -43,24 +44,24 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	switch message.Data.Verb {
 	case CREATE:
 		rq.ResourceController.CreateResource(ctx)
-		rq.handleResponse(ctx, EventTypeCreateRequestSent)
+		rq.handleResponse(ctx, metadata.StatusTypeCreateRequestSent)
 	case UPDATE:
 		rq.ResourceController.UpdateResource(ctx)
-		rq.handleResponse(ctx, EventTypeUpdateRequestSent)
+		rq.handleResponse(ctx, metadata.StatusTypeUpdateRequestSent)
 	case DELETE:
 		rq.ResourceController.DeleteResource(ctx)
-		rq.handleResponse(ctx, EventTypeDeleteRequestSent)
+		rq.handleResponse(ctx, metadata.StatusTypeDeleteRequestSent)
 	default:
 		return
 	}
 }
 
-func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
+func (rq *RabbitMQ) handleResponse(ctx context.Context, statusType metadata.StatusType) {
 	code := ctx.Value(context.ResponseCodeKey).(int)
 	if code%100 == 2 {
 		msg := MessageSend{
 			ProjectID: ctx.Value(context.ProjectIDKey).(string),
-			Type:      eventType,
+			Type:      statusType,
 			Code:      code,
 			Payload:   ctx.Value(context.ResponseKey),
 		}
@@ -74,7 +75,7 @@ func (rq *RabbitMQ) handleResponse(ctx context.Context, eventType eventType) {
 func (rq *RabbitMQ) handleError(ctx context.Context) {
 	msg := MessageSend{
 		ProjectID: ctx.Value(context.ProjectIDKey).(string),
-		Type:      Error,
+		Type:      metadata.StatusTypeError,
 		Code:      ctx.Value(context.ResponseCodeKey).(int),
 		Payload:   ctx.Value(context.ResponseKey),
 	}

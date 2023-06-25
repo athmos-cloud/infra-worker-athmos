@@ -193,6 +193,7 @@ func (gcp *gcpRepository) toModelVM(vm *v1beta1.Instance) (*instance.VM, errors.
 	}
 	return &instance.VM{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(vm.Status.Conditions),
 			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 			Tags:    tags,
 		},

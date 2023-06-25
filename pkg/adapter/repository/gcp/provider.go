@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	modelTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
@@ -184,6 +185,9 @@ func (gcp *gcpRepository) toModelProvider(provider *v1beta1.ProviderConfig) (*re
 		return nil, err
 	}
 	return &resource.Provider{
+		Metadata: metadata.Metadata{
+			Status: metadata.StatusFromKubernetesStatus(provider.Status.Conditions),
+		},
 		IdentifierID:   id,
 		IdentifierName: name,
 		Type:           modelTypes.ProviderGCP,

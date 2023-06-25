@@ -203,6 +203,7 @@ func (aws *awsRepository) toModelFirewall(firewall *v1beta1.Firewall, ruleGroup 
 	return &network.Firewall{
 		Metadata: metadata.Metadata{
 			Managed: firewall.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
+			Status:  metadata.StatusFromKubernetesStatus(firewall.Status.Conditions),
 		},
 		IdentifierID:   id,
 		IdentifierName: name,

@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"time"
 )
 
@@ -43,13 +44,13 @@ const (
 )
 
 type MessageSend struct {
-	ProjectID  string             `json:"project_id"`
-	Code       int                `json:"code"`
-	Type       eventType          `json:"type"`
-	Date       time.Time          `json:"date"`
-	Message    string             `json:"message"`
-	Identifier identifier.Payload `json:"identifier,omitempty"`
-	Payload    interface{}        `json:"payload,omitempty"`
+	ProjectID  string              `json:"project_id"`
+	Code       int                 `json:"code"`
+	Type       metadata.StatusType `json:"type"`
+	Date       time.Time           `json:"date"`
+	Message    string              `json:"message"`
+	Identifier identifier.Payload  `json:"identifier,omitempty"`
+	Payload    interface{}         `json:"payload,omitempty"`
 }
 
 type NestMessageWrap struct {

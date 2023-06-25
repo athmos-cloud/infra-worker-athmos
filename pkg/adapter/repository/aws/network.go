@@ -194,6 +194,7 @@ func (aws *awsRepository) toModelNetwork(network *v1beta1.VPC) (*networkModels.N
 	}
 	return &networkModels.Network{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(network.Status.Conditions),
 			Managed: network.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 		},
 		IdentifierID:   id,

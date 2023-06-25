@@ -200,6 +200,7 @@ func (aws *awsRepository) toModelVM(vm *v1beta1.Instance, keyPair *v1beta1.KeyPa
 	}
 	return &instance.VM{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(vm.Status.Conditions),
 			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 			Tags:    tags,
 		},

@@ -209,6 +209,7 @@ func (aws *awsRepository) toModelSubnetwork(subnet *v1beta1.Subnet) (*network.Su
 	}
 	return &network.Subnetwork{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(subnet.Status.Conditions),
 			Managed: subnet.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 		},
 		IdentifierID:   id,

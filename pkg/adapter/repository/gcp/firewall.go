@@ -178,6 +178,7 @@ func (gcp *gcpRepository) toModelFirewall(firewall *v1beta1.Firewall) (*network.
 
 	return &network.Firewall{
 		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(firewall.Status.Conditions),
 			Managed: firewall.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
 		},
 		IdentifierID:   id,
