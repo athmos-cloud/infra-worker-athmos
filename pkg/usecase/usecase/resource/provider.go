@@ -2,6 +2,7 @@ package resourceUc
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -14,6 +15,8 @@ import (
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
+	"github.com/samber/lo"
+	"golang.org/x/exp/maps"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
@@ -51,23 +54,22 @@ func (puc *providerUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 }
 
 func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.ProviderCollection) errors.Error {
-	repo := puc.getRepo(ctx)
-	if repo == nil {
-		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
-	}
-
 	searchOption := option.Option{Value: resourceRepo.FindAllResourceOption{
 		Labels: map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}},
 	}
-
-	foundProviders, err := repo.FindAllProviders(ctx, searchOption)
+	gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
 	if !err.IsOk() {
 		return err
 	}
-	if len(*foundProviders) == 0 {
+	awsProviders, err := puc.awsRepo.FindAllProviders(ctx, searchOption)
+	if !err.IsOk() {
+		return err
+	}
+	if len(*gcpProviders) == 0 && len(*awsProviders) == 0 {
 		return errors.NotFound.WithMessage("no providers found")
 	}
-	*providers = *foundProviders
+	*providers = lo.Assign(*gcpProviders, *awsProviders)
+
 	return errors.OK
 }
 
