@@ -28,7 +28,7 @@ func New(
 }
 
 func (server *Server) Start() {
-	server.WithProjectRouter().WithInternalRouter().WithSecretRouter()
+	server.WithProjectRouter().WithInternalRouter().WithSecretRouter().WithResourceController()
 	err := server.Engine.Run(fmt.Sprintf(":%d", config.Current.Http.Port))
 	if err != nil {
 		panic(err)

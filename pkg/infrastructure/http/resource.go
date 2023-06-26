@@ -8,12 +8,12 @@ import (
 )
 
 func (server *Server) WithResourceController() *Server {
-	server.Engine.GET("/resources/:projectId", func(c *gin.Context) {
+	server.Engine.GET("/resources/providers/:projectId", func(c *gin.Context) {
 		c.Set(context.ProjectIDKey, c.Param("projectId"))
 		c.Set(context.ResourceTypeKey, types.ProviderResource)
 		server.ResourceController.ListResources(c)
 	})
-	server.Engine.GET("/resources/:projectId/:providerType/:providerId", func(c *gin.Context) {
+	server.Engine.GET("/resources/stack/:projectId/:providerType/:providerId", func(c *gin.Context) {
 		c.Set(context.ProjectIDKey, c.Param("projectId"))
 		c.Set(context.ResourceTypeKey, types.ProviderResource)
 		providerType, err := types.ProviderFromString(c.Query("providerType"))
