@@ -83,7 +83,7 @@ spec:
       name: instance-config
     name: instance-secret
   forProvider:
-    machineType: "e2-medium"
+    machineType: "e2-medidddum"
     bootDisk:
       - autoDelete:  true
         initializeParams:

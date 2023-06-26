@@ -2,6 +2,7 @@ package metadata
 
 import (
 	cpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	corev1 "k8s.io/api/core/v1"
 	"time"
 )
 
@@ -25,30 +26,44 @@ const (
 )
 
 func StatusFromKubernetesStatus(status []cpv1.Condition) Status {
-	s := status[0]
-	return Status{
-		StatusType: StatusTypeFromKubernetesStatus(status),
-		Message:    s.Message,
-		Date:       s.LastTransitionTime.Time,
-	}
+	metaStatus := Status{}
+	StatusTypeFromKubernetesStatus(&metaStatus, status)
+	return metaStatus
 }
 
-func StatusTypeFromKubernetesStatus(status []cpv1.Condition) StatusType {
+func StatusTypeFromKubernetesStatus(metaStatus *Status, status []cpv1.Condition) {
+	for _, s := range status {
+		if s.Status == corev1.ConditionFalse && string(s.Reason) == "ApplyFailure" {
+			*metaStatus = Status{
+				StatusType: StatusTypeError,
+				Message:    s.Message,
+				Date:       s.LastTransitionTime.Time,
+			}
+			return
+		}
+	}
 	s := status[0]
+	metaStatus.Message = s.Message
+	metaStatus.Date = s.LastTransitionTime.Time
 	if s.Reason == cpv1.ReasonAvailable {
-		return StatusTypeCreated
+		metaStatus.StatusType = StatusTypeCreated
+		return
 	}
 	if s.Reason == cpv1.ReasonReconcileSuccess && s.Type == cpv1.TypeSynced {
-		return StatusTypeCreated
+		metaStatus.StatusType = StatusTypeCreated
+		return
 	}
 	if s.Reason == cpv1.ReasonDeleting {
-		return StatusTypeDeleting
+		metaStatus.StatusType = StatusTypeDeleting
+		return
 	}
 	if s.Reason == cpv1.ReasonCreating {
-		return StatusTypeCreating
+		metaStatus.StatusType = StatusTypeCreating
+		return
 	}
 	if s.Reason == cpv1.ReasonReconcileError {
-		return StatusTypeError
+		metaStatus.StatusType = StatusTypeError
+		return
 	}
-	return StatusTypeUnknown
+	metaStatus.StatusType = StatusTypeUnknown
 }
