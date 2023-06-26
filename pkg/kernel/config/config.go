@@ -90,6 +90,9 @@ func bindEnvs() {
 	if err := viper.BindEnv("mongo.address", "MONGO_ADDRESS"); err != nil {
 		panic(err)
 	}
+	if err := viper.BindEnv("mongo.password", "MONGO_PASSWORD"); err != nil {
+		panic(err)
+	}
 	if err := viper.BindEnv("rabbitmq.uri", "RABBITMQ_URI"); err != nil {
 		panic(err)
 	}
