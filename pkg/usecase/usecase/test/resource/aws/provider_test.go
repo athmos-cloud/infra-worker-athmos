@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	repository2 "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
@@ -8,6 +9,8 @@ import (
 	secretRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	secretModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/secret"
 	domainTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
@@ -19,7 +22,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-aws/apis/v1beta1"
@@ -42,15 +44,6 @@ type wantProvider struct {
 	Spec   v1beta1.ProviderConfigSpec
 }
 
-func provSuiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
-	require.NoError(t, gnomock.Stop(container))
-	ClearFixtures(ctx)
-}
-
-func provTeardown(ctx context.Context) {
-	ClearProviderFixtures(ctx)
-}
-
 func Test_providerUseCase_Create(t *testing.T) {
 	mongoC := test.Init(t)
 	ctx, resourceTest := initTest(t)
@@ -62,11 +55,11 @@ func Test_providerUseCase_Create(t *testing.T) {
 		awsRepo,
 		nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 	t.Run("Create a valid provider", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := ProviderFixture(ctx, t, uc)
 
@@ -116,7 +109,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 		assertProviderEqual(t, want, got)
 	})
 	t.Run("Create a provider with a non-existing secret should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		req := dto.CreateProviderRequest{
 			Name:           "test",
@@ -132,7 +125,7 @@ func Test_providerUseCase_Create(t *testing.T) {
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Create a provider with an already existing name should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		_ = ProviderFixture(ctx, t, uc)
 		newProvider := &resource.Provider{}
@@ -152,12 +145,12 @@ func Test_providerUseCase_Delete(t *testing.T) {
 		awsRepo,
 		nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 
 	t.Run("Delete a valid provider should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := ProviderFixture(ctx, t, uc)
 
@@ -175,7 +168,7 @@ func Test_providerUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete a non-existing provider should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := &resource.Provider{}
 		delReq := dto.DeleteProviderRequest{
@@ -189,7 +182,7 @@ func Test_providerUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete cascade a provider should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		sshRepo := repository2.NewSSHKeyRepository()
 		nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, nil, awsRepo, nil)
@@ -225,18 +218,18 @@ func Test_providerUseCase_Get(t *testing.T) {
 		awsRepo,
 		nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 	t.Run("Get a valid provider should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := ProviderFixture(ctx, t, uc)
 
-		getReq := dto.GetProviderRequest{
-			IdentifierID: identifier.Provider{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Provider{
 				Provider: provider.IdentifierID.Provider,
-			},
+			}.Provider,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getProvider := &resource.Provider{}
@@ -247,12 +240,12 @@ func Test_providerUseCase_Get(t *testing.T) {
 		assert.Equal(t, provider.Auth, getProvider.Auth)
 	})
 	t.Run("Get a non-existing provider should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
-		getReq := dto.GetProviderRequest{
-			IdentifierID: identifier.Provider{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Provider{
 				Provider: "this-provider-does-not-exist",
-			},
+			}.Provider,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getProvider := &resource.Provider{}
@@ -262,8 +255,7 @@ func Test_providerUseCase_Get(t *testing.T) {
 }
 
 func Test_providerUseCase_GetProviderStack(t *testing.T) {
-	t.Skip()
-	/*mongoC := test.Init(t)
+	mongoC := test.Init(t)
 	ctx, resourceTest := initTest(t)
 	awsRepo := aws.NewRepository()
 	uc := usecase.NewProviderUseCase(
@@ -272,59 +264,107 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 		nil,
 		awsRepo,
 		nil)
+	nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
+	suc := usecase.NewSubnetworkUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
+	fuc := usecase.NewFirewallUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
+	vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, repository2.NewSSHKeyRepository(), nil, aws.NewRepository(), nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid Provider Stack should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
+		region := "eu-west-1"
 		provider := ProviderFixture(ctx, t, uc)
-		nuc := usecase.NewNetworkUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
-		suc := usecase.NewSubnetworkUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
-		fuc := usecase.NewFirewallUseCase(resourceTest.ProjectRepo, nil, aws.NewRepository(), nil)
-		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, repository2.NewSSHKeyRepository(), nil, aws.NewRepository(), nil)
-
 		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-1",
+			Region:           region,
 		})
-		net1 := &resourceNetwork.Network{}
+		net1 := &network.Network{}
 		err := nuc.Create(ctx, net1)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateNetworkRequest{
 			ParentIDProvider: &provider.IdentifierID,
 			Name:             "test-network-2",
+			Region:           region,
 		})
-		net2 := &resourceNetwork.Network{}
+		net2 := &network.Network{}
 		err = nuc.Create(ctx, net2)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-11",
+			Region:   region,
 		})
-		subnet11 := &resourceNetwork.Subnetwork{}
+
+		subnet11 := &network.Subnetwork{}
 		err = suc.Create(ctx, subnet11)
 		require.True(t, err.IsOk())
 		ctx.Set(context.RequestKey, dto.CreateSubnetworkRequest{
 			ParentID: net1.IdentifierID,
 			Name:     "test-subnetwork-12",
+			Region:   region,
 		})
-		subnet12 := &resourceNetwork.Subnetwork{}
+		subnet12 := &network.Subnetwork{}
 		err = suc.Create(ctx, subnet12)
 		require.True(t, err.IsOk())
+
 		ctx.Set(context.RequestKey, dto.CreateFirewallRequest{
 			ParentID: net2.IdentifierID,
 			Name:     "test-firewall-21",
+			AllowRules: network.FirewallRuleList{
+				{
+					Protocol: "tcp",
+					Ports:    []string{"80", "443"},
+				},
+				{
+					Protocol: "udp",
+					Ports:    []string{"53"},
+				},
+			},
+			DenyRules: network.FirewallRuleList{
+				{
+					Protocol: "tcp",
+					Ports:    []string{"65"},
+				},
+			},
+			Managed: false,
 		})
-		fw21 := &resourceNetwork.Firewall{}
+		fw21 := &network.Firewall{}
 		err = fuc.Create(ctx, fw21)
 		require.True(t, err.IsOk())
+
 		ctx.Set(context.RequestKey, dto.CreateVMRequest{
-			ParentID: subnet11.IdentifierID,
-			Name:     "test-vm-111",
+			ParentID:    subnet11.IdentifierID,
+			Name:        "test-vm-111",
+			Zone:        region,
+			MachineType: "t2.micro",
+			Auths: []dto.VMAuth{
+				{
+					Username: "admin",
+				}, {
+					Username:     "test",
+					RSAKeyLength: 1024,
+				},
+			},
+			OS: instance.VMOS{
+				ID:   "ami-0a5d9cd4e632d99c1",
+				Name: "ami-0a5d9cd4e632d99c1",
+			},
+			Disks: []instance.VMDisk{
+				{
+					AutoDelete: true,
+					Mode:       instance.DiskModeReadWrite,
+					Type:       instance.DiskTypeSSD,
+					SizeGib:    10,
+				},
+			},
+			Managed: true,
 		})
-		vm111 := &resourceInstance.VM{}
+		vm111 := &instance.VM{}
 		err = vuc.Create(ctx, vm111)
+		fmt.Println(err.Message)
 		require.True(t, err.IsOk())
 
 		foundProvider := &resource.Provider{}
@@ -332,6 +372,7 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 			ProviderID: provider.IdentifierID.Provider,
 		})
 		err = uc.GetStack(ctx, foundProvider)
+
 		assert.True(t, err.IsOk())
 		assert.Equal(t, provider.IdentifierName, foundProvider.IdentifierName)
 		assert.Equal(t, 2, len(foundProvider.Networks))
@@ -339,7 +380,7 @@ func Test_providerUseCase_GetProviderStack(t *testing.T) {
 		assert.Equal(t, 1, len(foundProvider.Networks["test-network-2"].Firewalls))
 		assert.Equal(t, "test-vm-111", foundProvider.Networks["test-network-1"].Subnetworks["test-subnetwork-11"].VMs["test-vm-111"].IdentifierName.VM)
 
-	})*/
+	})
 }
 
 func Test_providerUseCase_List(t *testing.T) {
@@ -353,12 +394,12 @@ func Test_providerUseCase_List(t *testing.T) {
 		awsRepo,
 		nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	ctx.Set(context.ResourceTypeKey, domainTypes.ProviderResource)
 
 	t.Run("List providers should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		create := func(name string) {
 			req := dto.CreateProviderRequest{
@@ -383,7 +424,7 @@ func Test_providerUseCase_List(t *testing.T) {
 	})
 
 	t.Run("List providers in a non-existing project should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		ctx.Set(context.ProjectIDKey, "this-project-does-not-exist")
 		providerList := resource.ProviderCollection{}
@@ -403,10 +444,10 @@ func Test_providerUseCase_Update(t *testing.T) {
 		awsRepo,
 		nil)
 
-	defer provSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update a valid provider should succeed", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := ProviderFixture(ctx, t, uc)
 
@@ -435,8 +476,8 @@ func Test_providerUseCase_Update(t *testing.T) {
 		updatedProvider := &resource.Provider{}
 		err = uc.Update(ctx, updatedProvider)
 		assert.True(t, err.IsOk())
-		ctx.Set(context.RequestKey, dto.GetProviderRequest{
-			IdentifierID: provider.IdentifierID,
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: provider.IdentifierID.Provider,
 		})
 		err = uc.Get(ctx, updatedProvider)
 		kubeResource := &v1beta1.ProviderConfig{}
@@ -480,7 +521,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 
 	})
 	t.Run("Update a non-existing provider should fail", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		updateReq := dto.UpdateProviderRequest{
 			IdentifierID:   identifier.Provider{Provider: "this-provider-does-not-exist"},
@@ -493,7 +534,7 @@ func Test_providerUseCase_Update(t *testing.T) {
 		assert.Equal(t, errors.NotFound.Code, err.Code)
 	})
 	t.Run("Update a provider with a non-existing secret should return bad request", func(t *testing.T) {
-		defer provTeardown(ctx)
+		defer ClearProviderFixtures(ctx)
 
 		provider := ProviderFixture(ctx, t, uc)
 

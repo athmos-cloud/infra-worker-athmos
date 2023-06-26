@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository"
@@ -10,12 +9,9 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/utils"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
-	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-aws/apis/ec2/v1beta1"
@@ -28,15 +24,6 @@ type wantSubnetwork struct {
 	Name   string
 	Labels map[string]string
 	Spec   v1beta1.SubnetSpec
-}
-
-func subSuiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
-	require.NoError(t, gnomock.Stop(container))
-	ClearFixtures(ctx)
-}
-
-func subTeardown(ctx context.Context) {
-	ClearSubnetworkFixtures(ctx)
 }
 
 func Test_subnetworkUseCase_Create(t *testing.T) {
@@ -55,10 +42,10 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer subSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Create a valid subnetwork", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		subnet := SubnetworkFixture(ctx, t, suc)
 		region := "eu-west-1"
@@ -108,7 +95,7 @@ func Test_subnetworkUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a subnetwork with an already existing name should return conflict error", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		_ = SubnetworkFixture(ctx, t, suc)
 		newSubnet := &network.Subnetwork{}
@@ -133,10 +120,10 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer subSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Delete a valid subnetwork should succeed", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		subnet := SubnetworkFixture(ctx, t, suc)
 		delReq := dto.DeleteSubnetworkRequest{
@@ -148,7 +135,7 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing subnetwork should fail", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		delReq := dto.DeleteSubnetworkRequest{
 			IdentifierID: identifier.Subnetwork{
@@ -165,7 +152,7 @@ func Test_subnetworkUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete cascade a subnetwork should succeed", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		sshRepo := repository.NewSSHKeyRepository()
 		vuc := usecase.NewVMUseCase(resourceTest.ProjectRepo, sshRepo, nil, awsRepo, nil)
@@ -198,48 +185,32 @@ func Test_subnetworkUseCase_Get(t *testing.T) {
 
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
-
-	defer subSuiteTeardown(ctx, t, mongoC)
+	subnet := SubnetworkFixture(ctx, t, suc)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid subnetwork should succeed", func(t *testing.T) {
-		defer subTeardown(ctx)
-
-		parentID := ctx.Value(testResource.NetworkIDKey).(identifier.Network)
-		subnetName := fmt.Sprintf("%s-%s", "test", utils.RandomString(5))
-		region := "europe-west1"
+		region := "eu-west-1"
 		ipCIDR := "10.0.0.1/26"
-		req := dto.CreateSubnetworkRequest{
-			ParentID:    parentID,
-			Name:        subnetName,
-			Region:      region,
-			IPCIDRRange: ipCIDR,
-			Managed:     false,
-		}
-		ctx.Set(context.RequestKey, req)
-		subnet := &network.Subnetwork{}
-		err := suc.Create(ctx, subnet)
-		assert.Equal(t, errors.Created.Code, err.Code)
-		getReq := dto.GetSubnetworkRequest{
-			IdentifierID: subnet.IdentifierID,
+
+		getReq := dto.GetResourceRequest{
+			Identifier: subnet.IdentifierID.Subnetwork,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		getSubnet := &network.Subnetwork{}
-		err = suc.Get(ctx, getSubnet)
+		err := suc.Get(ctx, getSubnet)
 		assert.Equal(t, errors.OK.Code, err.Code)
-		assert.Equal(t, subnet.IdentifierID, getReq.IdentifierID)
+		assert.Equal(t, subnet.IdentifierID.Subnetwork, getReq.Identifier)
 		assert.Equal(t, subnet.IPCIDRRange, ipCIDR)
 		assert.Equal(t, subnet.Region, region)
 	})
 	t.Run("Get a non-existing subnetwork should fail", func(t *testing.T) {
-		defer subTeardown(ctx)
-
-		getReq := dto.GetSubnetworkRequest{
-			IdentifierID: identifier.Subnetwork{
+		getReq := dto.GetResourceRequest{
+			Identifier: identifier.Subnetwork{
 				Provider:   "test",
 				VPC:        "test",
 				Network:    "test",
 				Subnetwork: "this-network-does-not-exist",
-			},
+			}.Subnetwork,
 		}
 		ctx.Set(context.RequestKey, getReq)
 		subnet := &network.Subnetwork{}
@@ -264,10 +235,10 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer subSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update a valid subnetwork should succeed", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		subnet := SubnetworkFixture(ctx, t, suc)
 		newRegion := "eu-west-2"
@@ -288,7 +259,7 @@ func Test_subnetworkUseCase_Update(t *testing.T) {
 		assert.Equal(t, newIPCIDR, *kubeSubnet.Spec.ForProvider.CidrBlock)
 	})
 	t.Run("Update a non-existing subnetwork should fail", func(t *testing.T) {
-		defer subTeardown(ctx)
+		defer ClearSubnetworkFixtures(ctx)
 
 		newRegion := "europe-west2"
 		newIPCIDR := "10.1.0.1/26"

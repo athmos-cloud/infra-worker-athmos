@@ -14,7 +14,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-aws/apis/ec2/v1beta1"
@@ -31,15 +30,6 @@ type wantVM struct {
 	Name   string
 	Labels map[string]string
 	Spec   v1beta1.InstanceSpec
-}
-
-func vmSuiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
-	require.NoError(t, gnomock.Stop(container))
-	ClearFixtures(ctx)
-}
-
-func vmTeardown(ctx context.Context) {
-	ClearVMFixtures(ctx)
 }
 
 func Test_vmUseCase_Create(t *testing.T) {
@@ -62,10 +52,10 @@ func Test_vmUseCase_Create(t *testing.T) {
 	NetworkFixture(ctx, t, nuc)
 	SubnetworkFixture(ctx, t, suc)
 
-	defer vmSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Create a valid vm", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		vm := VMFixture(ctx, t, vuc)
 
@@ -155,7 +145,7 @@ func Test_vmUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a vm with an HDD root block should fail", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		machineType := "t2.micro"
 		zone := "eu-west-1"
@@ -198,7 +188,7 @@ func Test_vmUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a vm with an already existing name should fail", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.CreateVMRequest{
@@ -236,10 +226,10 @@ func Test_vmUseCase_Delete(t *testing.T) {
 	NetworkFixture(ctx, t, nuc)
 	SubnetworkFixture(ctx, t, suc)
 
-	defer vmSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Delete a valid vm should succeed", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.DeleteVMRequest{
@@ -250,7 +240,7 @@ func Test_vmUseCase_Delete(t *testing.T) {
 		assert.Equal(t, errors.NoContent.Code, err.Code)
 	})
 	t.Run("Delete a non-existing vm should return not found", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 		ctx.Set(context.RequestKey, dto.DeleteVMRequest{
 			IdentifierID: identifier.VM{
 				Provider:   "provider-test",
@@ -284,15 +274,13 @@ func Test_vmUseCase_Get(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 	SubnetworkFixture(ctx, t, suc)
+	vm := VMFixture(ctx, t, vuc)
 
-	defer vmSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid vm should succeed", func(t *testing.T) {
-		defer vmTeardown(ctx)
-
-		vm := VMFixture(ctx, t, vuc)
-		ctx.Set(context.RequestKey, dto.GetVMRequest{
-			IdentifierID: vm.IdentifierID,
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: vm.IdentifierID.VM,
 		})
 		foundVM := &instance.VM{}
 		err := vuc.Get(ctx, foundVM)
@@ -304,15 +292,15 @@ func Test_vmUseCase_Get(t *testing.T) {
 		assert.Equal(t, vm, foundVM)
 	})
 	t.Run("Get a non-existing vm should return not found", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
-		ctx.Set(context.RequestKey, dto.GetVMRequest{
-			IdentifierID: identifier.VM{
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: identifier.VM{
 				Provider:   "provider-test",
 				Network:    "network-test",
 				Subnetwork: "subnet-test",
 				VM:         "this-vm-does-not-exist",
-			},
+			}.VM,
 		})
 		delVM := &instance.VM{}
 		err := vuc.Get(ctx, delVM)
@@ -340,10 +328,10 @@ func Test_vmUseCase_Update(t *testing.T) {
 	NetworkFixture(ctx, t, nuc)
 	SubnetworkFixture(ctx, t, suc)
 
-	defer vmSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update an existing vm should succeed", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		vm := VMFixture(ctx, t, vuc)
 		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
@@ -366,7 +354,7 @@ func Test_vmUseCase_Update(t *testing.T) {
 		}
 	})
 	t.Run("Update a non-existing VM should return not found error", func(t *testing.T) {
-		defer vmTeardown(ctx)
+		defer ClearVMFixtures(ctx)
 
 		ctx.Set(context.RequestKey, dto.UpdateVMRequest{
 			IdentifierID: identifier.VM{

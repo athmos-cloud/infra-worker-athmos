@@ -1,0 +1,187 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xsqldatabases.aws.athmos.com
+spec:
+  group: aws.athmos.com
+  names:
+    kind: XSQLDatabase
+    plural: xsqldatabases
+  claimNames:
+    kind: SQLDatabase
+    plural: sqldatabases
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    machineType:
+                      type: string
+                    network:
+                      type: string
+                    password:
+                      type: string
+                    providerRef:
+                      type: string
+                    region:
+                      type: string
+                    sqlType:
+                      type: string
+                    sqlVersion:
+                      type: string
+                    storageGB:
+                      type: integer
+                    subnetGroupName:
+                      type: string
+                    subnet1:
+                      type: string
+                    subnet2:
+                      type: string
+                  required:
+                    - network
+                    - region
+                    - providerRef
+                    - network
+                    - region
+                    - machineType
+                    - subnetGroupName
+                    - subnet1
+                    - subnet2
+              required:
+                - parameters
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws-sqldb
+  labels:
+    crossplane.io/xrd: sqldatabases.aws.athmos.com
+    provider: provider-aws
+spec:
+  writeConnectionSecretsToNamespace: crossplane-system
+  compositeTypeRef:
+    apiVersion: aws.athmos.com/v1alpha1
+    kind: SQLDatabase
+  resources:
+    - name: sqlinstance
+      base:
+        apiVersion: rds.aws.upbound.io/v1beta1
+        kind: Instance
+        spec:
+          forProvider:
+            allocatedStorage: 10
+            engine: mysql
+            engineVersion: "5.7"
+            instanceClass: db.t4g.micro
+            dbSubnetGroupNameRef:
+              name: subnetgroup
+        patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.storageGB
+          toFieldPath: spec.forProvider.allocatedStorage
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.sqlType
+          toFieldPath: spec.forProvider.engine
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.sqlVersion
+          toFieldPath: spec.forProvider.engineVersion
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.machineType
+          toFieldPath: spec.forProvider.instanceClass
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.subnetGroupName
+          toFieldPath: spec.forProvider.dbSubnetGroupNameRef.name
+    - name: subnetgroup
+      base:
+        apiVersion: rds.aws.upbound.io/v1beta1
+        kind: SubnetGroup
+        spec:
+          forProvider:
+            region: eu-west-3
+            subnetIdRefs:
+              - name: subnet1
+              - name: subnet2
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.region
+          toFieldPath: spec.forProvider.region
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.subnet1
+          toFieldPath: spec.forProvider.subnetIdRefs[0].name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.subnet2
+          toFieldPath: spec.forProvider.subnetIdRefs[1].name
+    - name: subnet1
+      base:
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: Subnetwork
+        spec:
+          forProvider:
+            region: eu-west-3
+            vpcIdRef:
+              name: vpc
+      patches:
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.region
+        toFieldPath: spec.forProvider.region
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.network
+        toFieldPath: spec.forProvider.vpcIdRef.name
+    - name: subnet2
+      base:
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: Subnetwork
+        spec:
+          forProvider:
+            region: eu-west-3
+            vpcIdRef:
+              name: vpc
+      patches:
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.region
+        toFieldPath: spec.forProvider.region
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.network
+        toFieldPath: spec.forProvider.vpcIdRef.name
+
+    - name: secretpassword
+      base:
+        apiVersion: v1
+        kind: Secret
+        spec:
+          type: Opaque
+          data:
+            password: "password"
+      patches:
+      - type: FromCompositeFieldPath
+        fromFieldPath: spec.parameters.password
+        toFieldPath: spec.data.password
+
+---
+apiVersion: aws.athmos.com/v1alpha1
+kind: SQLDatabase
+metadata:
+  namespace: default
+  name: my-db
+spec:
+  parameters:
+    storageGB: 20
+    region: eu-west-3
+    machineType: db.t4g.micro
+    network: vpc
+    subnetGroupName: my-subnet-group
+    subnet1: my-subnet-1
+    subnet2: my-subnet-2
+    sqlVersion: "11"
+    sqlType: postgres
+  compositionRef:
+    name: aws-sqldb

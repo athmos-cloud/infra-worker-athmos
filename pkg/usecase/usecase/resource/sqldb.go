@@ -38,8 +38,8 @@ func (suc *sqlDBUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 	switch ctx.Value(context.ProviderTypeKey).(types.Provider) {
 	case types.ProviderGCP:
 		return suc.gcpRepo
-		//case types.ProviderAWS:
-		//	return suc.awsRepo
+	case types.ProviderAWS:
+		return suc.awsRepo
 		//case types.ProviderAZURE:
 		//	return suc.azureRepo
 	}
@@ -52,6 +52,11 @@ func (suc *sqlDBUseCase) Get(ctx context.Context, db *instance.SqlDB) errors.Err
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s db not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
+
+	err := _setSqlNamespace(ctx, suc)
+	if !err.IsOk() {
+		return err
+	}
 
 	foundDB, err := repo.FindSqlDB(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
@@ -71,6 +76,11 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateSqlDBRequest)
 	defaults.SetDefaults(&req)
+
+	err := _setSqlNamespace(ctx, suc)
+	if !err.IsOk() {
+		return err
+	}
 
 	project, errRepo := suc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !errRepo.IsOk() {
@@ -128,6 +138,11 @@ func (suc *sqlDBUseCase) Update(ctx context.Context, db *instance.SqlDB) errors.
 	req := ctx.Value(context.RequestKey).(dto.UpdateSqlDBRequest)
 	defaults.SetDefaults(&req)
 
+	err := _setSqlNamespace(ctx, suc)
+	if !err.IsOk() {
+		return err
+	}
+
 	foundDB, err := repo.FindSqlDB(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID.SqlDB}})
 	if !err.IsOk() {
 		return err
@@ -166,6 +181,11 @@ func (suc *sqlDBUseCase) Update(ctx context.Context, db *instance.SqlDB) errors.
 }
 
 func (suc *sqlDBUseCase) Delete(ctx context.Context, db *instance.SqlDB) errors.Error {
+	err := _setSqlNamespace(ctx, suc)
+	if !err.IsOk() {
+		return err
+	}
+
 	repo := suc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -186,4 +206,18 @@ func (suc *sqlDBUseCase) Delete(ctx context.Context, db *instance.SqlDB) errors.
 	}
 
 	return errors.NoContent
+}
+
+func _setSqlNamespace(ctx context.Context, suc *sqlDBUseCase) errors.Error {
+	project, err := suc.projectRepo.Find(ctx, option.Option{
+		Value: repository.FindProjectByIDRequest{
+			ID: ctx.Value(context.ProjectIDKey).(string),
+		},
+	})
+	if !err.IsOk() {
+		return err
+	}
+
+	ctx.Set(context.CurrentNamespace, project.Namespace)
+	return errors.OK
 }

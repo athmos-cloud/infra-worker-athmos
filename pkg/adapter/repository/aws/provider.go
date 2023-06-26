@@ -63,8 +63,34 @@ func (aws *awsRepository) FindAllProviders(ctx context.Context, opt option.Optio
 }
 
 func (aws *awsRepository) FindProviderStack(ctx context.Context, opt option.Option) (*resource.Provider, errors.Error) {
-	//TODO
-	panic("Implement me")
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindResourceOption)
+	awsProviders := &v1beta1.ProviderConfig{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, awsProviders); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", req.Name))
+		}
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", req.Name))
+	}
+
+	providerModel, err := aws.toModelProvider(awsProviders)
+	if !err.IsOk() {
+		return nil, err
+	}
+	// Find Networks recursively
+	networks, err := aws.FindAllRecursiveNetworks(ctx, option.Option{
+		Value: resourceRepo.FindAllResourceOption{
+			Labels: providerModel.IdentifierID.ToIDLabels(),
+		},
+	}, nil)
+	if !err.IsOk() {
+		return nil, err
+	}
+	providerModel.Networks = *networks
+
+	return providerModel, errors.OK
 }
 
 func (aws *awsRepository) CreateProvider(ctx context.Context, provider *resource.Provider) errors.Error {

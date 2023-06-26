@@ -76,9 +76,23 @@ func (aws *awsRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 }
 
 func (aws *awsRepository) FindAllVMs(ctx context.Context, opt option.Option) (*instance.VMCollection, errors.Error) {
-	//TODO implement me
-	//panic("implement me")
-	return &instance.VMCollection{}, errors.OK
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.BadRequest.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	awsVMList := &v1beta1.InstanceList{}
+	listOpt := &client.ListOptions{
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, awsVMList, listOpt); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vms"))
+	}
+
+	vmList, err := aws.toModelVMCollection(ctx, awsVMList)
+	if !err.IsOk() {
+		return nil, err
+	}
+	return vmList, errors.OK
 }
 
 func (aws *awsRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.Error {

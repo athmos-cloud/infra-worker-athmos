@@ -12,7 +12,6 @@ import (
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/orlangure/gnomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upbound/provider-aws/apis/networkfirewall/v1beta1"
@@ -24,15 +23,6 @@ type wantFirewall struct {
 	Name   string
 	Labels map[string]string
 	Spec   v1beta1.FirewallSpec
-}
-
-func fireSuiteTeardown(ctx context.Context, t *testing.T, container *gnomock.Container) {
-	require.NoError(t, gnomock.Stop(container))
-	ClearFixtures(ctx)
-}
-
-func fireTeardown(ctx context.Context) {
-	ClearFirewallFixtures(ctx)
 }
 
 func Test_firewallUseCase_Create(t *testing.T) {
@@ -51,10 +41,10 @@ func Test_firewallUseCase_Create(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer fireSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Create a valid firewall", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		firewall := FirewallFixture(ctx, t, fuc)
 
@@ -103,7 +93,7 @@ func Test_firewallUseCase_Create(t *testing.T) {
 	})
 
 	t.Run("Create a firewall with an already existing name should fail", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		firewall := FirewallFixture(ctx, t, fuc)
 		err := fuc.Create(ctx, firewall)
@@ -128,10 +118,10 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer fireSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Delete a valid firewall should succeed", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		firewall := FirewallFixture(ctx, t, fuc)
 		ctx.Set(context.RequestKey, dto.DeleteFirewallRequest{IdentifierID: firewall.IdentifierID})
@@ -141,7 +131,7 @@ func Test_firewallUseCase_Delete(t *testing.T) {
 	})
 
 	t.Run("Delete a non-existing firewall should fail", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		id := identifier.Firewall{
 			Provider: "test",
@@ -171,13 +161,13 @@ func Test_firewallUseCase_Get(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer fireSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Get a valid firewall should succeed", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		firewall := FirewallFixture(ctx, t, fuc)
-		getReq := dto.GetFirewallRequest{IdentifierID: firewall.IdentifierID}
+		getReq := dto.GetResourceRequest{Identifier: firewall.IdentifierID.Firewall}
 		ctx.Set(context.RequestKey, getReq)
 		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
@@ -190,13 +180,13 @@ func Test_firewallUseCase_Get(t *testing.T) {
 	})
 
 	t.Run("Get a non-existing firewall should fail", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
-		getReq := dto.GetFirewallRequest{IdentifierID: identifier.Firewall{
+		getReq := dto.GetResourceRequest{Identifier: identifier.Firewall{
 			Provider: "test",
 			Network:  "test",
 			Firewall: "this-firewall-does-not-exist",
-		}}
+		}.Firewall}
 		ctx.Set(context.RequestKey, getReq)
 		getFirewall := &network.Firewall{}
 		err := fuc.Get(ctx, getFirewall)
@@ -220,10 +210,10 @@ func Test_firewallUseCase_Update(t *testing.T) {
 	ProviderFixture(ctx, t, puc)
 	NetworkFixture(ctx, t, nuc)
 
-	defer fireSuiteTeardown(ctx, t, mongoC)
+	defer suiteTeardown(ctx, t, mongoC)
 
 	t.Run("Update a valid firewall should succeed", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		firewall := FirewallFixture(ctx, t, fuc)
 		port := "42"
@@ -251,7 +241,7 @@ func Test_firewallUseCase_Update(t *testing.T) {
 	})
 
 	t.Run("Update a non-existing firewall should fail", func(t *testing.T) {
-		defer fireTeardown(ctx)
+		defer ClearFirewallFixtures(ctx)
 
 		updateReq := dto.UpdateFirewallRequest{
 			IdentifierID: identifier.Firewall{

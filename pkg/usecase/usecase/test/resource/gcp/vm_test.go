@@ -241,8 +241,8 @@ func Test_vmUseCase_Get(t *testing.T) {
 	}()
 	t.Run("Get a valid vm should succeed", func(t *testing.T) {
 		vm := VMFixture(ctx, t, vuc)
-		ctx.Set(context.RequestKey, dto.GetVMRequest{
-			IdentifierID: vm.IdentifierID,
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: vm.IdentifierID.VM,
 		})
 		foundVM := &instance.VM{}
 		err := vuc.Get(ctx, foundVM)
@@ -254,13 +254,13 @@ func Test_vmUseCase_Get(t *testing.T) {
 		assert.Equal(t, vm, foundVM)
 	})
 	t.Run("Get a non-existing vm should return not found", func(t *testing.T) {
-		ctx.Set(context.RequestKey, dto.GetVMRequest{
-			IdentifierID: identifier.VM{
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: identifier.VM{
 				Provider:   "provider-test",
 				Network:    "network-test",
 				Subnetwork: "subnet-test",
 				VM:         "this-vm-does-not-exist",
-			},
+			}.VM,
 		})
 		delVM := &instance.VM{}
 		err := vuc.Get(ctx, delVM)

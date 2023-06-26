@@ -195,20 +195,20 @@ func Test_sqlDBUseCase_Get(t *testing.T) {
 	}()
 	t.Run("Get an existing db should succeed", func(t *testing.T) {
 		db := SqlDBFixture(ctx, t, duc)
-		ctx.Set(context.RequestKey, dto.GetSqlDBRequest{IdentifierID: db.IdentifierID})
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{Identifier: db.IdentifierID.SqlDB})
 		toGet := &instance.SqlDB{}
 		err := duc.Get(ctx, toGet)
 		require.Equal(t, errors.OK.Code, err.Code)
 	})
 
 	t.Run("Get a DB which does not exist should return NotFound error", func(t *testing.T) {
-		ctx.Set(context.RequestKey, dto.GetSqlDBRequest{
-			IdentifierID: identifier.SqlDB{
+		ctx.Set(context.RequestKey, dto.GetResourceRequest{
+			Identifier: identifier.SqlDB{
 				Provider: "test",
 				VPC:      "test",
 				Network:  "test-net",
 				SqlDB:    "this-db-does-not-exist",
-			},
+			}.SqlDB,
 		})
 		toGet := &instance.SqlDB{}
 		err := duc.Get(ctx, toGet)

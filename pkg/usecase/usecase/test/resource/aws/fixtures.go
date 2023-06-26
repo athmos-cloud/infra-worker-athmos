@@ -1,8 +1,10 @@
 package aws
 
 import (
+	"fmt"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws/xrds"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	instanceModel "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
@@ -11,13 +13,17 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test"
 	testResource "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/test/resource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	awsCompute "github.com/upbound/provider-aws/apis/ec2/v1beta1"
-	awsNeworks "github.com/upbound/provider-aws/apis/networkfirewall/v1beta1"
+	awsNetworks "github.com/upbound/provider-aws/apis/networkfirewall/v1beta1"
 	"github.com/upbound/provider-aws/apis/v1beta1"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
+	"time"
 )
 
 func ProviderFixture(ctx context.Context, t *testing.T, puc usecase.Provider) *resource.Provider {
@@ -155,13 +161,76 @@ func FirewallFixture(ctx context.Context, t *testing.T, fuc usecase.Firewall) *n
 	return firewall
 }
 
+func SqlDBFixture(ctx context.Context, t *testing.T, vuc usecase.SqlDB) *instanceModel.SqlDB {
+	region := "eu-west-1"
+	req := dto.CreateSqlDBRequest{
+		ParentID:    ctx.Value(testResource.NetworkIDKey).(identifier.Network),
+		Name:        "fixture-db",
+		Region:      region,
+		MachineType: "db.m7g",
+		Disk: instanceModel.SqlDbDisk{
+			Type:    instanceModel.DiskTypeSSD,
+			SizeGib: 10,
+		},
+		SQLType:      instanceModel.PostgresSQLType,
+		SQLVersion:   "12",
+		Managed:      true,
+		RootPassword: "proEsgi7656$!",
+	}
+	ctx.Set(context.RequestKey, req)
+
+	db := &instanceModel.SqlDB{}
+	err := vuc.Create(ctx, db)
+	require.Equal(t, errors.Created, err)
+
+	return db
+}
+
 func ClearFixtures(ctx context.Context) {
+	ClearSqlFixtures(ctx)
 	ClearVMFixtures(ctx)
 	ClearSubnetworkFixtures(ctx)
 	ClearFirewallFixtures(ctx)
 	ClearNetworksFixtures(ctx)
 	ClearProviderFixtures(ctx)
-	clear(ctx)
+}
+
+func ClearSqlFixtures(ctx context.Context) {
+	namespace := ctx.Value(test.TestNamespaceContextKey).(string)
+
+	rdsInstances := &xrds.SQLDatabaseList{}
+	err := kubernetes.Client().Client.List(ctx, rdsInstances, &client.ListOptions{
+		Namespace: namespace,
+	})
+
+	if err != nil {
+		return
+	}
+	for _, rdsInstance := range rdsInstances.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &rdsInstance)
+		if err != nil {
+			logger.Warning.Println(fmt.Sprintf("Error deleting sql db %s", rdsInstance.Name))
+			continue
+		}
+	}
+
+	passwordSecrets := &v1.SecretList{}
+	err = kubernetes.Client().Client.List(ctx, passwordSecrets, &client.ListOptions{
+		Namespace: namespace,
+	})
+	if err != nil {
+		return
+	}
+	for _, passwordSecret := range passwordSecrets.Items {
+		err = kubernetes.Client().Client.Delete(ctx, &passwordSecret)
+		if err != nil {
+			logger.Warning.Println(fmt.Sprintf("Error deleting password secret %s", passwordSecret.Name))
+			continue
+		}
+	}
+
+	logger.Info.Println("Cleared Sql fixtures")
+	time.Sleep(5 * 1000 * time.Millisecond)
 }
 
 func ClearVMFixtures(ctx context.Context) {
@@ -208,7 +277,7 @@ func ClearSubnetworkFixtures(ctx context.Context) {
 }
 
 func ClearFirewallFixtures(ctx context.Context) {
-	ruleGroups := &awsNeworks.RuleGroupList{}
+	ruleGroups := &awsNetworks.RuleGroupList{}
 	err := kubernetes.Client().Client.List(ctx, ruleGroups)
 	if err != nil {
 		return
@@ -221,7 +290,7 @@ func ClearFirewallFixtures(ctx context.Context) {
 		}
 	}
 
-	firewallPolicies := &awsNeworks.FirewallPolicyList{}
+	firewallPolicies := &awsNetworks.FirewallPolicyList{}
 	err = kubernetes.Client().Client.List(ctx, firewallPolicies)
 	if err != nil {
 		return
@@ -234,7 +303,7 @@ func ClearFirewallFixtures(ctx context.Context) {
 		}
 	}
 
-	firewalls := &awsNeworks.FirewallList{}
+	firewalls := &awsNetworks.FirewallList{}
 	err = kubernetes.Client().Client.List(ctx, firewalls)
 	if err != nil {
 		return
