@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
+	resourceRepos "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 )
 
 type Project interface {
@@ -17,16 +18,22 @@ type Project interface {
 	Delete(context.Context, *model.Project) errors.Error
 }
 
-func NewProjectUseCase(repo repository.Project) Project {
-	return &projectUseCase{repo: repo}
+func NewProjectUseCase(repo repository.Project, gcpRepo resourceRepos.Resource, awsRepo resourceRepos.Resource) Project {
+	return &projectUseCase{
+		projectRepo: repo,
+		gcpRepo:     gcpRepo,
+		awsRepo:     awsRepo,
+	}
 }
 
 type projectUseCase struct {
-	repo repository.Project
+	projectRepo repository.Project
+	gcpRepo     resourceRepos.Resource
+	awsRepo     resourceRepos.Resource
 }
 
 func (pu *projectUseCase) Get(ctx context.Context, project *model.Project) errors.Error {
-	foundProject, err := pu.repo.Find(ctx, option.Option{
+	foundProject, err := pu.projectRepo.Find(ctx, option.Option{
 		Value: repository.FindProjectByIDRequest{
 			ID: ctx.Value(context.ProjectIDKey).(string),
 		},
@@ -40,7 +47,7 @@ func (pu *projectUseCase) Get(ctx context.Context, project *model.Project) error
 }
 
 func (pu *projectUseCase) List(ctx context.Context, projects *[]model.Project) errors.Error {
-	foundProjects, err := pu.repo.FindAll(ctx, option.Option{
+	foundProjects, err := pu.projectRepo.FindAll(ctx, option.Option{
 		Value: repository.FindAllProjectByOwnerRequest{
 			Owner: ctx.Value(context.OwnerIDKey).(string),
 		},
@@ -54,24 +61,39 @@ func (pu *projectUseCase) List(ctx context.Context, projects *[]model.Project) e
 }
 
 func (pu *projectUseCase) Create(ctx context.Context, project *model.Project) errors.Error {
-	return pu.repo.Create(ctx, project)
+	return pu.projectRepo.Create(ctx, project)
 }
 
 func (pu *projectUseCase) Update(ctx context.Context, project *model.Project) errors.Error {
-	project, err := pu.repo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	project, err := pu.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !err.IsOk() {
 		return err
 	}
 	project.Name = ctx.Value(context.RequestKey).(dto.UpdateProjectRequest).Name
 
-	return pu.repo.Update(ctx, project)
+	return pu.projectRepo.Update(ctx, project)
 }
 
 func (pu *projectUseCase) Delete(ctx context.Context, project *model.Project) errors.Error {
-	project, err := pu.repo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	project, err := pu.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !err.IsOk() {
 		return err
 	}
+	searchLabels := map[string]string{model.ProjectIDLabelKey: project.ID.Hex()}
+	if providers, err := pu.gcpRepo.FindAllProviders(ctx, option.Option{Value: resourceRepos.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else {
+		if len(*providers) > 0 {
+			return errors.Conflict.WithMessage("Cannot delete project with providers")
+		}
+	}
+	if providers, err := pu.awsRepo.FindAllProviders(ctx, option.Option{Value: resourceRepos.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+		return err
+	} else {
+		if len(*providers) > 0 {
+			return errors.Conflict.WithMessage("Cannot delete project with providers")
+		}
+	}
 
-	return pu.repo.Delete(ctx, project)
+	return pu.projectRepo.Delete(ctx, project)
 }
