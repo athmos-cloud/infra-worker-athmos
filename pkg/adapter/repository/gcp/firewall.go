@@ -2,6 +2,8 @@ package gcp
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -19,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -43,9 +44,22 @@ func (gcp *gcpRepository) FindFirewall(ctx context.Context, opt option.Option) (
 }
 
 func (gcp *gcpRepository) FindAllFirewalls(ctx context.Context, opt option.Option) (*network.FirewallCollection, errors.Error) {
-	//TODO implement me
-	//panic("implement me")
-	return &network.FirewallCollection{}, errors.OK
+	if !opt.SetType(reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String()).Validate() {
+		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
+	}
+	req := opt.Get().(resourceRepo.FindAllResourceOption)
+	gcpFirewallList := &v1beta1.FirewallList{}
+	listOpt := &client.ListOptions{
+		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+	}
+	if err := kubernetes.Client().Client.List(ctx, gcpFirewallList, listOpt); err != nil {
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get firewalls"))
+	}
+	firewallCollection, err := gcp.toModelFirewallCollection(gcpFirewallList)
+	if !err.IsOk() {
+		return nil, err
+	}
+	return firewallCollection, errors.OK
 }
 
 func (gcp *gcpRepository) FindAllRecursiveFirewalls(ctx context.Context, opt option.Option, ch *resourceRepo.FirewallChannel) {

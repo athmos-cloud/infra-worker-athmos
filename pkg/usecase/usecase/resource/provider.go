@@ -16,7 +16,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
 	"github.com/samber/lo"
-	"golang.org/x/exp/maps"
 	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
