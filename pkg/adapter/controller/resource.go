@@ -71,9 +71,6 @@ func (rc *resourceController) GetResource(ctx context.Context) {
 }
 
 func (rc *resourceController) ListResources(ctx context.Context) {
-	if err := validator.Resource(ctx); !err.IsOk() {
-		errorCtrl.RaiseError(ctx, err)
-	}
 	switch ctx.Value(context.ResourceTypeKey).(types.Resource) {
 	case types.ProviderResource:
 		rc.providerController.ListProviders(ctx)

@@ -5,9 +5,9 @@ import (
 	errorCtrl "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/error"
 	resourceValidator "github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/validator/resource"
 	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
 	usecase "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase/resource"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 )
 
 type Provider interface {
@@ -42,10 +42,6 @@ func (pc *providerController) GetProvider(ctx context.Context) {
 }
 
 func (pc *providerController) GetStack(ctx context.Context) {
-	if err := resourceValidator.Stack(ctx); !err.IsOk() {
-		errorCtrl.RaiseError(ctx, err)
-		return
-	}
 	stack := &model.Provider{}
 	if err := pc.providerUseCase.GetStack(ctx, stack); !err.IsOk() {
 		errorCtrl.RaiseError(ctx, err)
