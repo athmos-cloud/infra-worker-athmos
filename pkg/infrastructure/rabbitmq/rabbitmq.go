@@ -20,7 +20,17 @@ type RabbitMQ struct {
 	MessageHandler     func(*amqp.Channel, string, MessageSend)
 }
 
-func New(uri string, receiveQueue string, sendQueue string, resourceController controller.Resource) *RabbitMQ {
+func New(receiveQueue string, sendQueue string, resourceController controller.Resource) *RabbitMQ {
+	var uri string
+	if config.Current.Queue.URI != "" {
+		uri = config.Current.Queue.URI
+	} else {
+		uri = fmt.Sprintf("amqp://%s:%s@%s:%d/",
+			config.Current.Queue.Username,
+			config.Current.Queue.Password,
+			config.Current.Queue.Address,
+			config.Current.Queue.Port)
+	}
 	conn, err := amqp.Dial(uri)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)

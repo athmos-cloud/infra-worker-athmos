@@ -1,14 +1,14 @@
-tmpDir: "/tmp/worker"
 staticFilesDir: "/static"
-test:
-  credentials:
-    gcp: "/etc/credentials/resource.json"
 http:
   port: 8081
 kubernetes:
   configPath: "/root/.kube/config"
 rabbitmq:
-  uri: "amqp://user:password@rabbitmq:5672/"
+  uri: "" #amqp://user:password@rabbitmq:5672/"
+  address: "rabbitmq"
+  port: 5672
+  username: "user"
+  password: "password"
   outcoming: "to-gateway-api"
   incoming: "to-infra-worker"
 mongo:
