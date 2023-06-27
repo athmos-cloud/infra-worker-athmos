@@ -40,6 +40,10 @@ func (p *provider) RenderAll(ctx context.Context, providers *resource.ProviderCo
 		ProjectID: ctx.Value(context.ProjectIDKey).(string),
 		Payload:   *providers,
 	}
+	if len(*providers) == 0 {
+		ctx.JSON(204, []string{})
+		return
+	}
 	ctx.JSON(200, gin.H{"payload": resp})
 }
 

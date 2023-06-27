@@ -9,11 +9,11 @@ import (
 )
 
 func IdFromName(name string) string {
-	return fmt.Sprintf("%s-%s", strings.ToLower(RemoveSpecialChars(name)), RandomString(8))
+	return fmt.Sprintf("%s-%s", strings.ToLower(RemoveSpecialChars(name)), RandomString(6))
 }
 
 func RandomString(n int) string {
-	var letter = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	var letter = []rune("abcdefghijklmnopqrstuvwxyz")
 	b := make([]rune, n)
 	for i := range b {
 		b[i] = letter[rand.Intn(len(letter)-1)]

@@ -65,7 +65,7 @@ func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.P
 		return err
 	}
 	if len(*gcpProviders) == 0 && len(*awsProviders) == 0 {
-		return errors.NotFound.WithMessage("no providers found")
+		return errors.NoContent.WithMessage("no providers found")
 	}
 	*providers = lo.Assign(*gcpProviders, *awsProviders)
 
@@ -123,7 +123,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.
 			VPC:      req.VPC,
 		},
 		Auth: resourceModel.ProviderAuth{
-			Name:             secret.Name,
+			Name:             secret.Kubernetes.SecretName,
 			KubernetesSecret: secret.Kubernetes,
 		},
 	}
@@ -132,6 +132,7 @@ func (puc *providerUseCase) Create(ctx context.Context, provider *resourceModel.
 	if !errCreate.IsOk() {
 		return errCreate
 	}
+
 	*provider = *providerToCreate
 
 	return errors.Created

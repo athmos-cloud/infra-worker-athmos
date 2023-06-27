@@ -32,6 +32,10 @@ func StatusFromKubernetesStatus(status []cpv1.Condition) Status {
 }
 
 func StatusTypeFromKubernetesStatus(metaStatus *Status, status []cpv1.Condition) {
+	if len(status) == 0 {
+		metaStatus.StatusType = StatusTypeUnknown
+		return
+	}
 	for _, s := range status {
 		if s.Status == corev1.ConditionFalse && string(s.Reason) == "ApplyFailure" {
 			*metaStatus = Status{
