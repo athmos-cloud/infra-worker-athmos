@@ -31,7 +31,6 @@ func New(receiveQueue string, sendQueue string, resourceController controller.Re
 			config.Current.Queue.Address,
 			config.Current.Queue.Port)
 	}
-	logger.Info.Printf("Connecting to RabbitMQ: %s", uri)
 	conn, err := amqp.Dial(uri)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
