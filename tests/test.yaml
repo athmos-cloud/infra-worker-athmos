@@ -16,92 +16,92 @@ spec:
       name:  gcp-creds
       key: plugin-playground.json
 
----
-apiVersion: compute.gcp.upbound.io/v1beta1
-kind: Network
-metadata:
-  name: default-net-1
-  namespace: crossplane
-  labels:
-    name.network: "default-net-1"
-    app.kubernetes.io/managed-by: "athmos"
-    athmos.cloud/project-id: "test-project"
-    identifier.provider: "gcp"
-    identifier.network: "default-net-1"
-spec:
-  deletionPolicy: Delete
-  providerConfigRef:
-    name: gcp-test
-  forProvider:
-    autoCreateSubnetworks: false
-  providerRef:
-    name: gcp-test
+# ---
+# apiVersion: compute.gcp.upbound.io/v1beta1
+# kind: Network
+# metadata:
+#   name: default-net-1
+#   namespace: crossplane
+#   labels:
+#     name.network: "default-net-1"
+#     app.kubernetes.io/managed-by: "athmos"
+#     athmos.cloud/project-id: "test-project"
+#     identifier.provider: "gcp"
+#     identifier.network: "default-net-1"
+# spec:
+#   deletionPolicy: Delete
+#   providerConfigRef:
+#     name: gcp-test
+#   forProvider:
+#     autoCreateSubnetworks: false
+#   providerRef:
+#     name: gcp-test
 
----
-apiVersion: compute.gcp.upbound.io/v1beta1
-kind: Subnetwork
-metadata:
-  name: subnet-test
-  namespace: crossplane
-  labels:
-    name.subnetwork: "subnet-test"
-    app.kubernetes.io/managed-by: "athmos"
-    athmos.cloud/project-id: "test-project"
-    identifier.provider: "gcp"
-    identifier.network: "default-net-1"
-    identifier.subnetwork: "subnet-test"
-spec:
-  deletionPolicy: Delete
-  providerConfigRef:
-    name: gcp-test
-  forProvider:
-    ipCidrRange: "10.0.0.0/8"
-    networkSelector:
-      matchLabels:
-        name.network: "default-net-1"
-    region: europe-west9
+# ---
+# apiVersion: compute.gcp.upbound.io/v1beta1
+# kind: Subnetwork
+# metadata:
+#   name: subnet-test
+#   namespace: crossplane
+#   labels:
+#     name.subnetwork: "subnet-test"
+#     app.kubernetes.io/managed-by: "athmos"
+#     athmos.cloud/project-id: "test-project"
+#     identifier.provider: "gcp"
+#     identifier.network: "default-net-1"
+#     identifier.subnetwork: "subnet-test"
+# spec:
+#   deletionPolicy: Delete
+#   providerConfigRef:
+#     name: gcp-test
+#   forProvider:
+#     ipCidrRange: "10.0.0.0/8"
+#     networkSelector:
+#       matchLabels:
+#         name.network: "default-net-1"
+#     region: europe-west9
 
----
-apiVersion: compute.gcp.upbound.io/v1beta1
-kind: Instance
-metadata:
-  name: vm-test
-  namespace: crossplane
-  labels:
-    app.kubernetes.io/managed-by: "athmos"
-    athmos.cloud/project-id: "test-project"
-    identifier.provider: "gcp"
-    identifier.network: "default-net-1"
-    identifier.subnetwork: "subnet-test"
-    identifier.vm: "vm-test"
-spec:
-  deletionPolicy: Delete
-  providerConfigRef:
-    name: gcp-test
-  publishConnectionDetailsTo:
-    configRef:
-      name: instance-config
-    name: instance-secret
-  forProvider:
-    machineType: "e2-medidddum"
-    bootDisk:
-      - autoDelete:  true
-        initializeParams:
-        - image: debian-cloud/debian-11
-          size: 10
-    zone: europe-west9-b
-    metadata:
-      ssh-keys: |
-        admin: ssh-rsa AAAAB3NzaC1yc2EAAA
-        user: ssh-rsa AAAAB3NzaC1ycdd2EAAA
-    networkInterface:
-        - accessConfig:
-              - { }
-          network: default-net-1
-          subnetwork: subnet-test
-          networkSelector:
-            matchLabels:
-              name.network: "default-net-1"
-          subnetworkSelector:
-            matchLabels:
-              name.subnetwork: "subnet-test"
+# ---
+# apiVersion: compute.gcp.upbound.io/v1beta1
+# kind: Instance
+# metadata:
+#   name: vm-test
+#   namespace: crossplane
+#   labels:
+#     app.kubernetes.io/managed-by: "athmos"
+#     athmos.cloud/project-id: "test-project"
+#     identifier.provider: "gcp"
+#     identifier.network: "default-net-1"
+#     identifier.subnetwork: "subnet-test"
+#     identifier.vm: "vm-test"
+# spec:
+#   deletionPolicy: Delete
+#   providerConfigRef:
+#     name: gcp-test
+#   publishConnectionDetailsTo:
+#     configRef:
+#       name: instance-config
+#     name: instance-secret
+#   forProvider:
+#     machineType: "e2-medidddum"
+#     bootDisk:
+#       - autoDelete:  true
+#         initializeParams:
+#         - image: debian-cloud/debian-11
+#           size: 10
+#     zone: europe-west9-b
+#     metadata:
+#       ssh-keys: |
+#         admin: ssh-rsa AAAAB3NzaC1yc2EAAA
+#         user: ssh-rsa AAAAB3NzaC1ycdd2EAAA
+#     networkInterface:
+#         - accessConfig:
+#               - { }
+#           network: default-net-1
+#           subnetwork: subnet-test
+#           networkSelector:
+#             matchLabels:
+#               name.network: "default-net-1"
+#           subnetworkSelector:
+#             matchLabels:
+#               name.subnetwork: "subnet-test"
