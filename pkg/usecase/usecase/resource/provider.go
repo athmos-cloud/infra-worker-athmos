@@ -3,6 +3,9 @@ package resourceUc
 import (
 	"fmt"
 
+	"github.com/samber/lo"
+	"gopkg.in/mcuadros/go-defaults.v1"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -10,13 +13,12 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/secret"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
-	"github.com/samber/lo"
-	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
 type Provider interface {

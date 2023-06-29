@@ -2,6 +2,7 @@ package resourceUc
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -9,11 +10,11 @@ import (
 	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/usecase"
-	"gopkg.in/mcuadros/go-defaults.v1"
 )
 
 type Network interface {
@@ -69,8 +70,6 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s createdNetwork not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.CreateNetworkRequest)
-	defaults.SetDefaults(&req)
-
 	parId := req.ParentIDProvider
 	provider, errProvider := repo.FindProvider(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: parId.Provider}})
 	if !errProvider.IsOk() {

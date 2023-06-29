@@ -11,11 +11,11 @@ type GetNetworkResponse struct {
 }
 
 type CreateNetworkRequest struct {
-	ParentIDProvider *identifier.Provider `json:"parent_id_provider"`
-	Name             string               `json:"name"`
-	Region           string               `json:"region,omitempty"`
-	Managed          bool                 `json:"managed" default:"true"`
-	Tags             map[string]string    `json:"tags"`
+	ParentIDProvider identifier.Provider `json:"parent_id"`
+	Name             string              `json:"name"`
+	Region           string              `json:"region,omitempty"`
+	Managed          bool                `json:"managed" default:"true"`
+	Tags             map[string]string   `json:"tags"`
 }
 
 type CreateNetworkResponse struct {

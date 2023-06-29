@@ -12,6 +12,7 @@ import (
 	modelTypes "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -84,6 +85,7 @@ func (gcp *gcpRepository) FindProviderStack(ctx context.Context, opt option.Opti
 			Labels: providerModel.IdentifierID.ToIDLabels(),
 		},
 	}, nil)
+	logger.Info.Println("networks", networks)
 	if !err.IsOk() {
 		return nil, err
 	}

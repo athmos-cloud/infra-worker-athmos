@@ -2,11 +2,13 @@ package resource
 
 import (
 	"fmt"
+
+	"github.com/gin-gonic/gin"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	output "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/output/resource"
-	"github.com/gin-gonic/gin"
 )
 
 type provider struct{}
