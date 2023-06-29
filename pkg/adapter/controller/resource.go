@@ -25,6 +25,7 @@ type resourceController struct {
 	subnetworkController resourceCtrl.Subnetwork
 	firewallController   resourceCtrl.Firewall
 	vmController         resourceCtrl.VM
+	sqlDBController      resourceCtrl.SqlDB
 }
 
 func NewResourceController(
@@ -33,6 +34,7 @@ func NewResourceController(
 	subnetworkController resourceCtrl.Subnetwork,
 	firewallController resourceCtrl.Firewall,
 	vmController resourceCtrl.VM,
+	sqlDBController resourceCtrl.SqlDB,
 ) Resource {
 	return &resourceController{
 		providerController:   providerController,
@@ -40,6 +42,7 @@ func NewResourceController(
 		subnetworkController: subnetworkController,
 		firewallController:   firewallController,
 		vmController:         vmController,
+		sqlDBController:      sqlDBController,
 	}
 }
 
@@ -65,6 +68,8 @@ func (rc *resourceController) GetResource(ctx context.Context) {
 		rc.firewallController.GetFirewall(ctx)
 	case types.VMResource:
 		rc.vmController.GetVM(ctx)
+	case types.SqlDBResource:
+		rc.sqlDBController.GetSqlDB(ctx)
 	default:
 		errorCtrl.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("getting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
@@ -94,6 +99,8 @@ func (rc *resourceController) CreateResource(ctx context.Context) {
 		rc.firewallController.CreateFirewall(ctx)
 	case types.VMResource:
 		rc.vmController.CreateVM(ctx)
+	case types.SqlDBResource:
+		rc.sqlDBController.CreateSqlDB(ctx)
 	default:
 		errorCtrl.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("creating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
@@ -114,6 +121,8 @@ func (rc *resourceController) UpdateResource(ctx context.Context) {
 		rc.firewallController.UpdateFirewall(ctx)
 	case types.VMResource:
 		rc.vmController.UpdateVM(ctx)
+	case types.SqlDBResource:
+		rc.sqlDBController.UpdateSqlDB(ctx)
 	default:
 		errorCtrl.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("updating %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}
@@ -134,6 +143,8 @@ func (rc *resourceController) DeleteResource(ctx context.Context) {
 		rc.firewallController.DeleteFirewall(ctx)
 	case types.VMResource:
 		rc.vmController.DeleteVM(ctx)
+	case types.SqlDBResource:
+		rc.sqlDBController.DeleteSqlDB(ctx)
 	default:
 		errorCtrl.RaiseError(ctx, errors.BadRequest.WithMessage(fmt.Sprintf("deleting %s resource is not supported", ctx.Value(context.ResourceTypeKey).(types.Resource))))
 	}

@@ -38,12 +38,16 @@ func (r *registry) NewResourceController() controller.Resource {
 		usecase.NewVMUseCase(projectRepo, sshKeysRepo, gcpRepo, awsRepo, nil),
 		presenter.NewVMPresenter(),
 	)
-
+	sqlCtrl := resourceCtrl.NewSqlDBController(
+		usecase.NewSqlDBUseCase(projectRepo, gcpRepo, awsRepo, nil),
+		presenter.NewSqlDBPresenter(),
+	)
 	return controller.NewResourceController(
 		providerCtrl,
 		networkCtrl,
 		subnetworkCtrl,
 		firewallCtrl,
 		vmCtrl,
+		sqlCtrl,
 	)
 }
