@@ -78,9 +78,6 @@ func bindEnvs() {
 	if err := viper.BindEnv("staticsFileDir", "STATIC_FILES_DIR"); err != nil {
 		panic(err)
 	}
-	if err := viper.BindEnv("tmpDir", "TMP_DIR"); err != nil {
-		panic(err)
-	}
 	if err := viper.BindEnv("kubernetes.configPath", "KUBECONFIG_PATH"); err != nil {
 		panic(err)
 	}
