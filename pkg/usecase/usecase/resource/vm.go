@@ -108,10 +108,10 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.VM{
-			Provider:   req.ParentID.Provider,
-			VPC:        req.ParentID.VPC,
-			Network:    req.ParentID.Network,
-			Subnetwork: req.ParentID.Subnetwork,
+			Provider:   subnetwork.IdentifierID.Provider,
+			VPC:        subnetwork.IdentifierID.VPC,
+			Network:    subnetwork.IdentifierID.Network,
+			Subnetwork: subnetwork.IdentifierID.Subnetwork,
 			VM:         usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.VM{

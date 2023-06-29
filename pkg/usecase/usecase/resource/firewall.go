@@ -84,9 +84,9 @@ func (fuc *firewallUseCase) Create(ctx context.Context, firewall *model.Firewall
 			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.Firewall{
-			Provider: req.ParentID.Provider,
-			VPC:      req.ParentID.VPC,
-			Network:  req.ParentID.Network,
+			Provider: network.IdentifierID.Provider,
+			VPC:      network.IdentifierID.VPC,
+			Network:  network.IdentifierID.Network,
 			Firewall: usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.Firewall{

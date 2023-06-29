@@ -100,9 +100,9 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.SqlDB{
-			Provider: req.ParentID.Provider,
-			VPC:      req.ParentID.VPC,
-			Network:  req.ParentID.Network,
+			Provider: network.IdentifierID.Provider,
+			VPC:      network.IdentifierID.VPC,
+			Network:  network.IdentifierID.Network,
 			SqlDB:    usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.SqlDB{

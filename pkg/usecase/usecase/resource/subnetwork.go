@@ -86,9 +86,9 @@ func (suc *subnetworkUseCase) Create(ctx context.Context, subnetwork *model.Subn
 			Tags:    req.Tags,
 		},
 		IdentifierID: identifier.Subnetwork{
-			Provider:   req.ParentID.Provider,
-			VPC:        req.ParentID.VPC,
-			Network:    req.ParentID.Network,
+			Provider:   network.IdentifierID.Provider,
+			VPC:        network.IdentifierID.VPC,
+			Network:    network.IdentifierID.Network,
 			Subnetwork: usecase.IdFromName(req.Name),
 		},
 		IdentifierName: identifier.Subnetwork{

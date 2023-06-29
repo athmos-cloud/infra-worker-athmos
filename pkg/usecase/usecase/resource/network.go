@@ -74,6 +74,7 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 	if !errProvider.IsOk() {
 		return errProvider
 	}
+
 	id := identifier.Network{
 		Provider: provider.IdentifierID.Provider,
 		VPC:      provider.IdentifierID.VPC,
