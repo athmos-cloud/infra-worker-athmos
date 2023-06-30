@@ -98,10 +98,12 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 			Channel:      make(chan *networkModels.SubnetworkCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
+
 		chDB := &resourceRepo.SqlDBChannel{
 			Channel:      make(chan *instance.SqlDBCollection),
 			ErrorChannel: make(chan errors.Error),
 		}
+
 		subnetChannels = append(subnetChannels, *chSubnet)
 		firewallChannels = append(firewallChannels, *chFirewall)
 		dbChannels = append(dbChannels, *chDB)
@@ -109,7 +111,6 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		go gcp.FindAllRecursiveFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chFirewall)
 		go gcp.FindAllRecursiveSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chSubnet)
 		go gcp.FindAllRecursiveSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: network.IdentifierID.ToIDLabels()}}, chDB)
-
 		gotFirewalls := false
 		gotSubnets := false
 		gotDBs := false
@@ -145,8 +146,7 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 					return
 				}
 				gotDBs = true
-			case errCh := <-chSubnet.ErrorChannel:
-				logger.Error.Println("error while listing dbs", errCh)
+			case errCh := <-chDB.ErrorChannel:
 				if gotDBs {
 					return
 				}
@@ -164,6 +164,10 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		close(ch.ErrorChannel)
 	}
 	for _, ch := range firewallChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
+	for _, ch := range dbChannels {
 		close(ch.Channel)
 		close(ch.ErrorChannel)
 	}

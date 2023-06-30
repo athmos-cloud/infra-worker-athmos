@@ -78,6 +78,11 @@ func (puc *providerUseCase) GetStack(ctx context.Context, provider *resourceMode
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
+	project, errRepo := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+    if !errRepo.IsOk() {
+        return errRepo
+    }
+    ctx.Set(context.CurrentNamespace, project.Namespace)
 	req := ctx.Value(context.RequestKey).(dto.GetProviderStackRequest)
 	foundProvider, err := repo.FindProviderStack(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.ProviderID}})
 	if !err.IsOk() {
@@ -185,6 +190,11 @@ func (puc *providerUseCase) Delete(ctx context.Context, provider *resourceModel.
 		return errFind
 	}
 	if req.Cascade {
+		project, errRepo := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+		if !errRepo.IsOk() {
+			return errRepo
+		}
+		ctx.Set(context.CurrentNamespace, project.Namespace)
 		if errDelete := repo.DeleteProviderCascade(ctx, provider); !errDelete.IsOk() {
 			return errDelete
 		}

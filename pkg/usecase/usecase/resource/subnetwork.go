@@ -158,6 +158,11 @@ func (suc *subnetworkUseCase) Delete(ctx context.Context, subnetwork *model.Subn
 	}
 	*subnetwork = *foundNetwork
 	if req.Cascade {
+		project, errRepo := suc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+		if !errRepo.IsOk() {
+			return errRepo
+		}
+		ctx.Set(context.CurrentNamespace, project.Namespace)
 		if delErr := repo.DeleteSubnetworkCascade(ctx, subnetwork); !delErr.IsOk() {
 			return delErr
 		}

@@ -54,6 +54,11 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
+	project, errRepo := vuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+    if !errRepo.IsOk() {
+        return errRepo
+    }
+    ctx.Set(context.CurrentNamespace, project.Namespace)
 
 	foundVM, err := repo.FindVM(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
@@ -244,7 +249,12 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteVMRequest)
 	defaults.SetDefaults(&req)
-
+	project, errRepo := vuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+    if !errRepo.IsOk() {
+        return errRepo
+    }
+    ctx.Set(context.CurrentNamespace, project.Namespace)
+	
 	foundVM, err := repo.FindVM(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})
