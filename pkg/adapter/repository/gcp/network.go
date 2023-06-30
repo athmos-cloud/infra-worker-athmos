@@ -115,42 +115,45 @@ func (gcp *gcpRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		gotSubnets := false
 		gotDBs := false
 		for {
+			logger.Info.Println("waiting for subnets, firewalls and dbs", gotFirewalls, gotSubnets, gotDBs)
 			select {
 			case firewalls := <-chFirewall.Channel:
 				network.Firewalls = *firewalls
-				if gotSubnets {
+				gotFirewalls = true
+				if gotSubnets && gotFirewalls && gotDBs {
 					return
 				}
-				gotFirewalls = true
 			case errCh := <-chFirewall.ErrorChannel:
 				logger.Error.Println("error while listing firewalls", errCh)
-				if gotSubnets {
+				gotFirewalls = true
+				if gotSubnets && gotFirewalls && gotDBs {
 					return
 				}
-				gotFirewalls = true
 			case subnetworks := <-chSubnet.Channel:
 				network.Subnetworks = *subnetworks
-				if gotFirewalls {
+				gotSubnets = true
+				if gotSubnets && gotFirewalls && gotDBs {
 					return
 				}
-				gotSubnets = true
 			case errCh := <-chSubnet.ErrorChannel:
 				logger.Error.Println("error while listing subnetworks", errCh)
-				if gotFirewalls {
-					return
-				}
 				gotFirewalls = true
+				if gotSubnets && gotFirewalls && gotDBs {
+					return
+				}
 			case dbs := <-chDB.Channel:
+				logger.Info.Println("dbs", dbs)
 				network.SqlDbs = *dbs
-				if gotDBs {
+				gotDBs = true
+				if gotSubnets && gotFirewalls && gotDBs {
 					return
 				}
-				gotDBs = true
 			case errCh := <-chDB.ErrorChannel:
-				if gotDBs {
+				logger.Error.Println("error while listing dbs", errCh)
+				gotDBs = true
+				if gotSubnets && gotFirewalls && gotDBs {
 					return
 				}
-				gotDBs = true
 			}
 		}
 	}
