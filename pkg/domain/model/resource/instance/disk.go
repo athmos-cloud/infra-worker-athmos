@@ -27,5 +27,5 @@ type SqlDbDisk struct {
 	Type               DiskType `json:"type"`
 	SizeGib            int      `json:"size_gib"`
 	Autoresize         bool     `json:"autoresize,omitempty" default:"true"`
-	AutoresizeLimitGib int      `json:"autoresize_limit_gib,omitempty" default:"0"`
+	AutoresizeLimitGib *int     `json:"autoresize_limit_gib,omitempty"`
 }

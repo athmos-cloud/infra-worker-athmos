@@ -52,6 +52,11 @@ func (suc *sqlDBUseCase) Get(ctx context.Context, db *instance.SqlDB) errors.Err
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s db not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
+	project, errRepo := suc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
+	if !errRepo.IsOk() {
+		return errRepo
+	}
+	ctx.Set(context.CurrentNamespace, project.Namespace)
 
 	err := _setSqlNamespace(ctx, suc)
 	if !err.IsOk() {

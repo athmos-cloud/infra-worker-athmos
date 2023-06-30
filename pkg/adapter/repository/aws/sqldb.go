@@ -243,7 +243,7 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 		Disk: instance.SqlDbDisk{
 			Type:               instance.DiskTypeSSD,
 			SizeGib:            sizeGib,
-			AutoresizeLimitGib: maxSizeGib,
+			AutoresizeLimitGib: &maxSizeGib,
 			Autoresize:         0 < maxSizeGib,
 		},
 		MachineType:    *db.Spec.Parameters.MachineType,
@@ -314,7 +314,7 @@ func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.Sql
 	storageSize := float64(db.Disk.SizeGib)
 	var maxStorageSize float64
 	if db.Disk.Autoresize {
-		maxStorageSize = float64(db.Disk.AutoresizeLimitGib)
+		maxStorageSize = float64(*db.Disk.AutoresizeLimitGib)
 	}
 	subnetGroupName := fmt.Sprintf("%s-subnet-group", db.IdentifierID.SqlDB)
 	subnet1 := fmt.Sprintf("%s-subnet1", db.IdentifierID.SqlDB)

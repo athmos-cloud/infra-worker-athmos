@@ -6,8 +6,10 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	"github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -34,7 +36,7 @@ func (gcp *gcpRepository) FindSqlDB(ctx context.Context, opt option.Option) (*in
 		}
 		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get SQL database %s", req.Name))
 	}
-	mod, err := gcp.toModelSqlDB(gcpDB)
+	mod, err := gcp.toModelSqlDB(ctx, gcpDB)
 	if !err.IsOk() {
 		return nil, err
 	}
@@ -167,7 +169,7 @@ func (gcp *gcpRepository) SqlDBExists(ctx context.Context, db *instance.SqlDB) (
 	return len(gcpDBs.Items) > 0, errors.OK
 }
 
-func (gcp *gcpRepository) toModelSqlDB(db *v1beta1.DatabaseInstance) (*instance.SqlDB, errors.Error) {
+func (gcp *gcpRepository) toModelSqlDB(ctx context.Context, db *v1beta1.DatabaseInstance) (*instance.SqlDB, errors.Error) {
 	id := identifier.SqlDB{}
 	name := identifier.SqlDB{}
 	if err := id.IDFromLabels(db.Labels); !err.IsOk() {
@@ -177,21 +179,33 @@ func (gcp *gcpRepository) toModelSqlDB(db *v1beta1.DatabaseInstance) (*instance.
 		return nil, err
 	}
 	version, err := getDBTypeVersion(*db.Spec.ForProvider.DatabaseVersion)
+	logger.Info.Println("version", version)
 	if !err.IsOk() {
 		return nil, err
 	}
-	return &instance.SqlDB{
+	logger.Info.Println("autoresize", *db.Spec.ForProvider.Settings[0].DiskAutoresizeLimit)
+	autoResizeLimit := int(*db.Spec.ForProvider.Settings[0].DiskAutoresizeLimit)
+	modelDB := &instance.SqlDB{
+		Metadata: metadata.Metadata{
+			Status:  metadata.StatusFromKubernetesStatus(db.Status.Conditions),
+			Managed: db.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
+		},
 		IdentifierID:   id,
 		IdentifierName: name,
 		SQLTypeVersion: *version,
 		MachineType:    *db.Spec.ForProvider.Settings[0].Tier,
+		Region:         *db.Spec.ForProvider.Region,
 		Disk: instance.SqlDbDisk{
 			Type:               fromGCPDiskType(*db.Spec.ForProvider.Settings[0].DiskType),
 			SizeGib:            int(*db.Spec.ForProvider.Settings[0].DiskSize),
-			AutoresizeLimitGib: int(*db.Spec.ForProvider.Settings[0].DiskAutoresizeLimit),
+			AutoresizeLimitGib: &autoResizeLimit,
 			Autoresize:         *db.Spec.ForProvider.Settings[0].DiskAutoresize,
 		},
-	}, errors.OK
+	}
+	if errPwd := gcp._getSqlPasswordSecret(ctx, modelDB); !errPwd.IsOk() {
+		return nil, errPwd
+	}
+	return modelDB, errors.OK
 }
 
 func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*v1beta1.DatabaseInstance, errors.Error) {
@@ -205,7 +219,7 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 	}
 	diskType := toGCPDiskType(db.Disk.Type)
 	diskSize := float64(db.Disk.SizeGib)
-	resizeLimit := float64(db.Disk.AutoresizeLimitGib)
+	resizeLimit := float64(*db.Disk.AutoresizeLimitGib)
 	labelsDB := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), db.IdentifierID.ToIDLabels(), db.IdentifierName.ToNameLabels())
 	return &v1beta1.DatabaseInstance{
 		ObjectMeta: metav1.ObjectMeta{
@@ -247,10 +261,8 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 func (gcp *gcpRepository) toModelSqlDBCollection(ctx context.Context, instanceList *v1beta1.DatabaseInstanceList) (*instance.SqlDBCollection, errors.Error) {
 	items := instance.SqlDBCollection{}
 	for _, item := range instanceList.Items {
-		sqlDB, err := gcp.toModelSqlDB(&item)
-		if errPwd := gcp._getSqlPasswordSecret(ctx, sqlDB); !errPwd.IsOk() {
-			return nil, errPwd
-		}
+		sqlDB, err := gcp.toModelSqlDB(ctx, &item)
+
 		if !err.IsOk() {
 			return nil, err
 		}
@@ -303,7 +315,7 @@ func getDBTypeVersion(dbVersion string) (*instance.SQLTypeVersion, errors.Error)
 	if len(split) < 2 {
 		return nil, errors.BadRequest.WithMessage(fmt.Sprintf("invalid db version %s", dbVersion))
 	}
-	sqlVersion := strings.Join(split[1:len(split)-1], "_")
+	sqlVersion := strings.Join(split[1:], "_")
 	var sqlType instance.SQLType
 	switch split[0] {
 	case "MYSQL":
