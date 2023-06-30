@@ -146,7 +146,7 @@ func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 					return
 				}
 				gotDBs = true
-			case errCh := <-chSubnet.ErrorChannel:
+			case errCh := <-chDB.ErrorChannel:
 				logger.Error.Println("error while listing dbs", errCh)
 				if gotDBs {
 					return
@@ -165,6 +165,10 @@ func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		close(ch.ErrorChannel)
 	}
 	for _, ch := range firewallChannels {
+		close(ch.Channel)
+		close(ch.ErrorChannel)
+	}
+	for _, ch := range dbChannels {
 		close(ch.Channel)
 		close(ch.ErrorChannel)
 	}

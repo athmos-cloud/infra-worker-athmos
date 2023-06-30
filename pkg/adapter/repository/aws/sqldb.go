@@ -308,10 +308,6 @@ func (aws *awsRepository) getSqlTypeVersion(db *xrds.SQLDatabase) (*instance.SQL
 }
 
 func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.SqlDB) (*xrds.SQLDatabase, errors.Error) {
-	if db.Disk.Type == instance.DiskTypeHDD {
-		return nil, errors.BadRequest.WithMessage("Aws RDS only supports SSD storage.")
-	}
-
 	labels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), db.IdentifierID.ToIDLabels(), db.IdentifierName.ToNameLabels())
 	namespace := ctx.Value(context.CurrentNamespace).(string)
 	passwordRef := fmt.Sprintf("%s-password", db.IdentifierID.SqlDB)
