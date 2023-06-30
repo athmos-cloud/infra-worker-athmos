@@ -3,6 +3,7 @@ package metadata
 import (
 	cpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	corev1 "k8s.io/api/core/v1"
+	"regexp"
 	"time"
 )
 
@@ -36,18 +37,29 @@ func StatusTypeFromKubernetesStatus(metaStatus *Status, status []cpv1.Condition)
 		metaStatus.StatusType = StatusTypeUnknown
 		return
 	}
+
+	getMessage := func(msg string) string {
+		re := regexp.MustCompile(`refresh failed:\s(.*?):`)
+		message := ""
+		match := re.FindStringSubmatch(msg)
+		if len(match) != 0 {
+			message = match[1]
+		}
+		return message
+	}
 	for _, s := range status {
 		if s.Status == corev1.ConditionFalse && string(s.Reason) == "ApplyFailure" {
+
 			*metaStatus = Status{
 				StatusType: StatusTypeError,
-				Message:    s.Message,
+				Message:    getMessage(s.Message),
 				Date:       s.LastTransitionTime.Time,
 			}
 			return
 		}
 	}
 	s := status[0]
-	metaStatus.Message = s.Message
+	metaStatus.Message = getMessage(s.Message)
 	metaStatus.Date = s.LastTransitionTime.Time
 	if s.Reason == cpv1.ReasonAvailable {
 		metaStatus.StatusType = StatusTypeCreated
