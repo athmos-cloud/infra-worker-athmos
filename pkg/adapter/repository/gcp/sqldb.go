@@ -243,6 +243,7 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 						Namespace: ns,
 					},
 				},
+				Project: &db.IdentifierID.VPC,
 				Region: &db.Region,
 				Settings: []v1beta1.SettingsParameters{
 					{

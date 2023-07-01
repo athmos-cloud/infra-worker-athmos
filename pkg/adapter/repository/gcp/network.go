@@ -234,7 +234,13 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *networkMod
 			return errFirewall
 		}
 	}
-	gcpSubnetwork := gcp.toGCPNetwork(ctx, network)
+	gcpSubnetwork := &v1beta1.Network{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, existingNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
+	}
 	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); errSubnet != nil {
 		if k8serrors.IsNotFound(errSubnet) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
@@ -274,8 +280,21 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *net
 			return sqlDBErr
 		}
 	}
-	return gcp.DeleteNetwork(ctx, network)
+	gcpSubnetwork := &v1beta1.Network{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, existingNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
+	}
+	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); errSubnet != nil {
+		if k8serrors.IsNotFound(errSubnet) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s", network.IdentifierName.Network))
+	}
 
+	return gcp.DeleteNetwork(ctx, network)
 }
 
 func (gcp *gcpRepository) NetworkExists(ctx context.Context, network *networkModels.Network) (bool, errors.Error) {

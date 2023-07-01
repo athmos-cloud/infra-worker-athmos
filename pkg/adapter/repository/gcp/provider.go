@@ -133,14 +133,14 @@ func (gcp *gcpRepository) UpdateProvider(ctx context.Context, provider *resource
 }
 
 func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource.Provider) errors.Error {
-	gcpSubnetwork := gcp.toGCPProvider(ctx, provider)
-
-	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
+	gcpProvider := &v1beta1.ProviderConfig{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, gcpProvider); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", req.Name))
 		}
-		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", req.Name))
 	}
+
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
 	networks, networksErr := gcp.FindAllNetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	if !networksErr.IsOk() {
@@ -149,6 +149,13 @@ func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource
 	if len(*networks) > 0 {
 		return errors.Conflict.WithMessage(fmt.Sprintf("provider %s still has networks", provider.IdentifierID.Provider))
 	}
+	if err := kubernetes.Client().Client.Delete(ctx, gcpProvider); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
+	}
+
 	return errors.NoContent
 }
 
@@ -158,11 +165,23 @@ func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *r
 	if !networksErr.IsOk() {
 		return networksErr
 	}
-
 	for _, network := range *networks {
 		if networkErr := gcp.DeleteNetworkCascade(ctx, &network); !networkErr.IsOk() {
 			return networkErr
 		}
+	}
+	gcpProvider := &v1beta1.ProviderConfig{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, gcpProvider); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", req.Name))
+		}
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", req.Name))
+	}
+	if err := kubernetes.Client().Client.Delete(ctx, gcpProvider); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
 	}
 
 	return gcp.DeleteProvider(ctx, provider)

@@ -221,6 +221,7 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *instance.VM) *v1beta1
 
 	netInterface := []v1beta1.NetworkInterfaceParameters{
 		{
+			
 			NetworkSelector: &v1.Selector{
 				MatchLabels: networkID.ToIDLabels(),
 			},
@@ -243,7 +244,7 @@ func (gcp *gcpRepository) toGCPVM(ctx context.Context, vm *instance.VM) *v1beta1
 			ResourceSpec: v1.ResourceSpec{
 				DeletionPolicy: crossplane.GetDeletionPolicy(vm.Metadata.Managed),
 				ProviderConfigReference: &v1.Reference{
-					Name: vm.IdentifierID.VM,
+					Name: vm.IdentifierID.Provider,
 				},
 			},
 			ForProvider: v1beta1.InstanceParameters{

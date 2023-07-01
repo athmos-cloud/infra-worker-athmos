@@ -41,7 +41,6 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 	ctx.Set(context.ProviderTypeKey, providerType)
 	ctx.Set(context.ResourceTypeKey, resourceType)
 	ctx.Set(context.RequestKey, message.Data.Payload)
-
 	switch message.Data.Verb {
 	case CREATE:
 		rq.ResourceController.CreateResource(ctx)

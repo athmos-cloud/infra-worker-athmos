@@ -154,7 +154,15 @@ func (gcp *gcpRepository) UpdateSubnetwork(ctx context.Context, subnetwork *netw
 }
 
 func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *network.Subnetwork) errors.Error {
-	gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
+	// gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
+	gcpSubnetwork := &v1beta1.Subnetwork{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, existingSubnet); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", subnetwork.IdentifierID.Subnetwork))
+	}
+
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
 	vms, errVMs := gcp.FindAllVMs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	if !errVMs.IsOk() {
@@ -183,7 +191,20 @@ func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwor
 				return vmErr
 			}
 		}
-		return gcp.DeleteSubnetwork(ctx, subnetwork)
+		gcpSubnetwork := &v1beta1.Subnetwork{}
+		if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, existingSubnet); err != nil {
+			if k8serrors.IsNotFound(err) {
+				return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
+			}
+			return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", subnetwork.IdentifierID.Subnetwork))
+		}
+		if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
+			if k8serrors.IsNotFound(err) {
+				return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", subnetwork.IdentifierName.Subnetwork))
+			}
+			return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", subnetwork.IdentifierName.Subnetwork))
+		}
+		return errors.NoContent
 	}
 }
 
@@ -241,7 +262,7 @@ func (gcp *gcpRepository) toGCPSubnetwork(ctx context.Context, subnet *network.S
 				},
 			},
 			ForProvider: v1beta1.SubnetworkParameters_2{
-				Network:     &subnet.IdentifierID.Network,
+				Network:     &subnet.IdentifierName.Network,
 				Project:     &subnet.IdentifierID.VPC,
 				Region:      &subnet.Region,
 				IPCidrRange: &subnet.IPCIDRRange,
