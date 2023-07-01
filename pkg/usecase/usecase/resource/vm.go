@@ -10,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
@@ -55,10 +56,10 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 	}
 	req := ctx.Value(context.RequestKey).(dto.GetResourceRequest)
 	project, errRepo := vuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-    if !errRepo.IsOk() {
-        return errRepo
-    }
-    ctx.Set(context.CurrentNamespace, project.Namespace)
+	if !errRepo.IsOk() {
+		return errRepo
+	}
+	ctx.Set(context.CurrentNamespace, project.Namespace)
 
 	foundVM, err := repo.FindVM(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.Identifier},
@@ -75,6 +76,7 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 }
 
 func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.Error {
+	logger.Info.Println("CREAATE")
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -84,13 +86,16 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 
 	project, errRepo := vuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !errRepo.IsOk() {
+		logger.Info.Println(errRepo)
 		return errRepo
 	}
 
 	subnetwork, errNet := repo.FindSubnetwork(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Subnetwork},
 	})
+
 	if !errNet.IsOk() {
+		logger.Info.Println(errNet)
 		return errNet
 	}
 
@@ -137,8 +142,10 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 		},
 	}
 	if err := repo.CreateVM(ctx, toCreateVM); !err.IsOk() {
+		logger.Info.Println(err)
 		return err
 	}
+	logger.Info.Printf("vm created: %s", toCreateVM.IdentifierID.VM)
 	*vm = *toCreateVM
 
 	return errors.Created
@@ -250,11 +257,11 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 	req := ctx.Value(context.RequestKey).(dto.DeleteVMRequest)
 	defaults.SetDefaults(&req)
 	project, errRepo := vuc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-    if !errRepo.IsOk() {
-        return errRepo
-    }
-    ctx.Set(context.CurrentNamespace, project.Namespace)
-	
+	if !errRepo.IsOk() {
+		return errRepo
+	}
+	ctx.Set(context.CurrentNamespace, project.Namespace)
+
 	foundVM, err := repo.FindVM(ctx, option.Option{
 		Value: resourceRepo.FindResourceOption{Name: req.IdentifierID},
 	})

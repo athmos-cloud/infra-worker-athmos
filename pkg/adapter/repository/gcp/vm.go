@@ -10,6 +10,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -45,6 +46,7 @@ func (gcp *gcpRepository) FindVM(ctx context.Context, opt option.Option) (*insta
 	if !err.IsOk() {
 		return nil, err
 	}
+	logger.Info.Println("vm found", mod)
 	return mod, errors.OK
 }
 
@@ -97,6 +99,7 @@ func (gcp *gcpRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.
 	}
 	gcpVM := gcp.toGCPVM(ctx, vm)
 	if err := kubernetes.Client().Client.Create(ctx, gcpVM); err != nil {
+		logger.Info.Println("unable to create vm", err)
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists", vm.IdentifierName.VM))
 		}
@@ -329,3 +332,8 @@ func sshKeysToString(sshKeys model.SSHKeyList) *string {
 	ret = strings.TrimSuffix(ret, "\n")
 	return &ret
 }
+
+//func withSSHKeys(vm *instance.VM) *instance.VM {
+//	vm.Auths = sshKeys
+//	return vm
+//}

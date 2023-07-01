@@ -1,8 +1,11 @@
 package rabbitmq
 
 import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/types"
 	"time"
 )
@@ -44,7 +47,7 @@ type MessageSend struct {
 	Type         metadata.StatusType `json:"type"`
 	Date         time.Time           `json:"date"`
 	Message      string              `json:"message"`
-	Identifier   identifier.Payload  `json:"identifier,omitempty"`
+	Identifier   identifier.ID       `json:"identifier,omitempty"`
 	Payload      interface{}         `json:"payload,omitempty"`
 }
 
@@ -58,4 +61,54 @@ func (ms *MessageSend) WithNestWrapper() NestMessageWrap {
 		Pattern: nestPatternValue,
 		Data:    ms,
 	}
+}
+
+func getResourceID(resourcePayload any, resourceType types.Resource) identifier.ID {
+	switch resourceType {
+	case types.ProviderResource:
+		provider := resourcePayload.(resource.Provider)
+		return &provider.IdentifierID
+	case types.NetworkResource:
+		network := resourcePayload.(network.Network)
+		return &network.IdentifierID
+	case types.FirewallResource:
+		firewall := resourcePayload.(network.Firewall)
+		return &firewall.IdentifierID
+	case types.SubnetworkResource:
+		subnetwork := resourcePayload.(network.Subnetwork)
+		return &subnetwork.IdentifierID
+	case types.VMResource:
+		vm := resourcePayload.(instance.VM)
+		return &vm.IdentifierID
+	case types.SqlDBResource:
+		sqldb := resourcePayload.(instance.SqlDB)
+		return &sqldb.IdentifierID
+	}
+
+	return nil
+}
+
+func getResourceName(resourcePayload any, resourceType types.Resource) identifier.ID {
+	switch resourceType {
+	case types.ProviderResource:
+		provider := resourcePayload.(resource.Provider)
+		return &provider.IdentifierName
+	case types.NetworkResource:
+		network := resourcePayload.(network.Network)
+		return &network.IdentifierName
+	case types.FirewallResource:
+		firewall := resourcePayload.(network.Firewall)
+		return &firewall.IdentifierName
+	case types.SubnetworkResource:
+		subnetwork := resourcePayload.(network.Subnetwork)
+		return &subnetwork.IdentifierName
+	case types.VMResource:
+		vm := resourcePayload.(instance.VM)
+		return &vm.IdentifierName
+	case types.SqlDBResource:
+		sqldb := resourcePayload.(instance.SqlDB)
+		return &sqldb.IdentifierName
+	}
+
+	return nil
 }

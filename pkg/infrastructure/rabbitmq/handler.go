@@ -60,11 +60,14 @@ func (rq *RabbitMQ) handleMessage(ctx context.Context, msg amqp.Delivery, err er
 func (rq *RabbitMQ) handleResponse(ctx context.Context, statusType metadata.StatusType) {
 	code := ctx.Value(context.ResponseCodeKey).(int)
 	if code%100 == 2 {
+		idName := getResourceName(ctx.Value(context.ResponseKey), ctx.Value(context.ResourceTypeKey).(types.Resource))
 		msg := MessageSend{
-			ProjectID: ctx.Value(context.ProjectIDKey).(string),
-			Type:      statusType,
-			Code:      code,
-			Payload:   ctx.Value(context.ResponseKey),
+			ProjectID:    ctx.Value(context.ProjectIDKey).(string),
+			ProviderType: ctx.Value(context.ProviderTypeKey).(types.Provider),
+			ResourceType: ctx.Value(context.ResourceTypeKey).(types.Resource),
+			Type:         statusType,
+			Code:         code,
+			Identifier:   idName,
 		}
 		rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)
 	} else {
@@ -74,11 +77,13 @@ func (rq *RabbitMQ) handleResponse(ctx context.Context, statusType metadata.Stat
 }
 
 func (rq *RabbitMQ) handleError(ctx context.Context) {
+	idName := getResourceName(ctx.Value(context.ResponseKey), ctx.Value(context.ResourceTypeKey).(types.Resource))
+
 	msg := MessageSend{
-		ProjectID: ctx.Value(context.ProjectIDKey).(string),
-		Type:      metadata.StatusTypeError,
-		Code:      ctx.Value(context.ResponseCodeKey).(int),
-		Payload:   ctx.Value(context.ResponseKey),
+		ProjectID:  ctx.Value(context.ProjectIDKey).(string),
+		Type:       metadata.StatusTypeError,
+		Code:       ctx.Value(context.ResponseCodeKey).(int),
+		Identifier: idName,
 	}
 	rq.MessageHandler(rq.Channel, rq.ReceiveQueue, msg)
 }

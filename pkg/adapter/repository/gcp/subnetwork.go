@@ -11,6 +11,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -22,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
 )
 
 func (gcp *gcpRepository) FindSubnetwork(ctx context.Context, opt option.Option) (*network.Subnetwork, errors.Error) {
@@ -83,11 +83,9 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 		ch.ErrorChannel <- err
 		return
 	}
-	wg := &sync.WaitGroup{}
 	vmChannels := make([]*resourceRepo.VMChannel, 0)
 	subnetResult := &network.SubnetworkCollection{}
 	for _, subnet := range *subnetworkCollection {
-		wg.Add(1)
 		optVM := option.Option{Value: resourceRepo.FindAllResourceOption{
 			Labels: subnet.IdentifierID.ToIDLabels(),
 		}}
@@ -101,11 +99,11 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 		case errCh := <-vmCh.ErrorChannel:
 			ch.ErrorChannel <- errCh
 		case vms := <-vmCh.Channel:
+			logger.Info.Println(vms)
 			subnet.VMs = *vms
 		}
 		(*subnetResult)[subnet.IdentifierName.Subnetwork] = subnet
 	}
-
 	for _, c := range vmChannels {
 		close(c.Channel)
 		close(c.ErrorChannel)

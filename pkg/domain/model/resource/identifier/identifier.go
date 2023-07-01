@@ -1,6 +1,8 @@
 package identifier
 
-import "github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+import (
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+)
 
 const (
 	ProviderIdentifierKey   = "identifier.provider"
@@ -36,6 +38,7 @@ type Payload struct {
 	Firewall   string `json:"firewall"`
 	SqlDB      string `json:"sqldb"`
 }
+
 
 func FromPayload(payload Payload) ID {
 	if payload.Provider != "" && (payload.VPC != "" || payload.Network != "") && payload.Subnetwork != "" && payload.VM != "" {

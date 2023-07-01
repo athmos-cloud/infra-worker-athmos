@@ -115,7 +115,6 @@ func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 		gotSubnets := false
 		gotDBs := false
 		for {
-			logger.Info.Println("waiting for subnets, firewalls and dbs", gotFirewalls, gotSubnets, gotDBs)
 			select {
 			case firewalls := <-chFirewall.Channel:
 				network.Firewalls = *firewalls
@@ -142,7 +141,6 @@ func (aws *awsRepository) FindAllRecursiveNetworks(ctx context.Context, opt opti
 					return
 				}
 			case dbs := <-chDB.Channel:
-				logger.Info.Println("dbs", dbs)
 				network.SqlDbs = *dbs
 				gotDBs = true
 				if gotSubnets && gotFirewalls && gotDBs {
