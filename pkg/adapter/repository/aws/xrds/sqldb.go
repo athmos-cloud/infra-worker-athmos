@@ -30,7 +30,7 @@ type SQLDatabase struct {
 	metav1.TypeMeta   `json:",inline"'`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              SQLDatabaseSpec   `json:"spec"`
-	SQLDatabaseStatus SQLDatabaseStatus `json:"status,omitempty"`
+	Status            SQLDatabaseStatus `json:"status,omitempty"`
 }
 
 type SQLDatabaseStatus struct {

@@ -67,6 +67,7 @@ func (in *SQLDatabase) DeepCopy() *SQLDatabase {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = *in.Spec.DeepCopy()
+	out.Status = SQLDatabaseStatus{DatabaseStatus: *in.Status.DatabaseStatus.DeepCopy()}
 
 	return out
 }
