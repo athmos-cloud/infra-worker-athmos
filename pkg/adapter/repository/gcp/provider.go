@@ -2,6 +2,8 @@ package gcp
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -22,7 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -54,7 +55,7 @@ func (gcp *gcpRepository) FindAllProviders(ctx context.Context, opt option.Optio
 	if err := kubernetes.Client().Client.List(ctx, gcpProviders, &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}); err != nil {
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list providers"))
+		return nil, errors.KubernetesError.WithMessage("unable to list providers")
 	}
 	mod, err := gcp.toModelProviderCollection(gcpProviders)
 	if !err.IsOk() {

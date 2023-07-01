@@ -59,10 +59,12 @@ func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.P
 	}
 	gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
 	if !err.IsOk() {
+		fmt.Println(fmt.Sprintf("gcp err: %s", err.Message))
 		return err
 	}
 	awsProviders, err := puc.awsRepo.FindAllProviders(ctx, searchOption)
 	if !err.IsOk() {
+		fmt.Println(fmt.Sprintf("aws err: %s", err.Message))
 		return err
 	}
 	if len(*gcpProviders) == 0 && len(*awsProviders) == 0 {
@@ -79,10 +81,10 @@ func (puc *providerUseCase) GetStack(ctx context.Context, provider *resourceMode
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s provider not supported", ctx.Value(context.ProviderTypeKey)))
 	}
 	project, errRepo := puc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
-    if !errRepo.IsOk() {
-        return errRepo
-    }
-    ctx.Set(context.CurrentNamespace, project.Namespace)
+	if !errRepo.IsOk() {
+		return errRepo
+	}
+	ctx.Set(context.CurrentNamespace, project.Namespace)
 	req := ctx.Value(context.RequestKey).(dto.GetProviderStackRequest)
 	foundProvider, err := repo.FindProviderStack(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.ProviderID}})
 	if !err.IsOk() {

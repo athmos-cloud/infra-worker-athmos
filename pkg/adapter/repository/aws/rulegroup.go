@@ -2,6 +2,8 @@ package aws
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	model "github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
@@ -13,7 +15,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 )
 
 func (aws *awsRepository) _createRuleGroup(ctx context.Context, firewall *model.Firewall, region *string) errors.Error {
@@ -134,11 +135,11 @@ func (aws *awsRepository) _toAwsRuleGroup(ctx context.Context, firewall *model.F
 												RuleDefinition: []v1beta1.RuleDefinitionParameters{
 													{
 														Actions:         []*string{&allowAction},
-														MatchAttributes: *allowParameters,
+														MatchAttributes: allowParameters,
 													},
 													{
 														Actions:         []*string{&denyAction},
-														MatchAttributes: *denyParameters,
+														MatchAttributes: denyParameters,
 													},
 												},
 											},
@@ -255,18 +256,18 @@ func _toModelRuleLists(awsMatchAttributes *[]v1beta1.MatchAttributesParameters) 
 	return &ruleList, errors.OK
 }
 
-func _toAwsMatchAttributesParameters(ruleList model.FirewallRuleList) (*[]v1beta1.MatchAttributesParameters, errors.Error) {
-	var res []v1beta1.MatchAttributesParameters
+func _toAwsMatchAttributesParameters(ruleList model.FirewallRuleList) ([]v1beta1.MatchAttributesParameters, errors.Error) {
+	res := make([]v1beta1.MatchAttributesParameters, 0)
 
 	for _, rule := range ruleList {
 		protocolf, errP := _protocolIANAFromString(rule.Protocol)
 		if !errP.IsOk() {
-			return nil, errP
+			return res, errP
 		}
 
 		portsf, errPorts := _floatSliceFromStringPorts(rule.Ports)
 		if !errPorts.IsOk() {
-			return nil, errPorts
+			return res, errPorts
 		}
 
 		newPort := v1beta1.MatchAttributesParameters{
@@ -282,7 +283,7 @@ func _toAwsMatchAttributesParameters(ruleList model.FirewallRuleList) (*[]v1beta
 		newPort.DestinationPort = ports
 		res = append(res, newPort)
 	}
-	return &res, errors.OK
+	return res, errors.OK
 }
 
 func _floatSliceFromStringPorts(ports []string) ([]*float64, errors.Error) {
