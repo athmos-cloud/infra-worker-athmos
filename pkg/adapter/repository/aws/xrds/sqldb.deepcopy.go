@@ -103,3 +103,23 @@ func (in *SQLDatabaseList) DeepCopyObject() runtime.Object {
 	}
 	return nil
 }
+
+func (in *SQLDatabase) GetContinue() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) SetContinue(c string) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) GetRemainingItemCount() *int64 {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) SetRemainingItemCount(c *int64) {
+	//TODO implement me
+	panic("implement me")
+}
