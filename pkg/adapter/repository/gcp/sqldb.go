@@ -202,9 +202,7 @@ func (gcp *gcpRepository) toModelSqlDB(ctx context.Context, db *v1beta1.Database
 			Autoresize:         *db.Spec.ForProvider.Settings[0].DiskAutoresize,
 		},
 	}
-	if errPwd := gcp._getSqlPasswordSecret(ctx, modelDB); !errPwd.IsOk() {
-		return nil, errPwd
-	}
+	 _ = gcp._getSqlPasswordSecret(ctx, modelDB)
 	return modelDB, errors.OK
 }
 
@@ -221,6 +219,8 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 	diskSize := float64(db.Disk.SizeGib)
 	resizeLimit := float64(*db.Disk.AutoresizeLimitGib)
 	labelsDB := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), db.IdentifierID.ToIDLabels(), db.IdentifierName.ToNameLabels())
+	deletionProtection := false
+
 	return &v1beta1.DatabaseInstance{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        db.IdentifierID.SqlDB,
@@ -243,6 +243,7 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 						Namespace: ns,
 					},
 				},
+				DeletionProtection: &deletionProtection,
 				Project: &db.IdentifierID.VPC,
 				Region: &db.Region,
 				Settings: []v1beta1.SettingsParameters{

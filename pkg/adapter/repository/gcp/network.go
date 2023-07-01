@@ -234,14 +234,14 @@ func (gcp *gcpRepository) DeleteNetwork(ctx context.Context, network *networkMod
 			return errFirewall
 		}
 	}
-	gcpNetwork := &v1beta1.Network{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, gcpNetwork); err != nil {
+	gcpSubnetwork := &v1beta1.Network{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
 	}
-	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpNetwork); errSubnet != nil {
+	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); errSubnet != nil {
 		if k8serrors.IsNotFound(errSubnet) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
 		}
@@ -256,38 +256,47 @@ func (gcp *gcpRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	firewalls, firewallsErr := gcp.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	sqldbs, sqldbsErr := gcp.FindAllSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	if !subnetsErr.IsOk() {
+		fmt.Println(subnetsErr)
 		return subnetsErr
 	}
 	if !firewallsErr.IsOk() {
+		fmt.Println(firewallsErr)
 		return firewallsErr
 	}
 	if !sqldbsErr.IsOk() {
+		fmt.Println(sqldbsErr)
+
 		return sqldbsErr
 	}
 
 	for _, subnet := range *subnets {
 		if subnetErr := gcp.DeleteSubnetworkCascade(ctx, &subnet); !subnetErr.IsOk() {
+			fmt.Println(subnetErr)
 			return subnetErr
 		}
 	}
 	for _, firewall := range *firewalls {
 		if firewallErr := gcp.DeleteFirewall(ctx, &firewall); !firewallErr.IsOk() {
+			fmt.Println(firewallErr)
 			return firewallErr
 		}
 	}
 	for _, sqlDB := range *sqldbs {
 		if sqlDBErr := gcp.DeleteSqlDB(ctx, &sqlDB); !sqlDBErr.IsOk() {
+			fmt.Println(sqlDBErr)
 			return sqlDBErr
 		}
 	}
-	gcpNetwork := &v1beta1.Network{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, gcpNetwork); err != nil {
+	gcpSubnetwork := &v1beta1.Network{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, gcpSubnetwork); err != nil {
+		fmt.Println(err)
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("networkModels %s not found", network.IdentifierID.Network))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get networkModels %s", network.IdentifierID.Network))
 	}
-	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpNetwork); errSubnet != nil {
+	if errSubnet := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); errSubnet != nil {
+		fmt.Println(errSubnet)
 		if k8serrors.IsNotFound(errSubnet) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
 		}

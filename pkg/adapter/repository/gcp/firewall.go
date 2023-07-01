@@ -218,6 +218,7 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *network.F
 			deny = append(deny, v1beta1.DenyParameters{Protocol: &d.Protocol, Ports: []*string{&curP}})
 		}
 	}
+	defaultSourceRanges := "0.0.0.0/0"
 	return &v1beta1.Firewall{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        firewall.IdentifierID.Firewall,
@@ -236,6 +237,7 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *network.F
 				Project: &firewall.IdentifierID.VPC,
 				Allow:   allow,
 				Deny:    deny,
+				SourceRanges: []*string{&defaultSourceRanges},
 			},
 		},
 	}
