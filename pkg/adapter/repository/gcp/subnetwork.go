@@ -154,7 +154,7 @@ func (gcp *gcpRepository) UpdateSubnetwork(ctx context.Context, subnetwork *netw
 func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *network.Subnetwork) errors.Error {
 	// gcpSubnetwork := gcp.toGCPSubnetwork(ctx, subnetwork)
 	gcpSubnetwork := &v1beta1.Subnetwork{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, existingSubnet); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, gcpSubnetwork); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
 		}
@@ -190,7 +190,7 @@ func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwor
 			}
 		}
 		gcpSubnetwork := &v1beta1.Subnetwork{}
-		if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, existingSubnet); err != nil {
+		if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, gcpSubnetwork); err != nil {
 			if k8serrors.IsNotFound(err) {
 				return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
 			}

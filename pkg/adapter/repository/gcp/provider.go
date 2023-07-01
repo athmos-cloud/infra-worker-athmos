@@ -134,11 +134,11 @@ func (gcp *gcpRepository) UpdateProvider(ctx context.Context, provider *resource
 
 func (gcp *gcpRepository) DeleteProvider(ctx context.Context, provider *resource.Provider) errors.Error {
 	gcpProvider := &v1beta1.ProviderConfig{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, gcpProvider); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: provider.IdentifierID.Provider}, gcpProvider); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", req.Name))
+			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", req.Name))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", provider.IdentifierID.Provider))
 	}
 
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, provider.IdentifierID.ToIDLabels())
@@ -171,11 +171,11 @@ func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *r
 		}
 	}
 	gcpProvider := &v1beta1.ProviderConfig{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, gcpProvider); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: provider.IdentifierID.Provider}, gcpProvider); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", req.Name))
+			return errors.NotFound.WithMessage(fmt.Sprintf("provider %s not found", provider.IdentifierID.Provider))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", req.Name))
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get provider %s", provider.IdentifierID.Provider))
 	}
 	if err := kubernetes.Client().Client.Delete(ctx, gcpProvider); err != nil {
 		if k8serrors.IsNotFound(err) {
