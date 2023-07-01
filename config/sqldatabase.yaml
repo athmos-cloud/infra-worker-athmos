@@ -136,6 +136,10 @@ spec:
                 fmt: "%s-sql-instance"
         - fromFieldPath: spec.parameters.region
           toFieldPath: spec.forProvider.region
+        - type: ToCompositeFieldPath
+          fromFieldPath: status
+          toFieldPath: status.databaseStatus
+
     - name: subnet-group
       base:
         apiVersion: rds.aws.upbound.io/v1beta1

@@ -67,6 +67,7 @@ func (in *SQLDatabase) DeepCopy() *SQLDatabase {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = *in.Spec.DeepCopy()
+	out.Status = SQLDatabaseStatus{DatabaseStatus: *in.Status.DatabaseStatus.DeepCopy()}
 
 	return out
 }
@@ -101,4 +102,24 @@ func (in *SQLDatabaseList) DeepCopyObject() runtime.Object {
 		return out
 	}
 	return nil
+}
+
+func (in *SQLDatabase) GetContinue() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) SetContinue(c string) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) GetRemainingItemCount() *int64 {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (in *SQLDatabase) SetRemainingItemCount(c *int64) {
+	//TODO implement me
+	panic("implement me")
 }
