@@ -1,20 +1,39 @@
 variables:
-  - name: "PROJECT_ID"
-    message: "GCP Project ID"
-  - name: "SERVICE_ACCOUNT"
-    message: "GCP Service Account email"
+  - name: "POLICY_NAME"
+    message: "Name of the policy you want to create"
+  - name: "ROLE_NAME"
+    message: "AWS Role Name you want to apply policy on"
+
 steps:
-  - message: "Enable the Service Networking API"
-    command: "gcloud --project $PROJECT_ID services enable servicenetworking.googleapis.com"
-  - message: "Enable the Compute API"
-    command: "gcloud --project $PROJECT_ID services enable compute.googleapis.com"
-  - message: "Enable the CloudSQL API"
-    command: "gcloud --project $PROJECT_ID services enable sqladmin.googleapis.com"
-  - message: "Assign Service Account User role to your service account"
-    command: "gcloud projects add-iam-policy-binding $PROJECT_ID --member \"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/iam.serviceAccountUser\""
-  - message: "Assign Service Cloud SQL role to your service account"
-    command: "gcloud projects add-iam-policy-binding $PROJECT_ID --member \"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/cloudsql.admin\""
-  - message: "Assign Compute Network Admin role to your service account"
-    command: "gcloud projects add-iam-policy-binding $PROJECT_ID --member \"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/compute.networkAdmin\""
-  - message: "Assign Compute Security Admin role to your service account"
-    command: "gcloud organization add-iam-policy-binding $PROJECT_ID --member=\"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/compute.instanceAdmin.v1\""
+  - message: "Save the following policy file on your local machine as policy.json"
+    command: |
+       {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+              "ec2:CreateVpc",
+              "ec2:CreateSubnet",
+              "ec2:DescribeVpcs",
+              "ec2:DescribeSubnets",
+              "ec2:CreateSecurityGroup",
+              "ec2:DescribeSecurityGroups",
+              "ec2:AuthorizeSecurityGroupIngress",
+              "ec2:AuthorizeSecurityGroupEgress",
+              "ec2:DeleteSecurityGroup",
+              "ec2:RevokeSecurityGroupIngress",
+              "ec2:RevokeSecurityGroupEgress",
+              "ec2:*",
+              "waf:*",
+              "rds:*"
+            ],
+            "Resource": "*"
+          }
+        ]
+    }
+  - message: "Create the policy"
+    command: "aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AthmosCreationPolicy"
+  - message: "Apply the policy to your AWS role"
+    command: "aws iam create-policy --policy-name $POLICY_NAME --policy-document file://policy.json"
