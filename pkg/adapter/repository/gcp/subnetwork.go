@@ -11,7 +11,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/network"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
-	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -99,7 +98,6 @@ func (gcp *gcpRepository) FindAllRecursiveSubnetworks(ctx context.Context, opt o
 		case errCh := <-vmCh.ErrorChannel:
 			ch.ErrorChannel <- errCh
 		case vms := <-vmCh.Channel:
-			logger.Info.Println(vms)
 			subnet.VMs = *vms
 		}
 		(*subnetResult)[subnet.IdentifierName.Subnetwork] = subnet

@@ -53,7 +53,6 @@ func Test_sqlDBUseCase_Create(t *testing.T) {
 
 		db := SqlDBFixture(ctx, t, duc)
 		namespace := ctx.Value(test.TestNamespaceContextKey).(string)
-		fmt.Println(fmt.Sprintf("Current namespace is %s", namespace))
 		kubeResource := &xrds.SQLDatabase{}
 		errk := kubernetes.Client().Client.Get(ctx, types.NamespacedName{
 			Name:      db.IdentifierID.SqlDB,
