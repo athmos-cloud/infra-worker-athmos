@@ -1,6 +1,7 @@
 package xrds
 
 import (
+	"github.com/upbound/provider-aws/apis/rds/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,7 +29,12 @@ type SQLDatabaseSpec struct {
 type SQLDatabase struct {
 	metav1.TypeMeta   `json:",inline"'`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              SQLDatabaseSpec `json:"spec"`
+	Spec              SQLDatabaseSpec   `json:"spec"`
+	SQLDatabaseStatus SQLDatabaseStatus `json:"status,omitempty"`
+}
+
+type SQLDatabaseStatus struct {
+	DatabaseStatus v1beta1.InstanceStatus `json:"databaseStatus"`
 }
 
 type SQLDatabaseList struct {

@@ -14,28 +14,27 @@ spec:
     secretRef:
       namespace: default
       name:  gcp-creds
-      key: plugin-playground.json
-
-# ---
-# apiVersion: compute.gcp.upbound.io/v1beta1
-# kind: Network
-# metadata:
-#   name: default-net-1
-#   namespace: crossplane
-#   labels:
-#     name.network: "default-net-1"
-#     app.kubernetes.io/managed-by: "athmos"
-#     athmos.cloud/project-id: "test-project"
-#     identifier.provider: "gcp"
-#     identifier.network: "default-net-1"
-# spec:
-#   deletionPolicy: Delete
-#   providerConfigRef:
-#     name: gcp-test
-#   forProvider:
-#     autoCreateSubnetworks: false
-#   providerRef:
-#     name: gcp-test
+      key: secr.json
+---
+apiVersion: compute.gcp.upbound.io/v1beta1
+kind: Network
+metadata:
+ name: default-net-1
+ namespace: crossplane
+ labels:
+   name.network: "default-net-1"
+   app.kubernetes.io/managed-by: "athmos"
+   athmos.cloud/project-id: "test-project"
+   identifier.provider: "gcp"
+   identifier.network: "default-net-1"
+spec:
+ deletionPolicy: Delete
+ providerConfigRef:
+   name: gcp-test
+ forProvider:
+   autoCreateSubnetworks: false
+ providerRef:
+   name: gcp-test
 
 # ---
 # apiVersion: compute.gcp.upbound.io/v1beta1
