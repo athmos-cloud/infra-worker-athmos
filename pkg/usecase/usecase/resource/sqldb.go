@@ -121,6 +121,8 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 			Version: req.SQLVersion,
 			Type:    req.SQLType,
 		},
+		Subnet1IpRange: req.Subnet1IpRange,
+		Subnet2IpRange: req.Subnet2IpRange,
 		Region: req.Region,
 		Auth: instance.SqlDBAuth{
 			RootPassword: req.RootPassword,
