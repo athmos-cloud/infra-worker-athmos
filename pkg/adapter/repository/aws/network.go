@@ -329,6 +329,7 @@ func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkMode
 		return nil, errors.BadRequest.WithMessage("Region is a required field.")
 	}
 
+	cidrRange := "10.6.0.0/16"
 	return &v1beta1.VPC{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        network.IdentifierID.Network,
@@ -343,7 +344,8 @@ func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkMode
 				},
 			},
 			ForProvider: v1beta1.VPCParameters_2{
-				Region: &network.Region,
+				CidrBlock: &cidrRange,
+				Region:    &network.Region,
 			},
 		},
 	}, errors.OK
