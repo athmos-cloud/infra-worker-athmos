@@ -269,7 +269,21 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 			return firewallErr
 		}
 	}
-	return aws.DeleteNetwork(ctx, network)
+
+	awsNetwork := &v1beta1.VPC{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, awsNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found", network.IdentifierID.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get network %s", network.IdentifierID.Network))
+	}
+	if err := kubernetes.Client().Client.Delete(ctx, awsNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s", network.IdentifierName.Network))
+	}
+	return errors.NoContent
 
 }
 
