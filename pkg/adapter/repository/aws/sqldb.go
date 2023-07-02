@@ -255,8 +255,8 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 		IdentifierName: name,
 		Region:         *db.Spec.Parameters.Region,
 		SQLTypeVersion: *version,
-		Subnet1IpRange: *db.Spec.Parameters.Subnet1IpRange,
-		Subnet2IpRange: *db.Spec.Parameters.Subnet2IpRange,
+		Subnet1IpRange: *db.Spec.Parameters.Subnet1CidrBlock,
+		Subnet2IpRange: *db.Spec.Parameters.Subnet2CidrBlock,
 	}, errors.OK
 }
 
@@ -353,9 +353,9 @@ func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.Sql
 				StorageGBLimit:    &maxStorageSize,
 				SubnetGroupName:   &subnetGroupName,
 				Subnet1:           &subnet1,
-				Subnet1IpRange:    &db.Subnet1IpRange,
+				Subnet1CidrBlock:  &db.Subnet1IpRange,
 				Subnet2:           &subnet2,
-				Subnet2IpRange:    &db.Subnet2IpRange,
+				Subnet2CidrBlock:  &db.Subnet2IpRange,
 			},
 		},
 	}, errors.OK
