@@ -184,7 +184,7 @@ func (gcp *gcpRepository) DeleteProviderCascade(ctx context.Context, provider *r
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update subnetwork %s", provider.IdentifierID.Provider))
 	}
 
-	return gcp.DeleteProvider(ctx, provider)
+	return errors.NoContent
 }
 
 func (gcp *gcpRepository) ProviderExists(ctx context.Context, name identifier.Provider) (bool, errors.Error) {
