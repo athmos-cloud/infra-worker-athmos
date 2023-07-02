@@ -93,6 +93,7 @@ func (nuc *networkUseCase) Create(ctx context.Context, network *model.Network) e
 		IdentifierID:   id,
 		IdentifierName: name,
 		Region:         req.Region,
+		IPCidrRange:    req.IPCidrRange,
 	}
 	if errCreate := repo.CreateNetwork(ctx, createdNetwork); !errCreate.IsOk() {
 		return errCreate
@@ -134,8 +135,6 @@ func (nuc *networkUseCase) Delete(ctx context.Context, subnetwork *model.Network
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s network not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
 	}
 	req := ctx.Value(context.RequestKey).(dto.DeleteNetworkRequest)
-
-	
 
 	foundNetwork, errNet := repo.FindNetwork(ctx, option.Option{Value: resourceRepo.FindResourceOption{Name: req.IdentifierID}})
 	if !errNet.IsOk() {

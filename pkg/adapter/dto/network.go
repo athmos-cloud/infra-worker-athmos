@@ -13,6 +13,7 @@ type GetNetworkResponse struct {
 type CreateNetworkRequest struct {
 	ParentIDProvider identifier.Provider `json:"parent_id"`
 	Name             string              `json:"name"`
+	IPCidrRange      string              `json:"ip_cidr_range,omitempty"`
 	Region           string              `json:"region,omitempty"`
 	Managed          bool                `json:"managed" default:"true"`
 	Tags             map[string]string   `json:"tags"`
