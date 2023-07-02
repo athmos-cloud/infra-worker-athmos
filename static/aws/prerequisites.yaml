@@ -8,31 +8,31 @@ steps:
   - message: "Save the following policy file on your local machine as policy.json"
     command: |
        {
-        "Version": "2012-10-17",
-        "Statement": [
-          {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": [
-              "ec2:CreateVpc",
-              "ec2:CreateSubnet",
-              "ec2:DescribeVpcs",
-              "ec2:DescribeSubnets",
-              "ec2:CreateSecurityGroup",
-              "ec2:DescribeSecurityGroups",
-              "ec2:AuthorizeSecurityGroupIngress",
-              "ec2:AuthorizeSecurityGroupEgress",
-              "ec2:DeleteSecurityGroup",
-              "ec2:RevokeSecurityGroupIngress",
-              "ec2:RevokeSecurityGroupEgress",
-              "ec2:*",
-              "waf:*",
-              "rds:*"
-            ],
-            "Resource": "*"
-          }
-        ]
-    }
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "VisualEditor0",
+              "Effect": "Allow",
+              "Action": [
+                "ec2:CreateVpc",
+                "ec2:CreateSubnet",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeSubnets",
+                "ec2:CreateSecurityGroup",
+                "ec2:DescribeSecurityGroups",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:DeleteSecurityGroup",
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:RevokeSecurityGroupEgress",
+                "ec2:*",
+                "waf:*",
+                "rds:*"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
   - message: "Create the policy"
     command: "aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/AthmosCreationPolicy"
   - message: "Apply the policy to your AWS role"
