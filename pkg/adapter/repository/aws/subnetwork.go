@@ -250,7 +250,13 @@ func (aws *awsRepository) toAWSSubnetwork(ctx context.Context, subnet *network.S
 				},
 			},
 			ForProvider: v1beta1.SubnetParameters_2{
-				VPCID:     &subnet.IdentifierID.Network,
+				VPCIDSelector: &v1.Selector{
+					MatchLabels: lo.Assign(map[string]string{
+						model.ProjectIDLabelKey:          ctx.Value(context.ProjectIDKey).(string),
+						identifier.ProviderIdentifierKey: subnet.IdentifierID.Provider,
+						identifier.NetworkIdentifierKey:  subnet.IdentifierID.Network,
+					}),
+				},
 				Region:    &subnet.Region,
 				CidrBlock: &subnet.IPCIDRRange,
 			},
