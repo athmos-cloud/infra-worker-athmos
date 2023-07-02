@@ -2,6 +2,18 @@ package gcp
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/samber/lo"
+	"github.com/upbound/provider-gcp/apis/sql/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -12,16 +24,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/logger"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
-	"github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/samber/lo"
-	"github.com/upbound/provider-gcp/apis/sql/v1beta1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func (gcp *gcpRepository) FindSqlDB(ctx context.Context, opt option.Option) (*instance.SqlDB, errors.Error) {
@@ -192,6 +194,7 @@ func (gcp *gcpRepository) toModelSqlDB(ctx context.Context, db *v1beta1.Database
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
+		PublicIP:       *db.Status.AtProvider.IPAddress[0].IPAddress,
 		SQLTypeVersion: *version,
 		MachineType:    *db.Spec.ForProvider.Settings[0].Tier,
 		Region:         *db.Spec.ForProvider.Region,
@@ -202,7 +205,7 @@ func (gcp *gcpRepository) toModelSqlDB(ctx context.Context, db *v1beta1.Database
 			Autoresize:         *db.Spec.ForProvider.Settings[0].DiskAutoresize,
 		},
 	}
-	 _ = gcp._getSqlPasswordSecret(ctx, modelDB)
+	_ = gcp._getSqlPasswordSecret(ctx, modelDB)
 	return modelDB, errors.OK
 }
 
@@ -244,8 +247,8 @@ func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*
 					},
 				},
 				DeletionProtection: &deletionProtection,
-				Project: &db.IdentifierID.VPC,
-				Region: &db.Region,
+				Project:            &db.IdentifierID.VPC,
+				Region:             &db.Region,
 				Settings: []v1beta1.SettingsParameters{
 					{
 						Tier:                &db.MachineType,
