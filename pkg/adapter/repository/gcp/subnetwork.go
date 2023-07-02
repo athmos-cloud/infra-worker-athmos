@@ -181,29 +181,31 @@ func (gcp *gcpRepository) DeleteSubnetwork(ctx context.Context, subnetwork *netw
 
 func (gcp *gcpRepository) DeleteSubnetworkCascade(ctx context.Context, subnetwork *network.Subnetwork) errors.Error {
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, subnetwork.IdentifierID.ToIDLabels())
-	if vms, err := gcp.FindAllVMs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}}); !err.IsOk() {
+	vms, err := gcp.FindAllVMs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	if !err.IsOk() {
 		return err
-	} else {
-		for _, vm := range *vms {
-			if vmErr := gcp.DeleteVM(ctx, &vm); !err.IsOk() {
-				return vmErr
-			}
-		}
-		gcpSubnetwork := &v1beta1.Subnetwork{}
-		if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, gcpSubnetwork); err != nil {
-			if k8serrors.IsNotFound(err) {
-				return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
-			}
-			return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", subnetwork.IdentifierID.Subnetwork))
-		}
-		if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
-			if k8serrors.IsNotFound(err) {
-				return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", subnetwork.IdentifierName.Subnetwork))
-			}
-			return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", subnetwork.IdentifierName.Subnetwork))
-		}
-		return errors.NoContent
 	}
+
+	for _, vm := range *vms {
+		if vmErr := gcp.DeleteVM(ctx, &vm); !err.IsOk() {
+			return vmErr
+		}
+	}
+
+	gcpSubnetwork := &v1beta1.Subnetwork{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: subnetwork.IdentifierID.Subnetwork}, gcpSubnetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", subnetwork.IdentifierID.Subnetwork))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get subnetwork %s", subnetwork.IdentifierID.Subnetwork))
+	}
+	if err := kubernetes.Client().Client.Delete(ctx, gcpSubnetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found in namespace %s", subnetwork.IdentifierName.Subnetwork))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s in namespace %s", subnetwork.IdentifierName.Subnetwork))
+	}
+	return errors.NoContent
 }
 
 func (gcp *gcpRepository) SubnetworkExists(ctx context.Context, subnetwork *network.Subnetwork) (bool, errors.Error) {

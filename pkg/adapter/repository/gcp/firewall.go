@@ -4,6 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/samber/lo"
+	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -14,14 +23,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
-	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/samber/lo"
-	"github.com/upbound/provider-gcp/apis/compute/v1beta1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (gcp *gcpRepository) FindFirewall(ctx context.Context, opt option.Option) (*network.Firewall, errors.Error) {
@@ -233,10 +234,10 @@ func (gcp *gcpRepository) toGCPFirewall(ctx context.Context, firewall *network.F
 				},
 			},
 			ForProvider: v1beta1.FirewallParameters{
-				Network: &firewall.IdentifierID.Network,
-				Project: &firewall.IdentifierID.VPC,
-				Allow:   allow,
-				Deny:    deny,
+				Network:      &firewall.IdentifierID.Network,
+				Project:      &firewall.IdentifierID.VPC,
+				Allow:        allow,
+				Deny:         deny,
 				SourceRanges: []*string{&defaultSourceRanges},
 			},
 		},

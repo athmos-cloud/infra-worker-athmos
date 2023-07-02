@@ -9,6 +9,7 @@ type SqlDB struct {
 	Metadata       metadata.Metadata `json:"metadata"`
 	IdentifierID   identifier.SqlDB  `json:"identifier_id"`
 	IdentifierName identifier.SqlDB  `json:"identifier_name"`
+	PublicIP       string            `json:"public_ip,omitempty"`
 	MachineType    string            `json:"machine_type"`
 	SQLTypeVersion SQLTypeVersion    `json:"sql_version"`
 	PrivateIp      string            `json:"private_ip,omitempty"`

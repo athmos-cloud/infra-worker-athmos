@@ -269,7 +269,21 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 			return firewallErr
 		}
 	}
-	return aws.DeleteNetwork(ctx, network)
+
+	awsNetwork := &v1beta1.VPC{}
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: network.IdentifierID.Network}, awsNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("network %s not found", network.IdentifierID.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get network %s", network.IdentifierID.Network))
+	}
+	if err := kubernetes.Client().Client.Delete(ctx, awsNetwork); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errors.NotFound.WithMessage(fmt.Sprintf("subnetwork %s not found", network.IdentifierName.Network))
+		}
+		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete subnetwork %s", network.IdentifierName.Network))
+	}
+	return errors.NoContent
 
 }
 
@@ -315,6 +329,7 @@ func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkMode
 		return nil, errors.BadRequest.WithMessage("Region is a required field.")
 	}
 
+	cidrRange := "10.6.0.0/16"
 	return &v1beta1.VPC{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        network.IdentifierID.Network,
@@ -329,7 +344,8 @@ func (aws *awsRepository) toAWSNetwork(ctx context.Context, network *networkMode
 				},
 			},
 			ForProvider: v1beta1.VPCParameters_2{
-				Region: &network.Region,
+				CidrBlock: &cidrRange,
+				Region:    &network.Region,
 			},
 		},
 	}, errors.OK

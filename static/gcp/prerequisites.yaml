@@ -18,3 +18,18 @@ steps:
     command: "gcloud projects add-iam-policy-binding $PROJECT_ID --member \"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/compute.networkAdmin\""
   - message: "Assign Compute Security Admin role to your service account"
     command: "gcloud organization add-iam-policy-binding $PROJECT_ID --member=\"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/compute.instanceAdmin.v1\""
+  - message: "To grant firewall permissions, save the following file as firewallRole.yaml"
+    command: >
+        title: Firewall Role
+        description: Allows creation of firewall rules
+        stage: GA
+        includedPermissions:
+        - compute.firewalls.create
+        - compute.firewalls.delete
+        - compute.firewalls.get
+        - compute.firewalls.list
+        - compute.firewalls.update
+  - message: "Create the firewall role"
+    command: "gcloud iam roles create firewallRole --project $PROJECT_ID --file firewallRole.yaml"
+  - message: "Assign Firewall role to your service account"
+    command: "gcloud projects add-iam-policy-binding $PROJECT_ID --member \"serviceAccount:$SERVICE_ACCOUNT\" --role=\"roles/firewallRole\""
