@@ -2,6 +2,18 @@ package aws
 
 import (
 	"fmt"
+	"reflect"
+
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/samber/lo"
+	awsCompute "github.com/upbound/provider-aws/apis/ec2/v1beta1"
+	"github.com/upbound/provider-aws/apis/networkfirewall/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -12,16 +24,6 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
 	resourceRepo "github.com/athmos-cloud/infra-worker-athmos/pkg/usecase/repository/resource"
-	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/samber/lo"
-	awsCompute "github.com/upbound/provider-aws/apis/ec2/v1beta1"
-	"github.com/upbound/provider-aws/apis/networkfirewall/v1beta1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (aws *awsRepository) FindFirewall(ctx context.Context, opt option.Option) (*network.Firewall, errors.Error) {
@@ -244,14 +246,17 @@ func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *network.F
 			ForProvider: v1beta1.FirewallParameters{
 				Name:   &firewall.IdentifierID.Provider,
 				Region: region,
-				VPCIDRef: &v1.Reference{
-					Name: firewall.IdentifierID.Network,
-				},
+				/*SubnetMapping: []v1beta1.SubnetMappingParameters{
+					{
+						SubnetIDSelector: &v1.Selector{
+							MatchLabels: resLabels,
+						},
+					},
+				},*/
+				VPCID: &firewall.IdentifierID.Network,
 			},
 		},
 	}
-	return &v1beta1.Firewall{}
-
 }
 
 func (aws *awsRepository) toModelFirewallCollection(ctx context.Context, firewallList *v1beta1.FirewallList) (*network.FirewallCollection, errors.Error) {

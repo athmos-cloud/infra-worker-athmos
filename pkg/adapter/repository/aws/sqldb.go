@@ -348,7 +348,7 @@ func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.Sql
 				Region:            &db.Region,
 				ResourceName:      &db.IdentifierID.SqlDB,
 				SqlType:           aws.toAWSEngine(db.SQLTypeVersion.Type),
-				SqlVersion:        &db.SQLTypeVersion.Version,
+				SqlVersion:        aws.getDefaultVersion(db.SQLTypeVersion.Type),
 				StorageGB:         &storageSize,
 				StorageGBLimit:    &maxStorageSize,
 				SubnetGroupName:   &subnetGroupName,
@@ -408,4 +408,15 @@ func (aws *awsRepository) getPasswordSecret(ctx context.Context, name *string, n
 		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("Unable to get password secret %s", *name))
 	}
 	return existingPasswordSecret, errors.OK
+}
+
+func (aws *awsRepository) getDefaultVersion(dbType instance.SQLType) *string {
+	version := ""
+	switch dbType {
+	case instance.MySqlSQLType:
+		version = "8.0.33"
+	case instance.PostgresSQLType:
+		version = "13.11-R1"
+	}
+	return &version
 }

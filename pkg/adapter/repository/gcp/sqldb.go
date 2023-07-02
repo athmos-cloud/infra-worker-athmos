@@ -210,10 +210,8 @@ func (gcp *gcpRepository) toModelSqlDB(ctx context.Context, db *v1beta1.Database
 }
 
 func (gcp *gcpRepository) toGCPSqlDB(ctx context.Context, db *instance.SqlDB) (*v1beta1.DatabaseInstance, errors.Error) {
-	version, err := _getDBVersion(db.SQLTypeVersion)
-	if !err.IsOk() {
-		return nil, err
-	}
+	version := gcp.getDefaultVersion(db.SQLTypeVersion.Type)
+
 	ns, ok := ctx.Value(context.CurrentNamespace).(string)
 	if !ok {
 		return nil, errors.InternalError.WithMessage("unable to get current namespace")
@@ -333,4 +331,15 @@ func getDBTypeVersion(dbVersion string) (*instance.SQLTypeVersion, errors.Error)
 		return nil, errors.BadRequest.WithMessage(fmt.Sprintf("invalid db type %s", split[0]))
 	}
 	return &instance.SQLTypeVersion{Version: sqlVersion, Type: sqlType}, errors.OK
+}
+
+func (gcp *gcpRepository) getDefaultVersion(dbType instance.SQLType) *string {
+	version := ""
+	switch dbType {
+	case instance.MySqlSQLType:
+		version = "MYSQL_8_0"
+	case instance.PostgresSQLType:
+		version = "POSTGRES_13"
+	}
+	return &version
 }
