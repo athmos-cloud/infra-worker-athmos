@@ -39,8 +39,14 @@ func (in *SQLDatabaseParameters) DeepCopyInto(out *SQLDatabaseParameters) {
 	out.Subnet1 = new(string)
 	*out.Subnet1 = *in.Subnet1
 
+	out.Subnet1IpRange = new(string)
+	*out.Subnet1IpRange = *in.Subnet1IpRange
+
 	out.Subnet2 = new(string)
 	*out.Subnet2 = *in.Subnet2
+
+	out.Subnet2IpRange = new(string)
+	*out.Subnet2IpRange = *in.Subnet2IpRange
 }
 
 func (in *SQLDatabaseParameters) DeepCopy() *SQLDatabaseParameters {

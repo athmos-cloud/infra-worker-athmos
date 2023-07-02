@@ -16,6 +16,8 @@ type SqlDB struct {
 	Region         string            `json:"region"`
 	Auth           SqlDBAuth         `json:"sql_db_auth"`
 	Disk           SqlDbDisk         `json:"sql_db_disk"`
+	Subnet1IpRange string            `json:"subnet1_ip_range,omitempty"`
+	Subnet2IpRange string            `json:"subnet2_ip_range,omitempty"`
 }
 
 type SqlDBCollection map[string]SqlDB

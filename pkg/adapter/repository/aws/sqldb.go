@@ -255,6 +255,8 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 		IdentifierName: name,
 		Region:         *db.Spec.Parameters.Region,
 		SQLTypeVersion: *version,
+		Subnet1IpRange: *db.Spec.Parameters.Subnet1IpRange,
+		Subnet2IpRange: *db.Spec.Parameters.Subnet2IpRange,
 	}, errors.OK
 }
 
@@ -312,6 +314,11 @@ func (aws *awsRepository) getSqlTypeVersion(db *xrds.SQLDatabase) (*instance.SQL
 }
 
 func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.SqlDB) (*xrds.SQLDatabase, errors.Error) {
+	if db.Subnet1IpRange == "" || db.Subnet2IpRange == "" {
+		return nil, errors.BadRequest.WithMessage(
+			fmt.Sprintf("Required subnet1 ip range and subnet2 ip range for db %s.", db.IdentifierName.SqlDB))
+	}
+
 	labels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), db.IdentifierID.ToIDLabels(), db.IdentifierName.ToNameLabels())
 	namespace := ctx.Value(context.CurrentNamespace).(string)
 	passwordRef := fmt.Sprintf("%s-password", db.IdentifierID.SqlDB)
@@ -346,7 +353,9 @@ func (aws *awsRepository) toAWSRDSInstance(ctx context.Context, db *instance.Sql
 				StorageGBLimit:    &maxStorageSize,
 				SubnetGroupName:   &subnetGroupName,
 				Subnet1:           &subnet1,
+				Subnet1IpRange:    &db.Subnet1IpRange,
 				Subnet2:           &subnet2,
+				Subnet2IpRange:    &db.Subnet2IpRange,
 			},
 		},
 	}, errors.OK

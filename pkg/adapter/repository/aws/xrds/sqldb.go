@@ -18,7 +18,9 @@ type SQLDatabaseParameters struct {
 	StorageGB         *float64 `json:"storageGB"`
 	StorageGBLimit    *float64 `json:"storageGBLimit"`
 	Subnet1           *string  `json:"subnet1"`
+	Subnet1IpRange    *string  `json:"subnet1_ip_range"`
 	Subnet2           *string  `json:"subnet2"`
+	Subnet2IpRange    *string  `json:"subnet2_ip_range"`
 	SubnetGroupName   *string  `json:"subnetGroupName"`
 }
 
