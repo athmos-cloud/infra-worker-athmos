@@ -244,14 +244,9 @@ func (aws *awsRepository) toAWSFirewall(ctx context.Context, firewall *network.F
 			ForProvider: v1beta1.FirewallParameters{
 				Name:   &firewall.IdentifierID.Provider,
 				Region: region,
-				SubnetMapping: []v1beta1.SubnetMappingParameters{
-					{
-						SubnetIDSelector: &v1.Selector{
-							MatchLabels: resLabels,
-						},
-					},
+				VPCIDRef: &v1.Reference{
+					Name: firewall.IdentifierID.Network,
 				},
-				VPCID: &firewall.IdentifierID.Network,
 			},
 		},
 	}
