@@ -7,6 +7,7 @@ import (
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/metadata"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/option"
@@ -239,6 +240,9 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 	maxSizeGib := int(*db.Spec.Parameters.StorageGBLimit)
 
 	return &instance.SqlDB{
+		Metadata: metadata.Metadata{
+			Status: metadata.StatusFromKubernetesStatus(db.Status.DatabaseStatus.Conditions),
+		},
 		Auth: *sqlAuthDB,
 		Disk: instance.SqlDbDisk{
 			Type:               instance.DiskTypeSSD,
