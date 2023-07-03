@@ -528,8 +528,8 @@ github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.2.9 h1:rmenucSohSTiyL09Y+l2OCk+FrMxGMzho2+tjr5ticU=
 github.com/ugorji/go/codec v1.2.9/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
-github.com/upbound/provider-aws v0.35.0 h1:NIWDGyRd2Yy1efaEI+nWQymP5weQEJoFXvusLW6Wm3g=
-github.com/upbound/provider-aws v0.35.0/go.mod h1:c8VsJOqj3jsh0YdQidxOIEU51DGXtjMwr4NltBJtpdk=
+github.com/upbound/provider-aws v0.37.0 h1:37X6gN/GVLI7zNFt9IjCghfI73AdIW9TRFFLDumya1w=
+github.com/upbound/provider-aws v0.37.0/go.mod h1:c8VsJOqj3jsh0YdQidxOIEU51DGXtjMwr4NltBJtpdk=
 github.com/upbound/provider-gcp v0.31.0 h1:CNcCGJYg02Cr2sB98hOO3N1NWSCqaLgRRl6DeHRUaV0=
 github.com/upbound/provider-gcp v0.31.0/go.mod h1:Ww8xUbvOkitqxlKGiaP55g8ADNjACB866ROlnEnjKY4=
 github.com/upbound/upjet v0.9.0-rc.0.0.20230502154751-645d7260d814 h1:lsVgo6tcAXmdHCoPgo0HT67rtYQ4DRzUeNJ2lh9Qhm0=

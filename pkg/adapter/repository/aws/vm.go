@@ -243,6 +243,15 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta
 		return nil, err
 	}
 
+	// cores := float64(1)
+	// threadsPerCPU := float64(1)
+	// cpuParams := []v1beta1.CPUOptionsParameters{
+	// 	{
+	// 		CoreCount:      &cores,
+	// 		ThreadsPerCore: &threadsPerCPU,
+	// 	},
+	// }
+
 	return &v1beta1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   vm.IdentifierID.VM,
@@ -263,6 +272,7 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta
 				KeyName:                  &keyName,
 				Region:                   &vm.Zone,
 				RootBlockDevice:          *awsDiskList,
+				// CPUOptions:               cpuParams,
 				SubnetIDRef: &v1.Reference{
 					Name: vm.IdentifierID.Subnetwork,
 				},
