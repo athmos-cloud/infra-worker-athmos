@@ -250,12 +250,16 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	searchLabels := lo.Assign(map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}, network.IdentifierID.ToIDLabels())
 	subnets, subnetsErr := aws.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	firewalls, firewallsErr := aws.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
-
+	sqldbs, sqldbsErr := aws.FindAllSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
+	
 	if !subnetsErr.IsOk() {
 		return subnetsErr
 	}
 	if !firewallsErr.IsOk() {
 		return firewallsErr
+	}
+	if !sqldbsErr.IsOk() {
+		return sqldbsErr
 	}
 
 	for _, subnet := range *subnets {
@@ -267,6 +271,12 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	for _, firewall := range *firewalls {
 		if firewallErr := aws.DeleteFirewall(ctx, &firewall); !firewallErr.IsOk() {
 			return firewallErr
+		}
+	}
+
+	for _, sqldb := range *sqldbs {
+		if sqldbErr := aws.DeleteSqlDB(ctx, &sqldb); !sqldbErr.IsOk() {
+			return sqldbErr
 		}
 	}
 
