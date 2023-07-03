@@ -1,7 +1,7 @@
 package xrds
 
 import (
-	"github.com/upbound/provider-aws/apis/rds/v1beta1"
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,9 +18,9 @@ type SQLDatabaseParameters struct {
 	StorageGB         *float64 `json:"storageGB"`
 	StorageGBLimit    *float64 `json:"storageGBLimit"`
 	Subnet1           *string  `json:"subnet1"`
-	Subnet1CidrBlock  *string  `json:"subnet1_cidr_block"`
+	Subnet1CidrBlock  *string  `json:"subnet1CidrBlock"`
 	Subnet2           *string  `json:"subnet2"`
-	Subnet2CidrBlock  *string  `json:"subnet2_cidr_block"`
+	Subnet2CidrBlock  *string  `json:"subnet2CidrBlock"`
 	SubnetGroupName   *string  `json:"subnetGroupName"`
 }
 
@@ -36,7 +36,7 @@ type SQLDatabase struct {
 }
 
 type SQLDatabaseStatus struct {
-	DatabaseStatus v1beta1.InstanceStatus `json:"databaseStatus"`
+	v1.ResourceStatus `json:",inline"`
 }
 
 type SQLDatabaseList struct {

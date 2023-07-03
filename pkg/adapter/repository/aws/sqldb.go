@@ -2,6 +2,8 @@ package aws
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws/xrds"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
@@ -18,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -114,6 +115,7 @@ func (aws *awsRepository) CreateSqlDB(ctx context.Context, db *instance.SqlDB) e
 		return err
 	}
 	if kubeErr := kubernetes.Client().Client.Create(ctx, rdsInstance); kubeErr != nil {
+		fmt.Println(kubeErr.Error())
 		if k8serrors.IsAlreadyExists(kubeErr) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("Db %s already exists", db.IdentifierID.SqlDB))
 		}
@@ -241,7 +243,7 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 
 	return &instance.SqlDB{
 		Metadata: metadata.Metadata{
-			Status: metadata.StatusFromKubernetesStatus(db.Status.DatabaseStatus.Conditions),
+			Status: metadata.StatusFromKubernetesStatus(db.Status.Conditions),
 		},
 		Auth: *sqlAuthDB,
 		Disk: instance.SqlDbDisk{
@@ -416,7 +418,7 @@ func (aws *awsRepository) getDefaultVersion(dbType instance.SQLType) *string {
 	case instance.MySqlSQLType:
 		version = "8.0.33"
 	case instance.PostgresSQLType:
-		version = "13.11-R1"
+		version = "13.11"
 	}
 	return &version
 }

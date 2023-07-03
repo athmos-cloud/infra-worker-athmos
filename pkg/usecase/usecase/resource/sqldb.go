@@ -2,6 +2,7 @@ package resourceUc
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -84,11 +85,13 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 
 	err := _setSqlNamespace(ctx, suc)
 	if !err.IsOk() {
+		fmt.Println(fmt.Sprintf("namespace err %s", err.Message))
 		return err
 	}
 
 	project, errRepo := suc.projectRepo.Find(ctx, option.Option{Value: repository.FindProjectByIDRequest{ID: ctx.Value(context.ProjectIDKey).(string)}})
 	if !errRepo.IsOk() {
+		fmt.Println(fmt.Sprintf("repo err %s", errRepo.Message))
 		return errRepo
 	}
 	ctx.Set(context.CurrentNamespace, project.Namespace)
@@ -96,6 +99,7 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 		Value: resourceRepo.FindResourceOption{Name: req.ParentID.Network},
 	})
 	if !errNet.IsOk() {
+		fmt.Println(fmt.Sprintf("net err %s", errNet.Message))
 		return errNet
 	}
 
@@ -123,16 +127,19 @@ func (suc *sqlDBUseCase) Create(ctx context.Context, db *instance.SqlDB) errors.
 		},
 		Subnet1IpRange: req.Subnet1IpRange,
 		Subnet2IpRange: req.Subnet2IpRange,
-		Region: req.Region,
+		Region:         req.Region,
 		Auth: instance.SqlDBAuth{
 			RootPassword: req.RootPassword,
 		},
 		Disk: req.Disk,
 	}
 	if err := repo.CreateSqlDB(ctx, toCreateDB); !err.IsOk() {
+		fmt.Println(fmt.Sprintf("create err %s", err.Message))
 		return err
 	}
 	*db = *toCreateDB
+
+	fmt.Println(fmt.Sprintf("subnets: %s | %s", db.Subnet1IpRange, db.Subnet2IpRange))
 
 	return errors.Created
 }
