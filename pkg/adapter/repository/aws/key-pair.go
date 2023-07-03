@@ -2,11 +2,13 @@ package aws
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/instance"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/infrastructure/kubernetes"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/samber/lo"
 	"github.com/upbound/provider-aws/apis/ec2/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -118,9 +120,15 @@ func (aws *awsRepository) _toAwsKeyPair(ctx context.Context, vm *instance.VM) (*
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-keypair", vm.IdentifierID.VM),
 			Labels:      keyPairLabels,
-			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.Network),
+			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)),
 		},
 		Spec: v1beta1.KeyPairSpec{
+			ResourceSpec: v1.ResourceSpec{
+				DeletionPolicy: crossplane.GetDeletionPolicy(vm.Metadata.Managed),
+				ProviderConfigReference: &v1.Reference{
+					Name: vm.IdentifierID.Provider,
+				},
+			},
 			ForProvider: v1beta1.KeyPairParameters{
 				PublicKey: &modelKeyPair.PublicKey,
 				Region:    &vm.Zone,

@@ -2,6 +2,10 @@ package aws
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -19,10 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -234,7 +235,7 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta
 	sshKeysLabels := crossplane.ToSSHKeySecretLabels(vm.Auths)
 	asPublicIPLabel := map[string]string{crossplane.VMPublicIPLabel: strconv.FormatBool(vm.AssignPublicIP)}
 	instanceLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
-	subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
+	//subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
 	keyName := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
 
 	awsDiskList, err := aws.toAWSVMDiskList(vm.Disks, vm.OS)
@@ -244,15 +245,15 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta
 
 	return &v1beta1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        vm.IdentifierID.VM,
-			Labels:      instanceLabels,
-			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.Network),
+			Name:   vm.IdentifierID.VM,
+			Labels: instanceLabels,
+			//Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.VM),
 		},
 		Spec: v1beta1.InstanceSpec{
 			ResourceSpec: v1.ResourceSpec{
 				DeletionPolicy: crossplane.GetDeletionPolicy(vm.Metadata.Managed),
 				ProviderConfigReference: &v1.Reference{
-					Name: vm.IdentifierID.VM,
+					Name: vm.IdentifierID.Provider,
 				},
 			},
 			ForProvider: v1beta1.InstanceParameters{
@@ -262,8 +263,11 @@ func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta
 				KeyName:                  &keyName,
 				Region:                   &vm.Zone,
 				RootBlockDevice:          *awsDiskList,
-				SubnetIDSelector: &v1.Selector{
-					MatchLabels: subnetID.ToIDLabels(),
+				SubnetIDRef: &v1.Reference{
+					Name: vm.IdentifierID.Subnetwork,
+				},
+				Tags: map[string]*string{
+					"Name": &vm.IdentifierID.VM,
 				},
 			},
 		},

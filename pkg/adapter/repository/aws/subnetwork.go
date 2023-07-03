@@ -2,6 +2,9 @@ package aws
 
 import (
 	"fmt"
+	"reflect"
+	"sync"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -20,9 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
 )
 
 func (aws *awsRepository) FindSubnetwork(ctx context.Context, opt option.Option) (*network.Subnetwork, errors.Error) {
