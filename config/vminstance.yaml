@@ -70,7 +70,7 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: aws-vm
-  vmLabels:
+  labels:
     crossplane.io/xrd: vminstances.aws.athmos.com
     provider: provider-aws
 spec:
