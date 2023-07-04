@@ -126,6 +126,10 @@ spec:
         - fromFieldPath: spec.parameters.subnetworkRef
           toFieldPath: spec.forProvider.subnetIdRef.name
 
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.publicIp
+          toFieldPath: status.publicIp
+
     - name: vm-keypair
       base:
         apiVersion: ec2.aws.crossplane.io/v1beta1
