@@ -2,6 +2,7 @@ package resourceUc
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/dto"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -50,6 +51,11 @@ func (vuc *vmUseCase) getRepo(ctx context.Context) resourceRepo.Resource {
 }
 
 func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Error {
+	err := _setVmNamespace(ctx, vuc)
+	if !err.IsOk() {
+		return err
+	}
+
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -76,6 +82,11 @@ func (vuc *vmUseCase) Get(ctx context.Context, vm *resourceModel.VM) errors.Erro
 }
 
 func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.Error {
+	err := _setVmNamespace(ctx, vuc)
+	if !err.IsOk() {
+		return err
+	}
+
 	logger.Info.Println("CREAATE")
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
@@ -152,6 +163,11 @@ func (vuc *vmUseCase) Create(ctx context.Context, vm *resourceModel.VM) errors.E
 }
 
 func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.Error {
+	err := _setVmNamespace(ctx, vuc)
+	if !err.IsOk() {
+		return err
+	}
+
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -206,6 +222,11 @@ func (vuc *vmUseCase) Update(ctx context.Context, vm *resourceModel.VM) errors.E
 }
 
 func (vuc *vmUseCase) updateSSHKeys(ctx context.Context, vmName string, auths *model.SSHKeyList, req dto.UpdateVMRequest) errors.Error {
+	err := _setVmNamespace(ctx, vuc)
+	if !err.IsOk() {
+		return err
+	}
+
 	userExists := func(username string) bool {
 		for _, auth := range *auths {
 			if auth.Username == username {
@@ -250,6 +271,11 @@ func (vuc *vmUseCase) updateSSHKeys(ctx context.Context, vmName string, auths *m
 }
 
 func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.Error {
+	err := _setVmNamespace(ctx, vuc)
+	if !err.IsOk() {
+		return err
+	}
+
 	repo := vuc.getRepo(ctx)
 	if repo == nil {
 		return errors.BadRequest.WithMessage(fmt.Sprintf("%s vm not supported", ctx.Value(context.ProviderTypeKey).(types.Provider)))
@@ -275,4 +301,18 @@ func (vuc *vmUseCase) Delete(ctx context.Context, vm *resourceModel.VM) errors.E
 	}
 
 	return errors.NoContent
+}
+
+func _setVmNamespace(ctx context.Context, suc *vmUseCase) errors.Error {
+	project, err := suc.projectRepo.Find(ctx, option.Option{
+		Value: repository.FindProjectByIDRequest{
+			ID: ctx.Value(context.ProjectIDKey).(string),
+		},
+	})
+	if !err.IsOk() {
+		return err
+	}
+
+	ctx.Set(context.CurrentNamespace, project.Namespace)
+	return errors.OK
 }
