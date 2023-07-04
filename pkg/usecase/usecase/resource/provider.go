@@ -57,18 +57,18 @@ func (puc *providerUseCase) List(ctx context.Context, providers *resourceModel.P
 	searchOption := option.Option{Value: resourceRepo.FindAllResourceOption{
 		Labels: map[string]string{model.ProjectIDLabelKey: ctx.Value(context.ProjectIDKey).(string)}},
 	}
-	// gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
-	// if !err.IsOk() {
-	// 	return err
-	// }
+	gcpProviders, err := puc.gcpRepo.FindAllProviders(ctx, searchOption)
+	if !err.IsOk() {
+		return err
+	}
 	awsProviders, err := puc.awsRepo.FindAllProviders(ctx, searchOption)
 	if !err.IsOk() {
 		return err
 	}
-	if /*len(*gcpProviders) == 0 &&*/ len(*awsProviders) == 0 {
+	if len(*gcpProviders) == 0 && len(*awsProviders) == 0 {
 		return errors.NoContent.WithMessage("no providers found")
 	}
-	*providers = lo.Assign( /**gcpProviders,*/ *awsProviders)
+	*providers = lo.Assign(*gcpProviders, *awsProviders)
 
 	return errors.OK
 }

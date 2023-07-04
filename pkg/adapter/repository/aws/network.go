@@ -2,6 +2,8 @@ package aws
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
@@ -21,7 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -251,7 +252,7 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	subnets, subnetsErr := aws.FindAllSubnetworks(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	firewalls, firewallsErr := aws.FindAllFirewalls(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
 	sqldbs, sqldbsErr := aws.FindAllSqlDBs(ctx, option.Option{Value: resourceRepo.FindAllResourceOption{Labels: searchLabels}})
-	
+
 	if !subnetsErr.IsOk() {
 		return subnetsErr
 	}
