@@ -275,7 +275,7 @@ func (aws *awsRepository) DeleteNetworkCascade(ctx context.Context, network *net
 	}
 
 	for _, sqldb := range *sqldbs {
-		if sqldbErr := aws.DeleteSqlDB(ctx, &sqldb); !sqldbErr.IsOk() {
+		if sqldbErr := aws.DeleteSqlDB(ctx, &sqldb); !sqldbErr.IsOk() {
 			return sqldbErr
 		}
 	}
