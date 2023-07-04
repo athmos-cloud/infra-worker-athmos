@@ -241,6 +241,11 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 	sizeGib := int(*db.Spec.Parameters.StorageGB)
 	maxSizeGib := int(*db.Spec.Parameters.StorageGBLimit)
 
+	publicIp := ""
+	if db.Status.PublicIp != nil {
+		publicIp = *db.Status.PublicIp
+	}
+
 	return &instance.SqlDB{
 		Metadata: metadata.Metadata{
 			Status: metadata.StatusFromKubernetesStatus(db.Status.Conditions),
@@ -253,6 +258,7 @@ func (aws *awsRepository) toSqlDBModel(db *xrds.SQLDatabase, secret *v1.Secret) 
 			Autoresize:         0 < maxSizeGib,
 		},
 		MachineType:    *db.Spec.Parameters.MachineType,
+		PublicIP:       publicIp,
 		IdentifierID:   id,
 		IdentifierName: name,
 		Region:         *db.Spec.Parameters.Region,

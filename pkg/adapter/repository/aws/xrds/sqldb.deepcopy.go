@@ -77,6 +77,10 @@ func (in *SQLDatabase) DeepCopy() *SQLDatabase {
 	temp := new(SQLDatabaseStatus)
 	in.Status.ResourceStatus.DeepCopyInto(&temp.ResourceStatus)
 	out.Status = *temp
+	if in.Status.PublicIp != nil {
+		out.Status.PublicIp = new(string)
+		*out.Status.PublicIp = *in.Status.PublicIp
+	}
 
 	return out
 }

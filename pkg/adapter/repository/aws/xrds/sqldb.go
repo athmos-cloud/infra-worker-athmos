@@ -37,6 +37,7 @@ type SQLDatabase struct {
 
 type SQLDatabaseStatus struct {
 	v1.ResourceStatus `json:",inline"`
+	PublicIp          *string `json:"publicIp,omitempty"`
 }
 
 type SQLDatabaseList struct {

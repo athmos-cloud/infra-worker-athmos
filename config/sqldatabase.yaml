@@ -144,8 +144,9 @@ spec:
         - fromFieldPath: spec.parameters.region
           toFieldPath: spec.forProvider.region
         - type: ToCompositeFieldPath
-          fromFieldPath: status
-          toFieldPath: status.databaseStatus
+          fromFieldPath: status.atProvider.publicIp
+          toFieldPath: status.endpoint
+        
 
     - name: subnet-group
       base:
