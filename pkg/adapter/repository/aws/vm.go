@@ -82,7 +82,7 @@ func (aws *awsRepository) FindAllVMs(ctx context.Context, opt option.Option) (*i
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
 	if err := kubernetes.Client().Client.List(ctx, awsVMList, listOpt); err != nil {
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vms"))
+		return nil, errors.KubernetesError.WithMessage("unable to list vms")
 	}
 
 	vmList, err := aws.toModelVMCollection(ctx, awsVMList)
@@ -133,10 +133,6 @@ func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierName.VM))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to update vm %s", vm.IdentifierName.VM))
-	}
-
-	if err := aws._updateKeyPair(ctx, vm); !err.IsOk() {
-		return err
 	}
 	return errors.NoContent
 }
