@@ -1,18 +1,24 @@
 package xrds
 
-import "k8s.io/apimachinery/pkg/runtime"
+import (
+	"github.com/upbound/provider-aws/apis/ec2/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
 
 func (in *VMInstanceParameters) DeepCopyInto(out *VMInstanceParameters) {
 	out.AssignPublicIp = new(bool)
 	*out.AssignPublicIp = *in.AssignPublicIp
 
-	out.DeletionPolicy = new(string)
-	*out.DeletionPolicy = *in.DeletionPolicy
+	out.DeletionPolicy = in.DeletionPolicy
 
-	out.Disks = *in.Disks.DeepCopy()
+	var disks []v1beta1.RootBlockDeviceParameters
+	for _, rbdp := range in.Disks {
+		disks = append(disks, *rbdp.DeepCopy())
+	}
+	out.Disks = disks
 
-	out.KeyPairId = new(string)
-	*out.KeyPairId = *in.KeyPairId
+	out.KeyPairRef = new(string)
+	*out.KeyPairRef = *in.KeyPairRef
 
 	out.MachineType = new(string)
 	*out.MachineType = *in.MachineType
@@ -67,6 +73,10 @@ func (in *VMInstance) DeepCopy() *VMInstance {
 	temp := new(VMInstanceStatus)
 	in.Status.ResourceStatus.DeepCopyInto(&temp.ResourceStatus)
 	out.Status = *temp
+	if in.Status.PublicIp != nil {
+		out.Status.PublicIp = new(string)
+		*out.Status.PublicIp = *in.Status.PublicIp
+	}
 
 	return out
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/controller/context"
+	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws/xrds"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/crossplane"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/domain/model/resource/identifier"
@@ -35,7 +36,7 @@ func (aws *awsRepository) FindVM(ctx context.Context, opt option.Option) (*insta
 		return nil, errors.InvalidOption.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
-	awsVM := &v1beta1.Instance{}
+	awsVM := &xrds.VMInstance{}
 	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, awsVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", req.Name))
@@ -43,12 +44,7 @@ func (aws *awsRepository) FindVM(ctx context.Context, opt option.Option) (*insta
 		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", req.Name))
 	}
 
-	awsKeyPair, err := aws._getKeyPair(ctx, awsVM)
-	if !err.IsOk() {
-		return nil, err
-	}
-
-	mod, err := aws.toModelVM(awsVM, awsKeyPair)
+	mod, err := aws.toModelVM(awsVM)
 	if !err.IsOk() {
 		return nil, err
 	}
@@ -61,7 +57,7 @@ func (aws *awsRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 		return
 	}
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
-	awsVMList := &v1beta1.InstanceList{}
+	awsVMList := &xrds.VMInstanceList{}
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
@@ -81,7 +77,7 @@ func (aws *awsRepository) FindAllVMs(ctx context.Context, opt option.Option) (*i
 		return nil, errors.BadRequest.WithMessage(fmt.Sprintf("invalid option : want %s, got %+v", reflect.TypeOf(resourceRepo.FindAllResourceOption{}).String(), opt.Get()))
 	}
 	req := opt.Get().(resourceRepo.FindAllResourceOption)
-	awsVMList := &v1beta1.InstanceList{}
+	awsVMList := &xrds.VMInstanceList{}
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
 	}
@@ -102,32 +98,31 @@ func (aws *awsRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.
 	} else if exists {
 		return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists in subnet %s", vm.IdentifierName.VM, vm.IdentifierID.Subnetwork))
 	}
-	awsVM, err := aws.toAWSVM(ctx, vm)
+
+	vmInstance, err := aws.toVMInstance(ctx, vm)
 	if !err.IsOk() {
 		return err
 	}
-	if err := kubernetes.Client().Client.Create(ctx, awsVM); err != nil {
+	if err := kubernetes.Client().Client.Create(ctx, vmInstance); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists", vm.IdentifierName.VM))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to create vm %s", vm.IdentifierName.VM))
 	}
 
-	if err := aws._createKeyPair(ctx, vm); !err.IsOk() {
-		return err
-	}
 	return errors.Created
 }
 
 func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.Error {
-	existingVM := &v1beta1.Instance{}
+	existingVM := &xrds.VMInstance{}
 	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, existingVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierID.VM))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to get vm %s", vm.IdentifierID.Subnetwork))
 	}
-	awsVM, err := aws.toAWSVM(ctx, vm)
+
+	awsVM, err := aws.toVMInstance(ctx, vm)
 	if !err.IsOk() {
 		return err
 	}
@@ -147,25 +142,22 @@ func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.
 }
 
 func (aws *awsRepository) DeleteVM(ctx context.Context, vm *instance.VM) errors.Error {
-	awsVM, err := aws.toAWSVM(ctx, vm)
+	awsVM, err := aws.toVMInstance(ctx, vm)
 	if !err.IsOk() {
 		return err
 	}
+
 	if err := kubernetes.Client().Client.Delete(ctx, awsVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierName.VM))
 		}
 		return errors.KubernetesError.WithMessage(fmt.Sprintf("unable to delete vm %s", vm.IdentifierName.VM))
 	}
-
-	if err := aws._deleteKeyPair(ctx, vm); !err.IsOk() {
-		return err
-	}
 	return errors.NoContent
 }
 
 func (aws *awsRepository) VMExists(ctx context.Context, vm *instance.VM) (bool, errors.Error) {
-	awsVMs := &v1beta1.InstanceList{}
+	vmInstances := &xrds.VMInstanceList{}
 	parentID := identifier.Subnetwork{
 		Provider:   vm.IdentifierID.Provider,
 		VPC:        vm.IdentifierID.VPC,
@@ -176,13 +168,13 @@ func (aws *awsRepository) VMExists(ctx context.Context, vm *instance.VM) (bool, 
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(searchLabels)},
 	}
-	if err := kubernetes.Client().Client.List(ctx, awsVMs, listOpt); err != nil {
+	if err := kubernetes.Client().Client.List(ctx, vmInstances, listOpt); err != nil {
 		return false, errors.KubernetesError.WithMessage("unable to list vm")
 	}
-	return len(awsVMs.Items) > 0, errors.OK
+	return len(vmInstances.Items) > 0, errors.OK
 }
 
-func (aws *awsRepository) toModelVM(vm *v1beta1.Instance, keyPair *v1beta1.KeyPair) (*instance.VM, errors.Error) {
+func (aws *awsRepository) toModelVM(vm *xrds.VMInstance) (*instance.VM, errors.Error) {
 	id := identifier.VM{}
 	name := identifier.VM{}
 	if err := id.IDFromLabels(vm.Labels); !err.IsOk() {
@@ -191,108 +183,81 @@ func (aws *awsRepository) toModelVM(vm *v1beta1.Instance, keyPair *v1beta1.KeyPa
 	if err := name.NameFromLabels(vm.Labels); !err.IsOk() {
 		return nil, err
 	}
-	tags := map[string]string{}
-	for _, tag := range vm.Spec.ForProvider.Tags {
-		split := strings.Split(*tag, tagKeyValueSeparator)
-		if len(split) != 2 {
-			continue
-		}
-		tags[split[0]] = split[1]
+
+	sshKeys := crossplane.FromSSHKeySecretLabels(vm.Labels)
+	publicIP := ""
+	if vm.Status.PublicIp != nil {
+		publicIP = *vm.Status.PublicIp
 	}
 
-	sshKeys := crossplane.FromSSHKeySecretLabels(keyPair.Labels)
-	publicIP := ""
-	if vm.Status.AtProvider.PublicIP != nil {
-		publicIP = *vm.Status.AtProvider.PublicIP
-	}
 	hasPublicIp, err := strconv.ParseBool(vm.ObjectMeta.Labels[crossplane.VMPublicIPLabel])
 	if err != nil {
 		return nil, errors.InternalError.WithMessage("unable to parse public ip label")
 	}
 	vmOS := instance.VMOS{}
-	if vm.Spec.ForProvider.AMI != nil {
-		vmOS = toVmOS(vm.Spec.ForProvider.AMI)
+	if vm.Spec.Parameters.Os != nil {
+		vmOS = toVmOS(vm.Spec.Parameters.Os)
 	}
 	return &instance.VM{
 		Metadata: metadata.Metadata{
 			Status:  metadata.StatusFromKubernetesStatus(vm.Status.Conditions),
-			Managed: vm.Spec.ResourceSpec.DeletionPolicy == v1.DeletionDelete,
-			Tags:    tags,
+			Managed: vm.Spec.Parameters.DeletionPolicy == v1.DeletionDelete,
+			Tags:    make(map[string]string),
 		},
 		IdentifierID:   id,
 		IdentifierName: name,
 		AssignPublicIP: hasPublicIp,
 		PublicIP:       publicIP,
-		Zone:           *vm.Spec.ForProvider.Region,
-		MachineType:    *vm.Spec.ForProvider.InstanceType,
+		Zone:           *vm.Spec.Parameters.Region,
+		MachineType:    *vm.Spec.Parameters.MachineType,
 		Auths:          sshKeys,
-		Disks:          aws.toVMDiskCollection(vm.Spec.ForProvider.RootBlockDevice),
+		Disks:          aws.toVMDiskCollection(vm.Spec.Parameters.Disks),
 		OS:             vmOS,
 	}, errors.OK
 }
 
-func (aws *awsRepository) toAWSVM(ctx context.Context, vm *instance.VM) (*v1beta1.Instance, errors.Error) {
+func (aws *awsRepository) toVMInstance(ctx context.Context, vm *instance.VM) (*xrds.VMInstance, errors.Error) {
 	sshKeysLabels := crossplane.ToSSHKeySecretLabels(vm.Auths)
 	asPublicIPLabel := map[string]string{crossplane.VMPublicIPLabel: strconv.FormatBool(vm.AssignPublicIP)}
-	instanceLabels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
-	//subnetID := identifier.Subnetwork{Provider: vm.IdentifierID.Provider, VPC: vm.IdentifierID.VPC, Network: vm.IdentifierID.Network, Subnetwork: vm.IdentifierID.Subnetwork}
-	keyName := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
+	labels := lo.Assign(crossplane.GetBaseLabels(ctx.Value(context.ProjectIDKey).(string)), vm.IdentifierID.ToIDLabels(), vm.IdentifierName.ToNameLabels(), sshKeysLabels, asPublicIPLabel)
 
-	awsDiskList, err := aws.toAWSVMDiskList(vm.Disks, vm.OS)
+	keyPairRef := fmt.Sprintf("%s-keypair", vm.IdentifierID.VM)
+	securityGroupRef := fmt.Sprintf("%s-security-group", vm.IdentifierID.VM)
+	disks, err := aws.toAWSVMDiskList(vm.Disks, vm.OS)
 	if !err.IsOk() {
 		return nil, err
 	}
 
-	// cores := float64(1)
-	// threadsPerCPU := float64(1)
-	// cpuParams := []v1beta1.CPUOptionsParameters{
-	// 	{
-	// 		CoreCount:      &cores,
-	// 		ThreadsPerCore: &threadsPerCPU,
-	// 	},
-	// }
-
-	return &v1beta1.Instance{
+	return &xrds.VMInstance{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   vm.IdentifierID.VM,
-			Labels: instanceLabels,
-			//Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.VM),
+			Annotations: crossplane.GetAnnotations(vm.Metadata.Managed, vm.IdentifierName.VM),
+			Labels:      labels,
+			Name:        vm.IdentifierID.VM,
+			Namespace:   ctx.Value(context.CurrentNamespace).(string),
 		},
-		Spec: v1beta1.InstanceSpec{
-			ResourceSpec: v1.ResourceSpec{
-				DeletionPolicy: crossplane.GetDeletionPolicy(vm.Metadata.Managed),
-				ProviderConfigReference: &v1.Reference{
-					Name: vm.IdentifierID.Provider,
-				},
-			},
-			ForProvider: v1beta1.InstanceParameters{
-				AMI:                      &vm.OS.Name,
-				AssociatePublicIPAddress: &vm.AssignPublicIP,
-				InstanceType:             &vm.MachineType,
-				KeyName:                  &keyName,
-				Region:                   &vm.Zone,
-				RootBlockDevice:          *awsDiskList,
-				// CPUOptions:               cpuParams,
-				SubnetIDRef: &v1.Reference{
-					Name: vm.IdentifierID.Subnetwork,
-				},
-				Tags: map[string]*string{
-					"Name": &vm.IdentifierID.VM,
-				},
+		Spec: xrds.VMInstanceSpec{
+			Parameters: xrds.VMInstanceParameters{
+				AssignPublicIp:   &vm.AssignPublicIP,
+				DeletionPolicy:   crossplane.GetDeletionPolicy(vm.Metadata.Managed),
+				Disks:            disks,
+				KeyPairRef:       &keyPairRef,
+				MachineType:      &vm.MachineType,
+				NetworkRef:       &vm.IdentifierID.Network,
+				Os:               &vm.OS.Name,
+				ProviderRef:      &vm.IdentifierID.Provider,
+				Region:           &vm.Zone,
+				SecurityGroupRef: &securityGroupRef,
+				SubnetworkRef:    &vm.IdentifierID.Subnetwork,
+				VmId:             &vm.IdentifierID.VM,
 			},
 		},
 	}, errors.OK
 }
 
-func (aws *awsRepository) toModelVMCollection(ctx context.Context, instanceList *v1beta1.InstanceList) (*instance.VMCollection, errors.Error) {
+func (aws *awsRepository) toModelVMCollection(ctx context.Context, instanceList *xrds.VMInstanceList) (*instance.VMCollection, errors.Error) {
 	items := instance.VMCollection{}
 	for _, item := range instanceList.Items {
-		keyPair, err := aws._getKeyPair(ctx, &item)
-		if !err.IsOk() {
-			return nil, err
-		}
-
-		vm, err := aws.toModelVM(&item, keyPair)
+		vm, err := aws.toModelVM(&item)
 		if !err.IsOk() {
 			return nil, err
 		}
@@ -328,7 +293,7 @@ func (aws *awsRepository) toVMDisk(disk *v1beta1.RootBlockDeviceParameters) inst
 	}
 }
 
-func (aws *awsRepository) toAWSVMDiskList(disks []instance.VMDisk, os instance.VMOS) (*[]v1beta1.RootBlockDeviceParameters, errors.Error) {
+func (aws *awsRepository) toAWSVMDiskList(disks []instance.VMDisk, os instance.VMOS) ([]v1beta1.RootBlockDeviceParameters, errors.Error) {
 	var bootDisks []v1beta1.RootBlockDeviceParameters
 	for _, disk := range disks {
 		awsDisk, err := aws.toAWSVMDisk(disk)
@@ -337,7 +302,7 @@ func (aws *awsRepository) toAWSVMDiskList(disks []instance.VMDisk, os instance.V
 		}
 		bootDisks = append(bootDisks, *awsDisk)
 	}
-	return &bootDisks, errors.OK
+	return bootDisks, errors.OK
 }
 
 func (aws *awsRepository) toAWSVMDisk(disk instance.VMDisk) (*v1beta1.RootBlockDeviceParameters, errors.Error) {
@@ -347,7 +312,6 @@ func (aws *awsRepository) toAWSVMDisk(disk instance.VMDisk) (*v1beta1.RootBlockD
 
 	diskSize := float64(disk.SizeGib)
 	diskType := "gp2"
-	//diskMode := toAWSDiskMode(disk.Mode)
 	return &v1beta1.RootBlockDeviceParameters{
 		DeleteOnTermination: &disk.AutoDelete,
 		VolumeSize:          &diskSize,

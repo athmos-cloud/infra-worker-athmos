@@ -7,18 +7,18 @@ import (
 )
 
 type VMInstanceParameters struct {
-	AssignPublicIp   *bool                             `json:"assignPublicIp"`
-	DeletionPolicy   *string                           `json:"deletionPolicy"`
-	Disks            v1beta1.RootBlockDeviceParameters `json:"disks"`
-	KeyPairId        *string                           `json:"keyPairId"`
-	MachineType      *string                           `json:"machineType"`
-	NetworkRef       *string                           `json:"networkRef"`
-	Os               *string                           `json:"os"`
-	ProviderRef      *string                           `json:"providerRef"`
-	Region           *string                           `json:"region"`
-	SecurityGroupRef *string                           `json:"securityGroupRef"`
-	SubnetworkRef    *string                           `json:"subnetworkRef"`
-	VmId             *string                           `json:"vmId"`
+	AssignPublicIp   *bool                               `json:"assignPublicIp"`
+	DeletionPolicy   v1.DeletionPolicy                   `json:"deletionPolicy"`
+	Disks            []v1beta1.RootBlockDeviceParameters `json:"disks"`
+	KeyPairRef       *string                             `json:"keyPairId"`
+	MachineType      *string                             `json:"machineType"`
+	NetworkRef       *string                             `json:"networkRef"`
+	Os               *string                             `json:"os"`
+	ProviderRef      *string                             `json:"providerRef"`
+	Region           *string                             `json:"region"`
+	SecurityGroupRef *string                             `json:"securityGroupRef"`
+	SubnetworkRef    *string                             `json:"subnetworkRef"`
+	VmId             *string                             `json:"vmId"`
 }
 
 type VMInstanceSpec struct {
@@ -27,6 +27,7 @@ type VMInstanceSpec struct {
 
 type VMInstanceStatus struct {
 	v1.ResourceStatus `json:",inline"`
+	PublicIp          *string `json:"publicIp,omitempty"`
 }
 
 type VMInstance struct {
