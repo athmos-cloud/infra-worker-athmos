@@ -112,6 +112,7 @@ spec:
             dbName: sqldb123
             passwordSecretRef:
               key: Password
+            publiclyAccessible: true
             storageEncrypted: true
             storageType: gp2
             username: root
