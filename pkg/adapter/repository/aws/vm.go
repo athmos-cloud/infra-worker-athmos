@@ -37,7 +37,7 @@ func (aws *awsRepository) FindVM(ctx context.Context, opt option.Option) (*insta
 	}
 	req := opt.Get().(resourceRepo.FindResourceOption)
 	awsVM := &xrds.VMInstance{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name}, awsVM); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: ctx.Value(context.CurrentNamespace).(string)}, awsVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return nil, errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", req.Name))
 		}
@@ -60,6 +60,7 @@ func (aws *awsRepository) FindAllRecursiveVMs(ctx context.Context, opt option.Op
 	awsVMList := &xrds.VMInstanceList{}
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		Namespace:     ctx.Value(context.CurrentNamespace).(string),
 	}
 	if err := kubernetes.Client().Client.List(ctx, awsVMList, listOpt); err != nil {
 		ch.ErrorChannel <- errors.KubernetesError.WithMessage(fmt.Sprintf("unable to list vm"))
@@ -80,8 +81,10 @@ func (aws *awsRepository) FindAllVMs(ctx context.Context, opt option.Option) (*i
 	awsVMList := &xrds.VMInstanceList{}
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		Namespace:     ctx.Value(context.CurrentNamespace).(string),
 	}
 	if err := kubernetes.Client().Client.List(ctx, awsVMList, listOpt); err != nil {
+		fmt.Println(err.Error())
 		return nil, errors.KubernetesError.WithMessage("unable to list vms")
 	}
 
@@ -104,6 +107,7 @@ func (aws *awsRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.
 		return err
 	}
 	if err := kubernetes.Client().Client.Create(ctx, vmInstance); err != nil {
+		fmt.Println(err.Error())
 		if k8serrors.IsAlreadyExists(err) {
 			return errors.Conflict.WithMessage(fmt.Sprintf("vm %s already exists", vm.IdentifierName.VM))
 		}
@@ -115,7 +119,7 @@ func (aws *awsRepository) CreateVM(ctx context.Context, vm *instance.VM) errors.
 
 func (aws *awsRepository) UpdateVM(ctx context.Context, vm *instance.VM) errors.Error {
 	existingVM := &xrds.VMInstance{}
-	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM}, existingVM); err != nil {
+	if err := kubernetes.Client().Client.Get(ctx, types.NamespacedName{Name: vm.IdentifierID.VM, Namespace: ctx.Value(context.CurrentNamespace).(string)}, existingVM); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return errors.NotFound.WithMessage(fmt.Sprintf("vm %s not found", vm.IdentifierID.VM))
 		}
@@ -241,6 +245,7 @@ func (aws *awsRepository) toVMInstance(ctx context.Context, vm *instance.VM) (*x
 				NetworkRef:       &vm.IdentifierID.Network,
 				Os:               &vm.OS.Name,
 				ProviderRef:      &vm.IdentifierID.Provider,
+				PublicKey:        &vm.Auths[0].PublicKey,
 				Region:           &vm.Zone,
 				SecurityGroupRef: &securityGroupRef,
 				SubnetworkRef:    &vm.IdentifierID.Subnetwork,

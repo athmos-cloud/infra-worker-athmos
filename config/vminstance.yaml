@@ -3,7 +3,7 @@ kind: CompositeResourceDefinition
 metadata:
   name: xvminstances.aws.athmos.com
 spec:
-  defaultCompositeDeletePolicy: Foreground
+  defaultCompositeDeletePolicy: Background
   group: aws.athmos.com
   names:
     kind: XVMInstance
@@ -31,6 +31,26 @@ spec:
                       type: string
                     disks:
                       type: array
+                      items:
+                        type: object
+                        properties:
+                          deleteOnTermination:
+                            type: boolean
+                          encrypted:
+                            type: boolean
+                          iops:
+                            type: number
+                          kmsKeyId:
+                            type: string
+                          kmsKeyIdRef:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                          volumeSize:
+                            type: number
+                          volumeType:
+                            type: string
                     keyPairRef:
                       type: string
                     machineType:
@@ -40,6 +60,8 @@ spec:
                     os:
                       type: string
                     providerRef:
+                      type: string
+                    publicKey:
                       type: string
                     region:
                       type: string
@@ -58,6 +80,7 @@ spec:
                     - networkRef
                     - os
                     - providerRef
+                    - publicKey
                     - region
                     - securityGroupRef
                     - subnetworkRef
@@ -94,12 +117,12 @@ spec:
     - name: security-rule-parameters
       patches:
         - fromFieldPath: "spec.parameters.securityGroupRef"
-          toFieldPath: "spec.forProvider.sourceSecurityGroupIdRef.name"
+          toFieldPath: "spec.forProvider.securityGroupIdRef.name"
 
   resources:
     - name: vm-instance
       base:
-        apiVersion: ec2.aws.crossplane.io/v1beta1
+        apiVersion: ec2.aws.upbound.io/v1beta1
         kind: Instance
       patches:
         - type: PatchSet
@@ -132,7 +155,7 @@ spec:
 
     - name: vm-keypair
       base:
-        apiVersion: ec2.aws.crossplane.io/v1beta1
+        apiVersion: ec2.aws.upbound.io/v1beta1
         kind: KeyPair
       patches:
         - type: PatchSet
@@ -141,12 +164,12 @@ spec:
         - fromFieldPath: spec.parameters.keyPairRef
           toFieldPath: metadata.name
 
-        - fromFieldPath: spec.parameters.publicKey,
+        - fromFieldPath: spec.parameters.publicKey
           toFieldPath: spec.forProvider.publicKey
 
     - name: vm-security-group
       base:
-        apiVersion: ec2.aws.crossplane.io/v1beta1
+        apiVersion: ec2.aws.upbound.io/v1beta1
         kind: SecurityGroup
         spec:
           forProvider:
@@ -166,8 +189,8 @@ spec:
 
     - name: vm-ingress-ssh
       base: 
-        apiVersion: ec2.aws.crossplane.io/v1beta1
-        kind: SecurityRuleGroup
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
         spec:
           forProvider:
             cidrBlocks:
@@ -185,8 +208,8 @@ spec:
 
     - name: vm-ingress-tcp-80
       base: 
-        apiVersion: ec2.aws.crossplane.io/v1beta1
-        kind: SecurityRuleGroup
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
         spec:
           forProvider:
             cidrBlocks:
@@ -204,8 +227,8 @@ spec:
 
     - name: vm-ingress-tcp-443
       base: 
-        apiVersion: ec2.aws.crossplane.io/v1beta1
-        kind: SecurityRuleGroup
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
         spec:
           forProvider:
             cidrBlocks:
@@ -221,29 +244,10 @@ spec:
         - type: PatchSet
           patchSetName: security-rule-parameters
 
-    - name: vm-ingress-ping
-      base: 
-        apiVersion: ec2.aws.crossplane.io/v1beta1
-        kind: SecurityRuleGroup
-        spec:
-          forProvider:
-            cidrBlocks:
-              - 0.0.0.0/0
-            fromPort: 8
-            protocol: icmp
-            toPort: -1
-            type: ingress
-      patches:
-        - type: PatchSet
-          patchSetName: common-parameters
-
-        - type: PatchSet
-          patchSetName: security-rule-parameters
-
     - name: vm-egress
       base: 
-        apiVersion: ec2.aws.crossplane.io/v1beta1
-        kind: SecurityRuleGroup
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
         spec:
           forProvider:
             cidrBlocks:

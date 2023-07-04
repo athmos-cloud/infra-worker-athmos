@@ -4,3 +4,4 @@ Dockerfile_debug
 Dockerfile_prod
 Dockerfile_test
 main
+vendor

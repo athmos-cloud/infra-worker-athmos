@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/adapter/repository/aws/xrds"
 	"github.com/athmos-cloud/infra-worker-athmos/pkg/kernel/errors"
 	computeAWS "github.com/upbound/provider-aws/apis/ec2/v1beta1"
@@ -85,6 +86,7 @@ func registerAWSResources(runtimeScheme *runtime.Scheme) {
 func registerXRDs(runtimeScheme *runtime.Scheme) {
 	UpboundXRDSchemeBuild := &scheme.Builder{GroupVersion: schema.GroupVersion{Group: "aws.athmos.com", Version: "v1alpha1"}}
 	UpboundXRDSchemeBuild.Register(&xrds.SQLDatabase{}, &xrds.SQLDatabaseList{})
+	UpboundXRDSchemeBuild.Register(&xrds.VMInstance{}, &xrds.VMInstanceList{})
 
 	if err := UpboundXRDSchemeBuild.AddToScheme(runtimeScheme); err != nil {
 		panic(errors.ExternalServiceError.WithMessage(fmt.Sprintf("Error registering custom or composition resources: %v", err)))

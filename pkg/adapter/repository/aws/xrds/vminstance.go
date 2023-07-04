@@ -10,11 +10,12 @@ type VMInstanceParameters struct {
 	AssignPublicIp   *bool                               `json:"assignPublicIp"`
 	DeletionPolicy   v1.DeletionPolicy                   `json:"deletionPolicy"`
 	Disks            []v1beta1.RootBlockDeviceParameters `json:"disks"`
-	KeyPairRef       *string                             `json:"keyPairId"`
+	KeyPairRef       *string                             `json:"keyPairRef"`
 	MachineType      *string                             `json:"machineType"`
 	NetworkRef       *string                             `json:"networkRef"`
 	Os               *string                             `json:"os"`
 	ProviderRef      *string                             `json:"providerRef"`
+	PublicKey 			 *string 														 `json:"publicKey"`
 	Region           *string                             `json:"region"`
 	SecurityGroupRef *string                             `json:"securityGroupRef"`
 	SubnetworkRef    *string                             `json:"subnetworkRef"`

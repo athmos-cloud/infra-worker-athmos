@@ -3,7 +3,7 @@ kind: CompositeResourceDefinition
 metadata:
   name: xsqldatabases.aws.athmos.com
 spec:
-  defaultCompositeDeletePolicy: Foreground
+  defaultCompositeDeletePolicy: Background
   group: aws.athmos.com
   names:
     kind: XSQLDatabase
@@ -75,6 +75,9 @@ spec:
                     - subnetGroupName
               required:
                 - parameters
+            status:
+              publicIp:
+                type: string
 
 ---
 apiVersion: apiextensions.crossplane.io/v1
@@ -112,7 +115,7 @@ spec:
             dbName: sqldb123
             passwordSecretRef:
               key: Password
-            publiclyAccessible: true
+            publiclyAccessible: false
             storageEncrypted: true
             storageType: gp2
             username: root
@@ -147,7 +150,6 @@ spec:
           fromFieldPath: status.atProvider.publicIp
           toFieldPath: status.endpoint
         
-
     - name: subnet-group
       base:
         apiVersion: rds.aws.upbound.io/v1beta1

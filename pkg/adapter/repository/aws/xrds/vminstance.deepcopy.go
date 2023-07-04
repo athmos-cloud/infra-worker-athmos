@@ -32,6 +32,9 @@ func (in *VMInstanceParameters) DeepCopyInto(out *VMInstanceParameters) {
 	out.ProviderRef = new(string)
 	*out.ProviderRef = *in.ProviderRef
 
+	out.PublicKey = new(string)
+	*out.PublicKey = *in.PublicKey
+
 	out.Region = new(string)
 	*out.Region = *in.Region
 

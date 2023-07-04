@@ -17,13 +17,13 @@ RUN CGO_ENABLED=0 go build \
     -o /app .
  
 # STAGE 2: build the container to run
-FROM gcr.io/distroless/static AS final
+# FROM gcr.io/distroless/static AS final
  
 USER nonroot:nonroot
 
 ADD static /etc/athmos/static
 # copy compiled app
-COPY --from=build --chown=nonroot:nonroot /app /app
+# COPY --from=build --chown=nonroot:nonroot /app /app
  
 # run binary; use vector form
 ENTRYPOINT ["/app"]

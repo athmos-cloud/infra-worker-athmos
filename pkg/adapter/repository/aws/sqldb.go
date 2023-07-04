@@ -80,6 +80,7 @@ func (aws *awsRepository) FindAllRecursiveSqlDBs(ctx context.Context, opt option
 	awsRDSInstances := &xrds.SQLDatabaseList{}
 	listOpt := &client.ListOptions{
 		LabelSelector: client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(req.Labels)},
+		Namespace:     ctx.Value(context.CurrentNamespace).(string),
 	}
 	if err := kubernetes.Client().Client.List(ctx, awsRDSInstances, listOpt); err != nil {
 		ch.ErrorChannel <- errors.KubernetesError.WithMessage("Unable to list dbs")
@@ -411,9 +412,9 @@ func (aws *awsRepository) getPasswordSecret(ctx context.Context, name *string, n
 		ctx,
 		types.NamespacedName{Name: *name, Namespace: *namespace}, existingPasswordSecret); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return nil, errors.NotFound.WithMessage(fmt.Sprintf("Password secret %s not found", *name))
+			return nil, errors.NotFound.WithMessage(fmt.Sprintf("Password secret %s not found in namespace %s", *name, *namespace))
 		}
-		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("Unable to get password secret %s", *name))
+		return nil, errors.KubernetesError.WithMessage(fmt.Sprintf("Unable to get password secret %s in namespace %s", *name, *namespace))
 	}
 	return existingPasswordSecret, errors.OK
 }
